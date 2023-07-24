@@ -8,6 +8,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from Stopwatch import Stopwatch
 import torch
 import json
+import threading
 
 sw = Stopwatch()
 
@@ -21,7 +22,6 @@ sw.stop("Loading Whisper model")
 
 # Create an InputStream for the microphone
 stream = sd.InputStream(samplerate=16000, channels=1, dtype='float32')
-stream.start()
 
 # Create a buffer to hold the recorded audio data
 buffer = np.array([], dtype='float32')
@@ -30,12 +30,28 @@ buffer = np.array([], dtype='float32')
 class RecordingThread(QThread):
     buffer_updated = pyqtSignal(np.ndarray)
 
+    def __init__(self):
+        super().__init__()
+        self.running = False
+        self.lock = threading.Lock()
+
     def run(self):
         global buffer
-        while self.isRunning():
+        self.running = True
+        print("...........starting thread............")
+        stream.start()
+        while self.running:
             data, _ = stream.read(1024)  # Read 1024 frames from the InputStream
-            buffer = np.append(buffer, data)  # Append the data to the buffer
+            with self.lock:
+                buffer = np.append(buffer, data)  # Append the data to the buffer
             self.buffer_updated.emit(buffer)
+        stream.stop()
+        print("...........stopping thread............")
+        
+    def stop(self):
+        with self.lock:
+            self.running = False
+        stream.stop()
 
 # Create a RecordingThread
 recording_thread = RecordingThread()
@@ -49,7 +65,7 @@ def on_button_press():
 
 # Define the callback for the button release event
 def on_button_release():
-    recording_thread.terminate()  # Stop the RecordingThread
+    recording_thread.stop()  # Stop the RecordingThread
     rt = sw.stop("Recording")["last"]
 
     global buffer
@@ -82,6 +98,3 @@ button.show()
 
 # Run the PyQt event loop
 app.exec_()
-
-# Stop the InputStream when the application exits
-stream.stop()
