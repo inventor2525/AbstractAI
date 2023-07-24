@@ -6,11 +6,13 @@ import whisper
 from PyQt5.QtWidgets import QApplication, QPushButton
 from PyQt5.QtCore import QThread, pyqtSignal
 from Stopwatch import Stopwatch
+import torch
+import json
 
 sw = Stopwatch()
 
 # Variables for model size
-model_size = "medium"  # Other options: "tiny", "small", "medium", "large"
+model_size = "medium.en"  # Other options: "tiny", "small", "medium", "large"
 
 # Load the Whisper model
 sw.start("Loading Whisper model")
@@ -65,11 +67,11 @@ def on_button_release():
 
     sw.start("Transcribing")
     # Transcribe the audio data with Whisper
-    result = model.transcribe('temp.wav')
+    result = model.transcribe('temp.wav', language="English", fp16=torch.cuda.is_available())
     tt = sw.stop("Transcribing")["last"]
     
     print(f"Seconds per seconds {rt/tt}")
-    print(result['text'])
+    print(json.dumps(result, indent=4))
 
 # Create a PyQt application and button
 app = QApplication([])
