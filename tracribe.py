@@ -1,21 +1,52 @@
 import sounddevice as sd
 import numpy as np
-import whisper
 import io
 import wave
+import whisper
+from PyQt5.QtWidgets import QApplication, QPushButton
+from PyQt5.QtCore import QThread, pyqtSignal
 
-# Variables for model size and chunk length
-model_size = "base"  # Other options: "tiny", "small", "medium", "large"
-chunk_length = 30  # Length of each chunk in seconds
+# Variables for model size
+model_size = "small"  # Other options: "tiny", "small", "medium", "large"
 
 # Load the Whisper model
 print("Loading Whisper model...")
 model = whisper.load_model(model_size)
 
-# Define the callback for the stream
-def callback(indata, frames, time, status):
-    # Convert the raw audio data to a format that Whisper can use
-    audio_data = np.int16(indata * 32767).tobytes()
+# Create an InputStream for the microphone
+stream = sd.InputStream(samplerate=16000, channels=1, dtype='float32')
+stream.start()
+
+# Create a buffer to hold the recorded audio data
+buffer = np.array([], dtype='float32')
+
+# Define a QThread for the recording process
+class RecordingThread(QThread):
+    buffer_updated = pyqtSignal(np.ndarray)
+
+    def run(self):
+        global buffer
+        while self.isRunning():
+            data, _ = stream.read(1024)  # Read 1024 frames from the InputStream
+            buffer = np.append(buffer, data)  # Append the data to the buffer
+            self.buffer_updated.emit(buffer)
+
+# Create a RecordingThread
+recording_thread = RecordingThread()
+
+# Define the callback for the button press event
+def on_button_press():
+    global buffer
+    buffer = np.array([], dtype='float32')  # Clear the buffer
+    recording_thread.start()  # Start the RecordingThread
+
+# Define the callback for the button release event
+def on_button_release():
+    recording_thread.terminate()  # Stop the RecordingThread
+
+    global buffer
+    # Convert the buffer to bytes
+    audio_data = np.int16(buffer * 32767).tobytes()
 
     # Save the audio data to a temporary WAV file
     with wave.open('temp.wav', 'wb') as wf:
@@ -29,14 +60,15 @@ def callback(indata, frames, time, status):
     result = model.transcribe('temp.wav')
     print(result['text'])
 
-# Calculate the number of frames in each chunk
-chunk_frames = int(chunk_length * 16000)  # 16000 samples/second
+# Create a PyQt application and button
+app = QApplication([])
+button = QPushButton('Hold to record')
+button.pressed.connect(on_button_press)
+button.released.connect(on_button_release)
+button.show()
 
-print("Starting recording...")
-for _ in range(10):  # Record 10 chunks for testing
-    # Record a chunk of audio
-    audio_data = sd.rec(frames=chunk_frames, samplerate=16000, channels=1, dtype='float32')
-    sd.wait()  # Wait for the recording to finish
+# Run the PyQt event loop
+app.exec_()
 
-    # Call the callback function to transcribe the chunk
-    callback(audio_data, chunk_frames, None, None)
+# Stop the InputStream when the application exits
+stream.stop()
