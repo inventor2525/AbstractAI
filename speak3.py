@@ -2,7 +2,11 @@ from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5Hif
 from datasets import load_dataset
 import torch
 import soundfile as sf
+from Stopwatch import Stopwatch
 
+sw = Stopwatch()
+
+sw.start("load text to speach")
 # Check if CUDA is available and set the device to GPU if it is
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Using device: {device}')  # This will print 'cuda' if CUDA is available
@@ -15,8 +19,10 @@ vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(devic
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
 speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0).to(device)  # Move the embeddings to the GPU
 
+sw.stop("load text to speach")
+
 def text_to_speach(text:str, file_path:str="speech.wav"):
-    print("Running...")
+    sw.start("text to speach")
     inputs = processor(text=text, return_tensors="pt")
 
     # Move the inputs to the GPU
@@ -28,7 +34,7 @@ def text_to_speach(text:str, file_path:str="speech.wav"):
     speech = speech.cpu()
 
     sf.write(file_path, speech.numpy(), samplerate=16000)
-    print("Done")
+    sw.stop("text to speach")
 
 text_to_speach(
     "Hello! I am a computer. Do you understand english like I do? If so, can you see how well I am handling punctuation? What about my pauses? Or my grammar?",
