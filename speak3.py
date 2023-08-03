@@ -15,16 +15,31 @@ vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(devic
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
 speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0).to(device)  # Move the embeddings to the GPU
 
-print("Running...")
-inputs = processor(text="Hello! I am a computer. Do you understand english like I do? If so, can you see how well I am handling punctuation? What about my pauses? Or my grammar? What if I am running on the Gee Pee yoU versus the (C) (P) (U)? Do you still understand me then? That would be good if you did because this thing is fairly slow to run on the [C] [P] [U]. I still as a computer however do not do well as you can see reading acrynyms, things like See, pea, you... arent read well when you type CPU.", return_tensors="pt")
+def text_to_speach(text:str, file_path:str="speech.wav"):
+    print("Running...")
+    inputs = processor(text=text, return_tensors="pt")
 
-# Move the inputs to the GPU
-inputs = {name: tensor.to(device) for name, tensor in inputs.items()}
+    # Move the inputs to the GPU
+    inputs = {name: tensor.to(device) for name, tensor in inputs.items()}
 
-speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
+    speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
 
-# Move the speech tensor back to CPU for saving to file
-speech = speech.cpu()
+    # Move the speech tensor back to CPU for saving to file
+    speech = speech.cpu()
 
-sf.write("speech.wav", speech.numpy(), samplerate=16000)
-print("Done")
+    sf.write(file_path, speech.numpy(), samplerate=16000)
+    print("Done")
+
+text_to_speach(
+    "Hello! I am a computer. Do you understand english like I do? If so, can you see how well I am handling punctuation? What about my pauses? Or my grammar?",
+    "file_1.wav"
+)
+text_to_speach(
+    "What if I am running on the Gee Pee yoU versus the (C) (P) (U)? Do you still understand me then? That would be good if you did because this thing is fairly slow to run on the [C] [P] [U]. ",
+    "file_2.wav"
+)
+
+text_to_speach(
+    "I still as a computer however, do not do well, as you can see, reading acrynyms. Things like See, pea, you? arent read well when you type CPU.",
+    "file_3.wav"
+)
