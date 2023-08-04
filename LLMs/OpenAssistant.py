@@ -3,15 +3,27 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datetime import datetime
 import subprocess
+import argparse
+import numpy as np
 
 # Define common strings
 SYSTEM_MESSAGE = "You are a helpful assistant."
 
-# Set model
-model_name = "OpenAssistant/llama2-13b-orca-v2-8k-3166"
-model_name = "OpenAssistant/falcon-40b-sft-mix-1226"
-model_name = "OpenAssistant/falcon-40b-sft-top1-560"
-model_name = "OpenAssistant/falcon-7b-sft-mix-2000"
+try:
+	# Parse command-line arguments
+	parser = argparse.ArgumentParser(description='Process some integers.')
+	parser.add_argument('--model_name', type=str, default="OpenAssistant/llama2-13b-orca-v2-8k-3166",
+						help='The model name to use')
+	args = parser.parse_args()
+	
+	# Use the model name from the command-line arguments
+	model_name = args.model_name
+except Exception as e:
+	# Set model name defult
+	model_name = "OpenAssistant/llama2-13b-orca-v2-8k-3166"
+	model_name = "OpenAssistant/falcon-40b-sft-mix-1226"
+	model_name = "OpenAssistant/falcon-40b-sft-top1-560"
+	model_name = "OpenAssistant/falcon-7b-sft-mix-2000"
 
 # Define base classes
 class LLM:
@@ -131,17 +143,19 @@ class OpenAssistantPromptGenerator(PromptGenerator):
 	def get_prompt(self) -> str:
 		return f"{self.conversation}<|assistant|>"
 
+def nvidia_smi():
+	# Print nvidia-smi output
+	print("nvidia-smi output:")
+	print(subprocess.check_output(["nvidia-smi"]).decode())
+	
+nvidia_smi()
+	
 # Use the classes
 print("Start Loading...", datetime.now())
 llm = OpenAssistantLLM(model_name)
 llm.start()
 print("Done Loading!", datetime.now())
 
-def nvidia_smi():
-	# Print nvidia-smi output
-	print("nvidia-smi output:")
-	print(subprocess.check_output(["nvidia-smi"]).decode())
-	
 nvidia_smi()
 
 def generate_text(user_prompt: str):
