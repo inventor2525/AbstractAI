@@ -21,8 +21,13 @@ class LLM:
 	def start(self):
 		raise NotImplementedError
 
-	def respond(self, prompt: str):
+	def respond(self, prompt: str, del_token_type_ids:bool=True):
 		inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
+		try:
+			if del_token_type_ids:
+				del inputs["token_type_ids"]
+		except Exception as e:
+			print(f"An error occurred while deleting 'token_type_ids': {e}")
 		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
 		return output
 
@@ -71,13 +76,13 @@ class PromptGenerator:
 class OpenAssistantPromptGenerator(PromptGenerator):
 	def __init__(self, system_message: str):
 		super().__init__(system_message)
-		self.conversation = f"""{self.system_message}</s>"""
+		self.conversation = f"""<|system|>{self.system_message}</s>"""
 		
-	def add_prompt(self, user_prompt: str):
-		self.conversation += f"{user_prompt}</s>"
+	def add_prompt(self, user_prompt):
+		self.conversation += f"<|prompter|>{user_prompt}</s>"
 
-	def add_response(self, ai_response: str):
-		self.conversation += f"{ai_response}</s>"
+	def add_response(self, ai_response):
+		self.conversation += f"<|assistant|>{ai_response}</s>"
 	
 	def get_prompt(self) -> str:
 		return f"{self.conversation}<|assistant|>"
