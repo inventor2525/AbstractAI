@@ -19,7 +19,7 @@ try:
 	# Use the model name from the command-line arguments
 	model_name = args.model_name
 except Exception as e:
-	# Set model name defult
+	# Set model name default
 	model_name = "OpenAssistant/llama2-13b-orca-v2-8k-3166"
 	model_name = "OpenAssistant/falcon-40b-sft-mix-1226"
 	model_name = "OpenAssistant/falcon-40b-sft-top1-560"
@@ -170,8 +170,12 @@ def generate_text(user_prompt: str):
 	nvidia_smi()
 
 # Call the function for different prompts
-generate_text("Write me a poem please")
-generate_text("Write me a vector3 class in python with lots of useful math functions")
-generate_text("Write me a python quaternion class with lots of useful math functions.")
-generate_text("Write me a vhdl binary counter")
-generate_text("Write me a vhdl 4 pin stepper motor controller.")
+for i in range(0,2):
+	generate_text("Write me a poem please")
+	generate_text("Write me a vector3 class in python with lots of useful math functions")
+	generate_text("Write me a python quaternion class with lots of useful math functions.")
+	generate_text("Write me a vhdl binary counter")
+	generate_text("Write me a vhdl 4 pin stepper motor controller.")
+	generate_text("Write me a implementation of pure pursuit in python that shows it's results with matplot lib.")
+	generate_text("List a bunch of tasks that could stress test you.")
+	generate_text("what series of terminal commands could I use to make a folder, put a new py file inside it, add some simple test code to it, and commit the work for that folder in a git repo. Assume everything is installed already.")
