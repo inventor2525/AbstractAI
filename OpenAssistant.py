@@ -1,4 +1,5 @@
 #copied from https://huggingface.co/OpenAssistant/llama2-13b-orca-8k-3319
+#better from https://huggingface.co/OpenAssistant/llama2-13b-orca-v2-8k-3166
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datetime import datetime
