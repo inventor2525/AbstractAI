@@ -21,12 +21,12 @@ class LLM:
 	def start(self):
 		raise NotImplementedError
 
-	def respond(self, prompt):
+	def respond(self, prompt: str):
 		inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
 		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
 		return output
 
-	def timed_prompt(self, prompt):
+	def timed_prompt(self, prompt: str):
 		start_time = datetime.now()
 		output = self.respond(prompt)
 		end_time = datetime.now()
@@ -46,7 +46,7 @@ class LLM:
 		return generated_text
 
 class OpenAssistantLLM(LLM):
-	def __init__(self, model_name):
+	def __init__(self, model_name: str):
 		super().__init__()
 		self.model_name = model_name
 
@@ -55,31 +55,31 @@ class OpenAssistantLLM(LLM):
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto")
 
 class PromptGenerator:
-	def __init__(self, system_message):
+	def __init__(self, system_message: str):
 		self.system_message = system_message
 		self.conversation = ""
 
-	def add_prompt(self, user_prompt):
+	def add_prompt(self, user_prompt: str):
 		raise NotImplementedError
 
-	def add_response(self, ai_response):
+	def add_response(self, ai_response: str):
 		raise NotImplementedError
 	
-	def get_prompt(self):
+	def get_prompt(self) -> str:
 		return self.conversation
 
 class OpenAssistantPromptGenerator(PromptGenerator):
-	def __init__(self, system_message):
-		super(PromptGenerator, obj)
-		self.conversation = f"""<|system|>{self.system_message}</s>"""
+	def __init__(self, system_message: str):
+		super().__init__(system_message)
+		self.conversation = f"""{self.system_message}</s>"""
 		
-	def add_prompt(self, user_prompt):
-		self.conversation += f"<|prompter|>{user_prompt}</s>"
+	def add_prompt(self, user_prompt: str):
+		self.conversation += f"{user_prompt}</s>"
 
-	def add_response(self, ai_response):
-		self.conversation += f"<|assistant|>{ai_response}</s>"
+	def add_response(self, ai_response: str):
+		self.conversation += f"{ai_response}</s>"
 	
-	def get_prompt(self):
+	def get_prompt(self) -> str:
 		return f"{self.conversation}<|assistant|>"
 
 # Use the classes
@@ -88,7 +88,7 @@ llm = OpenAssistantLLM(model_name)
 llm.start()
 print("done loading!", datetime.now())
 
-def generate_text(user_prompt):
+def generate_text(user_prompt: str):
 	prompt_generator = OpenAssistantPromptGenerator(SYSTEM_MESSAGE)
 	prompt_generator.add_prompt(user_prompt)
 	
