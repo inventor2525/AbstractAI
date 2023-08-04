@@ -1,5 +1,5 @@
 On an 80GB H100
-OpenAssistant.py:
+OpenAssistant.py   OpenAssistant/llama2-13b-orca-v2-8k-3166:
 ubuntu@xxx-xxx-xxx-xxx:~$ nvidia-smi 
 Fri Aug  4 08:49:38 2023       
 +-----------------------------------------------------------------------------+
@@ -47,7 +47,7 @@ Fri Aug  4 08:55:19 2023
 +-----------------------------------------------------------------------------+
 
 
-stable beluga 2:
+StableBeluga2.py:
 ubuntu@xxx-xxx-xxx-xxx:~$ nvidia-smi 
 Fri Aug  4 09:23:09 2023       
 +-----------------------------------------------------------------------------+
@@ -75,7 +75,7 @@ Fri Aug  4 09:23:09 2023
 
 
 
-upstage llama 2 70b (with 8 bit turned off it ran very slow but gave these results):
+upstage-Llama-2-70b-instruct-v2.py (with 8 bit turned off it ran very slow but gave these results):
 ubuntu@xxx-xxx-xxx-xxx:~$ nvidia-smi 
 Fri Aug  4 11:38:33 2023       
 +-----------------------------------------------------------------------------+
