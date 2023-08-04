@@ -27,7 +27,7 @@ class LLM:
 			if del_token_type_ids:
 				del inputs["token_type_ids"]
 		except Exception as e:
-			print(f"An error occurred while deleting 'token_type_ids': {e}")
+			pass
 		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
 		return output
 
