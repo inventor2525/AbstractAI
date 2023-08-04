@@ -2,6 +2,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datetime import datetime
+import subprocess
 
 # Define common strings
 SYSTEM_MESSAGE = "You are a helpful assistant."
@@ -56,6 +57,7 @@ class OpenAssistantLLM(LLM):
 		self.model_name = model_name
 
 	def start(self):
+		print(f"Loading LLM \"{self.model_name}\"")
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False)
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto")
 
@@ -88,10 +90,14 @@ class OpenAssistantPromptGenerator(PromptGenerator):
 		return f"{self.conversation}<|assistant|>"
 
 # Use the classes
-print("Start...", datetime.now())
+print("Start Loading...", datetime.now())
 llm = OpenAssistantLLM(model_name)
 llm.start()
-print("done loading!", datetime.now())
+print("Done Loading!", datetime.now())
+
+# Print nvidia-smi output
+print("nvidia-smi output:")
+print(subprocess.check_output(["nvidia-smi"]).decode())
 
 def generate_text(user_prompt: str):
 	prompt_generator = OpenAssistantPromptGenerator(SYSTEM_MESSAGE)
