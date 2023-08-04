@@ -95,11 +95,15 @@ llm = OpenAssistantLLM(model_name)
 llm.start()
 print("Done Loading!", datetime.now())
 
-# Print nvidia-smi output
-print("nvidia-smi output:")
-print(subprocess.check_output(["nvidia-smi"]).decode())
+def nvidia_smi():
+	# Print nvidia-smi output
+	print("nvidia-smi output:")
+	print(subprocess.check_output(["nvidia-smi"]).decode())
+	
+nvidia_smi()
 
 def generate_text(user_prompt: str):
+	print("Prompting...\n\n\n\n\n")
 	prompt_generator = OpenAssistantPromptGenerator(SYSTEM_MESSAGE)
 	prompt_generator.add_prompt(user_prompt)
 	
@@ -107,6 +111,7 @@ def generate_text(user_prompt: str):
 	
 	prompt_generator.add_response(response)
 	print(prompt_generator.conversation)
+	nvidia_smi()
 
 # Call the function for different prompts
 generate_text("Write me a poem please")
