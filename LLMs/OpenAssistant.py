@@ -86,8 +86,8 @@ class OpenAssistantLLM(LLM):
 
 	def start(self):
 		print(f"\n\n\nLoading LLM \"{self.model_name}\"...\n\n\n")
-		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False)
-		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto")
+		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
+		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
 
 	def timed_prompt(self, prompt: str):
 		start_time = datetime.now()
