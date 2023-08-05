@@ -6,24 +6,18 @@ import subprocess
 import argparse
 import numpy as np
 
-# Define common strings
-SYSTEM_MESSAGE = "You are a helpful assistant."
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--model_name', type=str, default="OpenAssistant/falcon-7b-sft-mix-2000",
+					help='The model name to use')
+parser.add_argument('--system_message', type=str, default="You are a helpful assistant.",
+					help='A pre message before all prompts that gets the model into the right frame of mind')
+args = parser.parse_args()
 
-try:
-	# Parse command-line arguments
-	parser = argparse.ArgumentParser(description='Process some integers.')
-	parser.add_argument('--model_name', type=str, default="OpenAssistant/llama2-13b-orca-v2-8k-3166",
-						help='The model name to use')
-	args = parser.parse_args()
-	
-	# Use the model name from the command-line arguments
-	model_name = args.model_name
-except Exception as e:
-	# Set model name default
-	model_name = "OpenAssistant/llama2-13b-orca-v2-8k-3166"
-	model_name = "OpenAssistant/falcon-40b-sft-mix-1226"
-	model_name = "OpenAssistant/falcon-40b-sft-top1-560"
-	model_name = "OpenAssistant/falcon-7b-sft-mix-2000"
+# Extract the args
+model_name = args.model_name
+SYSTEM_MESSAGE = args.system_message
+
 
 # Define base classes
 class LLM:
