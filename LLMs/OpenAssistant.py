@@ -5,6 +5,8 @@ from datetime import datetime
 import subprocess
 import argparse
 import numpy as np
+import transformers
+from torch import bfloat16
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -75,9 +77,10 @@ class LLM:
 	def __init__(self):
 		self.model = None
 		self.tokenizer = None
+		self.stats = LLMStats()
 
 	def start(self):
-		raise NotImplementedError
+		print(f"\n\n\nLoading LLM \"{self.model_name}\"...\n\n\n")
 
 	def respond(self, prompt: str, del_token_type_ids:bool=True):
 		inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
@@ -113,19 +116,19 @@ class OpenAssistantLLM(LLM):
 	def __init__(self, model_name: str):
 		super().__init__()
 		self.model_name = model_name
-		self.stats = LLMStats()
 
 	def start(self):
-		print(f"\n\n\nLoading LLM \"{self.model_name}\"...\n\n\n")
+		super().start()
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
 
-
-class StableBeluga2():
+class StableBeluga2(LLM):
 	def __init__(self):
+		super().__init__()
 		self.model_name = "stabilityai/StableBeluga2"
 	
-	def start():
+	def start(self):
+		super().start()
 		bnb_config = transformers.BitsAndBytesConfig(
 			load_in_4bit=True,
 			bnb_4bit_quant_type='nf4',
@@ -182,7 +185,7 @@ class OpenAssistantPromptGenerator(PromptGenerator):
 class StableBeluga2PromptGenerator(PromptGenerator):
 	def __init__(self, system_message: str):
 		super().__init__(system_message)
-		self.conversation = f"""### System:\n{system_prompt}\n\n"""
+		self.conversation = f"""### System:\n{system_message}\n\n"""
 		
 	def add_prompt(self, user_prompt):
 		self.conversation += f"""### User:\n{user_prompt}\n\n"""
@@ -202,7 +205,7 @@ nvidia_smi()
 	
 # Use the classes
 print("Start Loading...", datetime.now())
-llm = OpenAssistantLLM(model_name)
+llm = StableBeluga2()
 llm.start()
 print("Done Loading!", datetime.now())
 
@@ -210,7 +213,7 @@ nvidia_smi()
 
 def generate_text(user_prompt: str):
 	print("Prompting...\n\n\n\n\n")
-	prompt_generator = OpenAssistantPromptGenerator(SYSTEM_MESSAGE)
+	prompt_generator = StableBeluga2PromptGenerator(SYSTEM_MESSAGE)
 	prompt_generator.add_prompt(user_prompt)
 	
 	response = llm.timed_prompt(prompt_generator.get_prompt())
