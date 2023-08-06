@@ -120,6 +120,36 @@ class OpenAssistantLLM(LLM):
 		self.stats.print()
 		return generated_text
 
+class StableBeluga2():
+	def __init__(self):
+		self.model_name = "stabilityai/StableBeluga2"
+	
+	def start():
+		bnb_config = transformers.BitsAndBytesConfig(
+			load_in_4bit=True,
+			bnb_4bit_quant_type='nf4',
+			bnb_4bit_use_double_quant=True,
+			bnb_4bit_compute_dtype=bfloat16
+		)
+		model_config = transformers.AutoConfig.from_pretrained(
+			self.model_name,
+			#use_auth_token=HF_AUTH
+		)
+
+		self.model = transformers.AutoModelForCausalLM.from_pretrained(
+			self.model_name,
+			trust_remote_code=True,
+			config=model_config,
+			quantization_config=bnb_config,
+			device_map='auto',
+			#use_auth_token=HF_AUTH
+		)
+
+		self.tokenizer = transformers.AutoTokenizer.from_pretrained(
+			self.model_name,
+			#use_auth_token=HF_AUTH
+		)
+
 class PromptGenerator:
 	def __init__(self, system_message: str):
 		self.system_message = system_message
@@ -147,6 +177,20 @@ class OpenAssistantPromptGenerator(PromptGenerator):
 	
 	def get_prompt(self) -> str:
 		return f"{self.conversation}<|assistant|>"
+
+class StableBeluga2PromptGenerator(PromptGenerator):
+	def __init__(self, system_message: str):
+		super().__init__(system_message)
+		self.conversation = f"""### System:\n{system_prompt}\n\n"""
+		
+	def add_prompt(self, user_prompt):
+		self.conversation += f"""### User:\n{user_prompt}\n\n"""
+
+	def add_response(self, ai_response):
+		self.conversation += f"### Assistant:\n{ai_response}\n\n"""
+	
+	def get_prompt(self) -> str:
+		return f"{self.conversation}### Assistant:"""
 
 def nvidia_smi():
 	# Print nvidia-smi output
