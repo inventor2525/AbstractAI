@@ -48,7 +48,27 @@ class LLM:
 			pass
 		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
 		return output
-
+	
+	def timed_prompt(self, prompt: str):
+		start_time = datetime.now()
+		output = self.respond(prompt)
+		generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
+		end_time = datetime.now()
+		
+		print(f"Start time: {start_time}")
+		print(f"End time: {end_time}")
+		
+		duration_seconds = (end_time - start_time).total_seconds()
+		token_count = len(output[0])
+		
+		self.stats.duration.add(duration_seconds)
+		self.stats.response_length.add(len(generated_text))
+		self.stats.token_count.add(token_count)
+		self.stats.chars_per_second.add(len(generated_text) / duration_seconds)
+		self.stats.tokens_per_second.add(token_count / duration_seconds)
+		self.stats.print()
+		return generated_text
+	
 class AMMS:
 	def __init__(self):
 		self.values = []
@@ -100,25 +120,6 @@ class OpenAssistantLLM(LLM):
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
 
-	def timed_prompt(self, prompt: str):
-		start_time = datetime.now()
-		output = self.respond(prompt)
-		generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-		end_time = datetime.now()
-		
-		print(f"Start time: {start_time}")
-		print(f"End time: {end_time}")
-		
-		duration_seconds = (end_time - start_time).total_seconds()
-		token_count = len(output[0])
-		
-		self.stats.duration.add(duration_seconds)
-		self.stats.response_length.add(len(generated_text))
-		self.stats.token_count.add(token_count)
-		self.stats.chars_per_second.add(len(generated_text) / duration_seconds)
-		self.stats.tokens_per_second.add(token_count / duration_seconds)
-		self.stats.print()
-		return generated_text
 
 class StableBeluga2():
 	def __init__(self):
