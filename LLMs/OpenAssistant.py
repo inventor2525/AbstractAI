@@ -30,45 +30,6 @@ print("..............................................................")
 print("..............................................................")
 print("..............................................................")
 
-# Define base classes
-class LLM:
-	def __init__(self):
-		self.model = None
-		self.tokenizer = None
-
-	def start(self):
-		raise NotImplementedError
-
-	def respond(self, prompt: str, del_token_type_ids:bool=True):
-		inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
-		try:
-			if del_token_type_ids:
-				del inputs["token_type_ids"]
-		except Exception as e:
-			pass
-		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
-		return output
-	
-	def timed_prompt(self, prompt: str):
-		start_time = datetime.now()
-		output = self.respond(prompt)
-		generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-		end_time = datetime.now()
-		
-		print(f"Start time: {start_time}")
-		print(f"End time: {end_time}")
-		
-		duration_seconds = (end_time - start_time).total_seconds()
-		token_count = len(output[0])
-		
-		self.stats.duration.add(duration_seconds)
-		self.stats.response_length.add(len(generated_text))
-		self.stats.token_count.add(token_count)
-		self.stats.chars_per_second.add(len(generated_text) / duration_seconds)
-		self.stats.tokens_per_second.add(token_count / duration_seconds)
-		self.stats.print()
-		return generated_text
-	
 class AMMS:
 	def __init__(self):
 		self.values = []
@@ -108,6 +69,45 @@ class LLMStats:
 		print(f"Token count: {self.token_count}")
 		print(f"Characters per second: {self.chars_per_second}")
 		print(f"Tokens per second: {self.tokens_per_second}")
+		
+# Define base classes
+class LLM:
+	def __init__(self):
+		self.model = None
+		self.tokenizer = None
+
+	def start(self):
+		raise NotImplementedError
+
+	def respond(self, prompt: str, del_token_type_ids:bool=True):
+		inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
+		try:
+			if del_token_type_ids:
+				del inputs["token_type_ids"]
+		except Exception as e:
+			pass
+		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
+		return output
+	
+	def timed_prompt(self, prompt: str):
+		start_time = datetime.now()
+		output = self.respond(prompt)
+		generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
+		end_time = datetime.now()
+		
+		print(f"Start time: {start_time}")
+		print(f"End time: {end_time}")
+		
+		duration_seconds = (end_time - start_time).total_seconds()
+		token_count = len(output[0])
+		
+		self.stats.duration.add(duration_seconds)
+		self.stats.response_length.add(len(generated_text))
+		self.stats.token_count.add(token_count)
+		self.stats.chars_per_second.add(len(generated_text) / duration_seconds)
+		self.stats.tokens_per_second.add(token_count / duration_seconds)
+		self.stats.print()
+		return generated_text
 		
 class OpenAssistantLLM(LLM):
 	def __init__(self, model_name: str):
