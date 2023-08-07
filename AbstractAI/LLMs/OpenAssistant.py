@@ -129,6 +129,9 @@ class StableBeluga2(LLM):
 	
 	def start(self):
 		super().start()
+		# self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
+		# self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
+
 		bnb_config = transformers.BitsAndBytesConfig(
 			load_in_4bit=True,
 			bnb_4bit_quant_type='nf4',
