@@ -1,12 +1,5 @@
-#modified from from https://huggingface.co/OpenAssistant/llama2-13b-orca-v2-8k-3166 & https://huggingface.co/OpenAssistant/llama2-13b-orca-8k-3319
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from datetime import datetime
-import subprocess
 import argparse
-import numpy as np
-import transformers
-from torch import bfloat16
+from AbstractAI.Helpers.nvidia_smi import nvidia_smi
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -32,86 +25,6 @@ print("..............................................................")
 print("..............................................................")
 print("..............................................................")
 
-class AMMS:
-	def __init__(self):
-		self.values = []
-	
-	def add(self, value):
-		self.values.append(value)
-	
-	def current(self):
-		return self.values[-1]
-	
-	def average(self):
-		return np.mean(self.values)
-	
-	def min(self):
-		return np.min(self.values)
-	
-	def max(self):
-		return np.max(self.values)
-	
-	def std(self):
-		return np.std(self.values)
-	
-	def __str__(self):
-		return f"current={self.current():.2f} average={self.average():.2f} min={self.min():.2f} max={self.max():.2f} std={self.std():.2f}"
-
-class LLMStats:
-	def __init__(self):
-		self.duration = AMMS()
-		self.response_length = AMMS()
-		self.token_count = AMMS()
-		self.chars_per_second = AMMS()
-		self.tokens_per_second = AMMS()
-		
-	def print(self):
-		print(f"Duration: {self.duration}")
-		print(f"Response length: {self.response_length}")
-		print(f"Token count: {self.token_count}")
-		print(f"Characters per second: {self.chars_per_second}")
-		print(f"Tokens per second: {self.tokens_per_second}")
-		
-# Define base classes
-class LLM:
-	def __init__(self):
-		self.model = None
-		self.tokenizer = None
-		self.stats = LLMStats()
-
-	def start(self):
-		print(f"\n\n\nLoading LLM \"{self.model_name}\"...\n\n\n")
-
-	def respond(self, prompt: str, del_token_type_ids:bool=True):
-		inputs = self.tokenizer(prompt, return_tensors="pt").to("cuda")
-		try:
-			if del_token_type_ids:
-				del inputs["token_type_ids"]
-		except Exception as e:
-			pass
-		output = self.model.generate(**inputs, do_sample=True, top_p=0.95, top_k=0, max_new_tokens=1024)
-		return output
-	
-	def timed_prompt(self, prompt: str):
-		start_time = datetime.now()
-		output = self.respond(prompt)
-		generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-		end_time = datetime.now()
-		
-		print(f"Start time: {start_time}")
-		print(f"End time: {end_time}")
-		
-		duration_seconds = (end_time - start_time).total_seconds()
-		token_count = len(output[0])
-		
-		self.stats.duration.add(duration_seconds)
-		self.stats.response_length.add(len(generated_text))
-		self.stats.token_count.add(token_count)
-		self.stats.chars_per_second.add(len(generated_text) / duration_seconds)
-		self.stats.tokens_per_second.add(token_count / duration_seconds)
-		self.stats.print()
-		return generated_text
-		
 class OpenAssistantLLM(LLM):
 	def __init__(self, model_name: str):
 		super().__init__()
@@ -199,11 +112,6 @@ class StableBeluga2PromptGenerator(PromptGenerator):
 	def get_prompt(self) -> str:
 		return f"{self.conversation}### Assistant:"""
 
-def nvidia_smi():
-	# Print nvidia-smi output
-	print("nvidia-smi output:")
-	print(subprocess.check_output(["nvidia-smi"]).decode())
-	
 nvidia_smi()
 	
 # Use the classes
