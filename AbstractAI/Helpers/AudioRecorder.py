@@ -13,20 +13,25 @@ class AudioRecorder:
 
 	class RecordingThread(threading.Thread):
 		def __init__(self, recorder):
-			super().__init__()
+			super().__init__(daemon=True)  # Make the thread a daemon thread
 			self.record = False
 			self.recorder = recorder
 			self.temporary_buffer = np.array([], dtype='float32')
 
 		def run(self):
-			print("...........starting thread............")
+			print("Starting recorder thread.")
 			self.recorder.stream.start()
-			while True:
-				data, _ = self.recorder.stream.read(1024)
-				if self.record:
-					self.temporary_buffer = np.append(self.temporary_buffer, data)
-				else:
-					self.temporary_buffer = data
+			try:
+				while True:
+					data, _ = self.recorder.stream.read(1024)
+					if self.record:
+						self.temporary_buffer = np.append(self.temporary_buffer, data)
+					else:
+						self.temporary_buffer = data
+			except KeyboardInterrupt:
+				print("Stopping recorder thread.")
+				self.recorder.stream.stop()
+				return
 
 	def start_recording(self):
 		with self.lock:
