@@ -3,8 +3,8 @@ from AbstractAI.Helpers.Stopwatch import Stopwatch
 from .STT import STT
 
 class RemoteSTT(STT):
-	def __init__(self, server_url: str):
-		self.server_url = server_url
+	def __init__(self, host: str, port: str):
+		self.server_url = f"{host}:{port}"
 	
 	def transcribe(self, file_name: str) -> dict:
 		Stopwatch.singleton.start("Transcribing remotely")
