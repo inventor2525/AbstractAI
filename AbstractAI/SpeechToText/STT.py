@@ -16,7 +16,7 @@ class STT():
 		'''Transcribe the audio data at file_name with Whisper.'''
 		Stopwatch.singleton.start("Transcribing")
 		result = self.model.transcribe(file_name, language="English", fp16=torch.cuda.is_available())
-		tt = Stopwatch.singleton.stop("Transcribing")["last"]
+		self.last_transcription_time = Stopwatch.singleton.stop("Transcribing")["last"]
 		
 		return result
 	

@@ -40,7 +40,7 @@ class AudioRecorder:
 
 	def stop_recording(self):
 		self.recording_thread.stop()
-		rt = Stopwatch.singleton().stop("Recording")["last"]
+		self.last_record_time = Stopwatch.singleton().stop("Recording")["last"]
 		audio_data = np.int16(self.buffer * 32767).tobytes()
 
 		Stopwatch.singleton().start("Saving")
