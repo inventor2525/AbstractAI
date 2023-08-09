@@ -19,5 +19,5 @@ model_names=(
 # Loop over each model name and call the Python script
 for model_name in "${model_names[@]}"
 do
-  python3 AbstractAI/LLMs/time_a_model.py --model_name $model_name | tee -a $log_file
+  python3 AbstractAI/examples/time_a_LLM.py --model_name $model_name | tee -a $log_file
 done
