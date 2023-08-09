@@ -4,6 +4,9 @@ from .PromptGenerator import PromptGenerator
 class OpenAssistantPromptGenerator(PromptGenerator):
 	def __init__(self, system_message: str):
 		super().__init__(system_message)
+		self.reset()
+	
+	def reset(self):
 		self.conversation = f"""<|system|>{self.system_message}</s>"""
 		
 	def add_prompt(self, user_prompt):

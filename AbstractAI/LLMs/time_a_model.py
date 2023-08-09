@@ -1,5 +1,6 @@
 import argparse
 from AbstractAI.Helpers.nvidia_smi import nvidia_smi
+from .LoadLLM import *
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -29,7 +30,7 @@ nvidia_smi()
 	
 # Use the classes
 print("Start Loading...", datetime.now())
-llm = StableBeluga2()
+llm, prompt_generator = LoadLLM(model_name, system_message)
 llm.start()
 print("Done Loading!", datetime.now())
 
@@ -37,7 +38,7 @@ nvidia_smi()
 
 def generate_text(user_prompt: str):
 	print("Prompting...\n\n\n\n\n")
-	prompt_generator = StableBeluga2PromptGenerator(SYSTEM_MESSAGE)
+	prompt_generator.reset()
 	prompt_generator.add_prompt(user_prompt)
 	
 	response = llm.timed_prompt(prompt_generator.get_prompt())

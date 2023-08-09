@@ -10,5 +10,6 @@ def LoadLLM(model_name:str, system_message:str) -> Tuple[LLM, PromptGenerator]:
 		)
 	if model_name.startswith("stabilityai/StableBeluga2"):
 		return (
-			StableBeluga2()
+			StableBeluga2(model_name),
+			StableBeluga2PromptGenerator(system_message)
 		)
