@@ -29,9 +29,12 @@ class TimerStats:
             return None
 
 class Stopwatch:
+    singleton = None
     def __init__(self, debug=True):
         self.timers = {}
         self.debug = debug
+        if singleton is None:
+            singleton = self
         
     def start(self, key):
         if self.debug:
