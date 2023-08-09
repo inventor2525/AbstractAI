@@ -12,7 +12,7 @@ args = parser.parse_args()
 
 # Extract the args
 model_name = args.model_name
-SYSTEM_MESSAGE = args.system_message
+system_message = args.system_message
 
 print("..............................................................")
 print("..............................................................")
