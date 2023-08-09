@@ -9,7 +9,7 @@ class STT():
 
 		# Load the Whisper model
 		Stopwatch.singleton.start("Loading Whisper model")
-		self.model = whisper.load_model(model_size)
+		self.model = whisper.load_model(self.model_name)
 		Stopwatch.singleton.stop("Loading Whisper model")
 	
 	def transcribe(self, file_name:str) -> dict:
@@ -18,7 +18,6 @@ class STT():
 		result = self.model.transcribe(file_name, language="English", fp16=torch.cuda.is_available())
 		tt = Stopwatch.singleton.stop("Transcribing")["last"]
 		
-		print(f"Transcribed at {rt/tt} seconds per second")
 		return result
 	
 	def transcribe_str(self, file_name:str) -> str:
