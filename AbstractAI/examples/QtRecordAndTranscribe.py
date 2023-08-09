@@ -3,11 +3,10 @@ from AbstractAI.Helpers.AudioRecorder import *  # Assuming the class is in a fil
 from AbstractAI.SpeechToText.STT import STT  # Assuming the class is in a file called 'stt.py'
 
 recorder = AudioRecorder()
-stt = STT("medium.en")
+stt = STT("tiny.en")
 
 def on_button_press():
 	recorder.start_recording()
-	label.setText("Recording...")
 
 def on_button_release():
 	file_name = 'temp.wav'

@@ -33,8 +33,8 @@ class Stopwatch:
     def __init__(self, debug=True):
         self.timers = {}
         self.debug = debug
-        if singleton is None:
-            singleton = self
+        if Stopwatch.singleton is None:
+            Stopwatch.singleton = self
         
     def start(self, key):
         if self.debug:

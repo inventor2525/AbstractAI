@@ -1,7 +1,7 @@
 import sounddevice as sd
 import numpy as np
 from pydub import AudioSegment
-from Stopwatch import Stopwatch
+from .Stopwatch import Stopwatch
 import threading
 
 class AudioRecorder:
@@ -34,22 +34,22 @@ class AudioRecorder:
 			self.recorder.stream.stop()
 
 	def start_recording(self):
-		Stopwatch.singleton().start("Recording")
+		Stopwatch.singleton.start("Recording")
 		self.buffer = np.array([], dtype='float32')
 		self.recording_thread.start()
 
 	def stop_recording(self):
 		self.recording_thread.stop()
-		self.last_record_time = Stopwatch.singleton().stop("Recording")["last"]
+		self.last_record_time = Stopwatch.singleton.stop("Recording")["last"]
 		audio_data = np.int16(self.buffer * 32767).tobytes()
 
-		Stopwatch.singleton().start("Saving")
+		Stopwatch.singleton.start("Saving")
 		audio_segment = AudioSegment(
 			data=audio_data,
 			sample_width=2,
 			frame_rate=16000,
 			channels=1
 		)
-		Stopwatch.singleton().stop("Saving")
+		Stopwatch.singleton.stop("Saving")
 		
 		return audio_segment

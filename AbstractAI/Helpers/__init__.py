@@ -1,2 +1,2 @@
-from Stopwatch import Stopwatch
+from .Stopwatch import Stopwatch
 Stopwatch()
