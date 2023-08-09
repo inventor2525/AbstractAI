@@ -1,4 +1,4 @@
-from Stopwatch import Stopwatch
+from AbstractAI.Helpers.Stopwatch import Stopwatch
 from pydub import AudioSegment
 import torch
 
