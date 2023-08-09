@@ -17,7 +17,6 @@ setup(
 		'torch>=2.0.1',
 		'numexpr>=2.8.4',
 		'transformers',
-		'gradio',
 		'bitsandbytes',
 		'einops',
 		'accelerate',
