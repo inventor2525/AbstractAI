@@ -9,7 +9,7 @@ setup(
 	py_modules=[],
 	scripts=[],
 	url='https://github.com/inventor2525/AbstractAI',
-	license='LICENSE.txt',
+	license='LICENSE',
 	description='A simple library to abstract various ML models.',
 	long_description=open('README.md').read(),
 	install_requires=[
