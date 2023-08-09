@@ -1,6 +1,6 @@
 import argparse
 from AbstractAI.Helpers.nvidia_smi import nvidia_smi
-from .LoadLLM import *
+from AbstractAI.LLMs.LoadLLM import *
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Process some integers.')
