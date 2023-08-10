@@ -23,8 +23,12 @@ def transcribe():
 
 @app.route('/llm', methods=['POST'])
 def llm_endpoint():
+	prompt_generator.reset()
+	
 	text = request.json['text']
-	response = llm.timed_prompt(text)
+	prompt_generator.add_prompt(text)
+	response = llm.timed_prompt(prompt_generator.get_prompt())
+	prompt_generator.add_response(response)
 	print(f"LLM was requested with this {text} and returned {response}")
 	return jsonify({'response': response})
 
