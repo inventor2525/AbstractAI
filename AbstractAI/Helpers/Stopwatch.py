@@ -36,9 +36,12 @@ class Stopwatch:
 		if Stopwatch.singleton is None:
 			Stopwatch.singleton = self
 		
-	def start(self, key):
+	def start(self, key, details:str=None):
 		if self.debug:
-			print("Starting ", key)
+			if details is None:
+				print("Starting ", key)
+			else:
+				print(f"Starting {key} {details}")
 		if key not in self.timers:
 			self.timers[key] = TimerStats()
 		self.timers[key].start()

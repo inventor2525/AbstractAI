@@ -8,7 +8,7 @@ class WhisperSTT(STT):
 		self.model_name = model_name
 
 		# Load the Whisper model
-		Stopwatch.singleton.start("Loading Whisper model")
+		Stopwatch.singleton.start("Loading Whisper model", f" {self.model_name}")
 		self.model = whisper.load_model(self.model_name)
 		Stopwatch.singleton.stop("Loading Whisper model")
 	
