@@ -10,7 +10,7 @@ args = parser.parse_args()
 
 app = Flask(__name__)
 stt = WhisperSTT(args.model_name)
-llm, _ = LoadLLM(args.llm_name)
+llm, _ = LoadLLM(args.llm_name, "You are a helpful AI.")
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
