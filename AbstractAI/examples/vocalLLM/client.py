@@ -1,22 +1,21 @@
 import sys
 import argparse
 import requests
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QLabel, QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QTextEdit, QLabel, QPushButton, QHBoxLayout, QWidget
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.SpeechToText.RemoteSTT import RemoteSTT
 
-class Application:
+class Application(QMainWindow):
 	def __init__(self, host, port):
-		self.app = QApplication(sys.argv)
-		
+		super().__init__()
+
 		self.host = host
 		self.port = port
-		
+
 		self.recorder = AudioRecorder()
 		self.stt = RemoteSTT(host, port)
-		
+
 		self.gui_init()
-		sys.exit(self.app.exec_())
 
 	def on_record_button_press(self):
 		self.recorder.start_recording()
@@ -31,10 +30,13 @@ class Application:
 	def on_send_button_click(self):
 		user_text = self.you_text_edit.toPlainText()
 		response = requests.post(f'{self.host}:{self.port}/llm', json={'text': user_text})
-		self.ai_response_text_edit.setText(response.json()['response'])
+		try:
+			self.ai_response_text_edit.setText(response.json()['response'])
+		except requests.exceptions.JSONDecodeError:
+			self.ai_response_text_edit.setText(f"Invalid response from server \"{response}\".")
 
 	def gui_init(self):
-		window = QWidget()
+		central_widget = QWidget()
 		layout = QVBoxLayout()
 
 		you_label = QLabel("You:")
@@ -62,9 +64,10 @@ class Application:
 		buttons_layout.addWidget(send_button)
 
 		layout.addLayout(buttons_layout)
-		window.setLayout(layout)
-		window.show()
+		central_widget.setLayout(layout)
+		self.setCentralWidget(central_widget)
 
+		self.show()
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Remote Speech-to-Text Client')
@@ -72,4 +75,7 @@ if __name__ == "__main__":
 	parser.add_argument('port', type=int, help='The port number on which the server is running (e.g., 8000).', default=8000)
 	args = parser.parse_args()
 
-	Application(args.host, args.port)
+	app = QApplication(sys.argv)
+	window = Application(args.host, args.port)
+	window.show()
+	sys.exit(app.exec_())
