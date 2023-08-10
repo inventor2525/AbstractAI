@@ -24,6 +24,7 @@ def transcribe():
 def llm_endpoint():
 	text = request.json['text']
 	response = llm.timed_prompt(text)
+	print(f"LLM was requested with this {text} and returned {response}")
 	return jsonify({'response': response})
 
 app.run(host='0.0.0.0', port=8000)
