@@ -11,10 +11,10 @@ stt = WhisperSTT(args.model_name)
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
-    audio_file = request.files['audio']
-    file_name = 'received.wav'
-    audio_file.save(file_name)
-    transcription = stt.transcribe_str(file_name)
-    return jsonify({'transcription': transcription})
+	audio_file = request.files['audio']
+	file_name = 'received.wav'
+	audio_file.save(file_name)
+	transcription = stt.transcribe_str(file_name)
+	return jsonify({'transcription': transcription})
 
 app.run(host='0.0.0.0', port=8000)

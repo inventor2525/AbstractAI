@@ -6,8 +6,8 @@ model = AutoModel.from_pretrained("suno/bark-small")
 
 print("setting up input...")
 inputs = processor(
-    text=["Hello, my name is Suno. And, uh — and I like pizza. [laughs] But I also have other interests such as playing tic tac toe."],
-    return_tensors="pt",
+	text=["Hello, my name is Suno. And, uh — and I like pizza. [laughs] But I also have other interests such as playing tic tac toe."],
+	return_tensors="pt",
 )
 
 print("Generating...")

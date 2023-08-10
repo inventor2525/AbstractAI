@@ -9,8 +9,8 @@ processor = AutoProcessor.from_pretrained("suno/bark-small")
 model = AutoModel.from_pretrained("suno/bark-small").to(device)  # Move the model to the GPU
 
 inputs = processor(
-    text=["Hello, I'm a computer talking to you!"],
-    return_tensors="pt",
+	text=["Hello, I'm a computer talking to you!"],
+	return_tensors="pt",
 )
 
 print("doing the stuff")
