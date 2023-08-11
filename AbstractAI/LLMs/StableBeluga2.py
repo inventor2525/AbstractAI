@@ -5,6 +5,7 @@ from torch import bfloat16
 class StableBeluga2PromptGenerator(PromptGenerator):
 	def __init__(self, system_message: str):
 		super().__init__(system_message)
+		self.reset()
 	
 	def reset(self):
 		self.conversation = f"""### System:\n{self.system_message}\n\n"""
