@@ -7,7 +7,7 @@ class StableBeluga2PromptGenerator(PromptGenerator):
 		super().__init__(system_message)
 	
 	def reset(self):
-		self.conversation = f"""### System:\n{system_message}\n\n"""
+		self.conversation = f"""### System:\n{self.system_message}\n\n"""
 		
 	def add_prompt(self, user_prompt):
 		self.conversation += f"""### User:\n{user_prompt}\n\n"""
