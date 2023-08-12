@@ -4,6 +4,8 @@ import requests
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QTextEdit, QLabel, QPushButton, QHBoxLayout, QWidget
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.SpeechToText.RemoteSTT import RemoteSTT
+from AbstractAI.TextToSpeech.RemoteTTS import RemoteTTS
+from AbstractAI.Helpers.AudioPlayer import *
 
 class Application(QMainWindow):
 	def __init__(self, host, port):
@@ -15,6 +17,9 @@ class Application(QMainWindow):
 		self.recorder = AudioRecorder()
 		self.stt = RemoteSTT(host, port)
 
+		self.tts = RemoteTTS(host, port)
+		self.audio_player = AudioPlayer()
+		
 		self.gui_init()
 
 	def on_record_button_press(self):
@@ -28,10 +33,18 @@ class Application(QMainWindow):
 		self.you_text_edit.setText(result)
 
 	def on_send_button_click(self):
+		#Get the AI's response to user input:
 		user_text = self.you_text_edit.toPlainText()
 		response = requests.post(f'{self.host}:{self.port}/llm', json={'text': user_text})
 		try:
-			self.ai_response_text_edit.setText(response.json()['response'])
+			ai_response_text = response.json()['response']
+			
+			#Set the text output box contents:
+			self.ai_response_text_edit.setText(ai_response_text)
+			
+			#Text to speech and play it:
+			audio_segment = self.tts.text_to_speech(ai_response_text)
+			self.audio_player.play(audio_segment)
 		except requests.exceptions.JSONDecodeError:
 			self.ai_response_text_edit.setText(f"Invalid response from server \"{response}\".")
 
