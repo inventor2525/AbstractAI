@@ -6,6 +6,7 @@ from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.SpeechToText.RemoteSTT import RemoteSTT
 from AbstractAI.TextToSpeech.RemoteTTS import RemoteTTS
 from AbstractAI.Helpers.AudioPlayer import *
+from pydub.exceptions import CouldntDecodeError
 
 class Application(QMainWindow):
 	def __init__(self, host, port):
@@ -31,6 +32,7 @@ class Application(QMainWindow):
 		audio_segment.export(file_name, format="wav")
 		result = self.stt.transcribe_str(file_name)
 		self.you_text_edit.setText(result)
+		self.on_send_button_click()
 
 	def on_send_button_click(self):
 		#Get the AI's response to user input:
@@ -43,8 +45,13 @@ class Application(QMainWindow):
 			self.ai_response_text_edit.setText(ai_response_text)
 			
 			#Text to speech and play it:
-			audio_segment = self.tts.text_to_speech(ai_response_text)
-			self.audio_player.play(audio_segment)
+			try:
+				audio_segment = self.tts.text_to_speech(ai_response_text)
+				self.audio_player.play(audio_segment)
+			except CouldntDecodeError:
+				print("Decoding failed. The audio file may be corrupted or incorrectly formatted.")
+				# You can add additional handling here, such as logging the error or notifying the user through the GUI
+				
 		except requests.exceptions.JSONDecodeError:
 			self.ai_response_text_edit.setText(f"Invalid response from server \"{response}\".")
 
