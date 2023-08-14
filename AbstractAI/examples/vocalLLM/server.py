@@ -73,11 +73,41 @@ def llm_endpoint():
 	print(f"LLM was requested with this '{text}'\n\n(aka, '{prompt}')\n\nand returned '{response}'")
 	return jsonify({'response': response})
 
+def split_codeblocks(text):
+	'''Separates out the code blocks from input text.'''
+	pattern = r'```^(\w+)?$'
+	inside_code_block = False
+	delimiter_count = 0
+	regular_text = ''
+	code_blocks = []
+	code_block_content = ''
+	for line in text.split('\n'):
+		match = re.match(pattern, line)
+		if match:
+			if match.group(1):  # Start of a code block
+				delimiter_count += 1
+				inside_code_block = True
+				language = match.group(1) if match.group(1) else ''
+			else:  # End of a code block
+				delimiter_count -= 1
+				if delimiter_count == 0:
+					inside_code_block = False
+					code_blocks.append(code_block_content.strip())
+					regular_text += 'Some ' + language + ' code\n'
+					code_block_content = ''
+		if inside_code_block:
+			code_block_content += line + '\n'
+		else:
+			regular_text += line + '\n'
+	return regular_text, code_blocks
+	
 @app.route('/tts', methods=['POST'])
 def tts_endpoint():
 	text = request.json['text']
 	log_request("tts_requests", request.remote_addr, (text,))
-	audio_segment = tts.text_to_speech(text)
+	
+	separated_text = split_codeblocks(text)
+	audio_segment = tts.text_to_speech(separated_text)
 	
 	buffer = BytesIO()
 	audio_segment.export(buffer, format="mp3")
