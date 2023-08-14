@@ -2,6 +2,7 @@ from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5Hif
 from nltk.tokenize import sent_tokenize, word_tokenize
 from datasets import load_dataset
 from .TextToSpeech import *
+import numpy as np
 import nltk
 
 class MicrosoftSpeechT5_TTS(TextToSpeech):
