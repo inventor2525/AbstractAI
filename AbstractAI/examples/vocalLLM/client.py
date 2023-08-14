@@ -27,9 +27,9 @@ class Application(QMainWindow):
 		self.recorder.start_recording()
 
 	def on_record_button_release(self):
-		file_name = 'temp.wav'
+		file_name = 'temp.mp3'
 		audio_segment = self.recorder.stop_recording()
-		audio_segment.export(file_name, format="wav")
+		audio_segment.export(file_name, format="mp3")
 		result = self.stt.transcribe_str(file_name)
 		self.you_text_edit.setText(result)
 		self.on_send_button_click()
