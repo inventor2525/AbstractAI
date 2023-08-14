@@ -25,7 +25,8 @@ setup(
 		'sentencepiece',
 		'openai-whisper',
 		'datasets',
-		'soundfile'
+		'soundfile',
+		'nltk'
 	],
 	python_requires='~=3.10'
 )
