@@ -48,10 +48,9 @@ class Application(QMainWindow):
 			try:
 				audio_segment = self.tts.text_to_speech(ai_response_text)
 				self.audio_player.play(audio_segment)
-			except CouldntDecodeError:
+			except:
 				print("Decoding failed. The audio file may be corrupted or incorrectly formatted.")
-				# You can add additional handling here, such as logging the error or notifying the user through the GUI
-				
+
 		except requests.exceptions.JSONDecodeError:
 			self.ai_response_text_edit.setText(f"Invalid response from server \"{response}\".")
 
