@@ -8,6 +8,7 @@ from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import MicrosoftSpeechT5_TTS
 from AbstractAI.LLMs.LoadLLM import *
 from pydub import AudioSegment
 from io import BytesIO
+import re
 
 def init_db(model_name, llm_name):
 	db_path = os.path.join(os.path.expanduser("~"), "ai_log.db")
