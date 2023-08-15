@@ -29,6 +29,10 @@ class MicrosoftSpeechT5_TTS(TextToSpeech):
 			group_text = " ".join(group)
 			inputs = self.processor(text=group_text, return_tensors="pt")
 			inputs = {name: tensor.to(self.device) for name, tensor in inputs.items()}
+			
+			# Debugging: Print input shapes
+			print(f"Input IDs shape: {inputs['input_ids'].shape}")
+
 			speech = self.model.generate_speech(inputs["input_ids"], self.speaker_embeddings, vocoder=self.vocoder)
 			speech = speech.cpu()
 			return (speech * 32767).numpy().astype('int16')
@@ -48,6 +52,9 @@ class MicrosoftSpeechT5_TTS(TextToSpeech):
 					speech_segments.append(generate_speech_for_group(group))
 					group = [word]
 					token_count = len(input_ids[0])
+
+				# Debugging: Print token counts
+				print(f"Token count: {token_count}, New token count: {new_token_count}")
 
 		# Handle the last group
 		if group:
