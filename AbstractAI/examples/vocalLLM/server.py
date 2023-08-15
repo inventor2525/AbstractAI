@@ -107,7 +107,7 @@ def tts_endpoint():
 	text = request.json['text']
 	log_request("tts_requests", request.remote_addr, (text,))
 	
-	separated_text = split_codeblocks(text)
+	separated_text,_ = split_codeblocks(text)
 	audio_segment = tts.text_to_speech(separated_text)
 	
 	buffer = BytesIO()
