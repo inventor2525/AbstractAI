@@ -55,6 +55,22 @@ if __name__ == '__main__':
 	terminal = Terminal()
 	log_print("", terminal.output_history)
 	
+	inputs = [
+		"cd ~",
+		"rm -rf test_thing1",
+		"mkdir test_thing1",
+		"cd test_thing1",
+		"touch bla",
+		"git init",
+		"git add bla",
+		"git commit -m \"Test\"",
+		"ls -a"
+	]
+	
+	for inpt in inputs:
+		user_input = inpt
+		response = terminal.run_command_blocking(user_input)
+		log_print(user_input, response)
 	while True:
 		user_input = input()
 		response = terminal.run_command_blocking(user_input)
