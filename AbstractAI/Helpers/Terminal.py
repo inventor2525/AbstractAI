@@ -3,12 +3,13 @@ import asyncio
 import re
 
 class Terminal:
-	def __init__(self, docker_container_name:str=None):
+	def __init__(self, docker_container_name:str=None, anonymize:bool=True):
 		command = "/bin/bash"
 		if docker_container_name is not None:
 			command = f"docker run -it {docker_container_name} /bin/bash"
 		self.output_history = ''
-		self.pattern = r'([a-zA-Z0-9_.-]+)@([a-zA-Z0-9_.-]+):([^$#]*)[#$] '
+		self.pattern = r'([a-zA-Z0-9_.-]+)@([a-zA-Z0-9_.-]+):([^$#]*)([#$] )'
+		self.anonymize = anonymize
 		
 		self.child = pexpect.spawn(command, encoding='utf-8')
 		self.output_history = self._get_output()
@@ -23,10 +24,12 @@ class Terminal:
 			
 	def _get_output(self, timeout:float=None):
 		self.child.expect([self.pattern], timeout=timeout)
-		
-		return self._clean_response(
+		response = self._clean_response(
 			self.child.before + self.child.match.group(0)
 		).replace('\r\n', '\n')
+		if self.anonymize:
+			response = re.sub(self.pattern, r"user@computer:\3\4", response)
+		return response
 		
 	async def run_command(self, command, timeout:float=None):
 		self.child.sendline(command)
