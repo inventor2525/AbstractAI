@@ -6,7 +6,7 @@ class Role(Enum):
     ASSISTANT = "assistant"
 
 class Message:
-    def __init__(self, content, role, source=None):
+    def __init__(self, content: str, role: Role, source=None):
         self.content = content
         self.role = role
         self.source = source

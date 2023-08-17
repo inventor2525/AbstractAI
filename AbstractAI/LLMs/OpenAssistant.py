@@ -33,7 +33,12 @@ class OpenAssistantLLM(HuggingFaceLLM):
 			Role.USER: "user",
 			Role.ASSISTANT: "assistant"
 		}
-	def prompt_with_conversation(self, conversation):
+	
+    def prompt_with_conversation(self, conversation: Conversation):
+        prompt = self._generate_prompt(conversation)
+        return self.prompt(prompt)
+    
+    def _generate_prompt(self, conversation: Conversation):
 		prompt = self._generate_prompt(conversation)
 		return self.prompt(prompt)
 	

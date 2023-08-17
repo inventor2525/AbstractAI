@@ -61,7 +61,8 @@ class StableBeluga2(HuggingFaceLLM):
 			Role.USER: "User",
 			Role.ASSISTANT: "Assistant"
 		}
-	def prompt_with_conversation(self, conversation):
+	
+	def prompt_with_conversation(self, conversation: Conversation):
 		prompt = self._generate_prompt(conversation)
 		return self.prompt(prompt)
 	
