@@ -1,23 +1,5 @@
 from .Message import Message, Role
-from .PromptGenerator import PromptGenerator
 from torch import bfloat16
-
-class StableBeluga2PromptGenerator(PromptGenerator):
-	def __init__(self, system_message: str):
-		super().__init__(system_message)
-		self.reset()
-	
-	def reset(self):
-		self.conversation = f"""### System:\n{self.system_message}\n\n"""
-		
-	def add_prompt(self, user_prompt):
-		self.conversation += f"""### User:\n{user_prompt}\n\n"""
-
-	def add_response(self, ai_response):
-		self.conversation += f"### Assistant:\n{ai_response}\n\n"""
-	
-	def get_prompt(self) -> str:
-		return f"{self.conversation}### Assistant:"""
 
 class StableBeluga2(HuggingFaceLLM):
 	def __init__(self, model_name:str):
@@ -63,10 +45,10 @@ class StableBeluga2(HuggingFaceLLM):
 		}
 	
 	def prompt_with_conversation(self, conversation: Conversation):
-		prompt = self._generate_prompt(conversation)
+		prompt = self.generate_prompt(conversation)
 		return self.prompt(prompt)
 	
-	def _generate_prompt(self, conversation):
+	def generate_prompt(self, conversation):
 		prompt = ""
 		for message in conversation.messages:
 			prompt += f"### {self.role_mapping[message.role]}:\n{message.content}\n\n"

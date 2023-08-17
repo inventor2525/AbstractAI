@@ -1,23 +1,5 @@
 from .Message import Message, Role
-from .PromptGenerator import PromptGenerator
 
-class OpenAssistantPromptGenerator(PromptGenerator):
-	def __init__(self, system_message: str):
-		super().__init__(system_message)
-		self.reset()
-	
-	def reset(self):
-		self.conversation = f"""<|system|>{self.system_message}</s>"""
-		
-	def add_prompt(self, user_prompt):
-		self.conversation += f"<|prompter|>{user_prompt}</s>"
-
-	def add_response(self, ai_response):
-		self.conversation += f"<|assistant|>{ai_response}</s>"
-	
-	def get_prompt(self) -> str:
-		return f"{self.conversation}<|assistant|>"
-		
 class OpenAssistantLLM(HuggingFaceLLM):
 	def __init__(self, model_name: str):
 		super().__init__()
@@ -30,7 +12,7 @@ class OpenAssistantLLM(HuggingFaceLLM):
 
 		self.role_mapping = {
 			Role.SYSTEM: "system",
-			Role.USER: "user",
+			Role.USER: "prompter",
 			Role.ASSISTANT: "assistant"
 		}
 	
