@@ -1,4 +1,4 @@
-from .HuggingFaceLLM import *
+from .Message import Message, Role
 from .PromptGenerator import PromptGenerator
 from torch import bfloat16
 
@@ -55,3 +55,19 @@ class StableBeluga2(HuggingFaceLLM):
 		else:
 			self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
 			self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
+		
+		self.role_mapping = {
+			Role.SYSTEM: "System",
+			Role.USER: "User",
+			Role.ASSISTANT: "Assistant"
+		}
+	def prompt_with_conversation(self, conversation):
+		prompt = self._generate_prompt(conversation)
+		return self.prompt(prompt)
+	
+	def _generate_prompt(self, conversation):
+		prompt = ""
+		for message in conversation.messages:
+			prompt += f"### {self.role_mapping[message.role]}:\n{message.content}\n\n"
+		prompt += f"### {self.role_mapping[Role.ASSISTANT]}:"
+		return prompt
