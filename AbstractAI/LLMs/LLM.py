@@ -22,10 +22,9 @@ class LLM:
 		'''Prompt the model and get a raw response. This is a blocking function.'''
 		raise NotImplementedError
 	
-	def prompt_with_conversation(self, conversation: Conversation) -> Message:
+	def prompt_with_conversation(self, conversation: Conversation):
 		prompt = self.generate_prompt(conversation)
-		result = self.prompt(prompt)
-		return Message(result, Role.ASSISTANT)
+		return self.prompt(prompt)
 	
 	def generate_prompt(self, conversation: Conversation) -> str:
 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
