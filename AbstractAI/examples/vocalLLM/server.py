@@ -41,7 +41,7 @@ stt = WhisperSTT(args.model_name)
 
 llm, prompt_generator = LoadLLM(args.llm_name, "You are a helpful AI.")
 conversation = Conversation()
-conversation.add_message(Message("You are a helpful AI.", Role.SYSTEM))
+conversation.add_message(Message("You are a helpful AI.", Role.System))
 llm.start()
 
 tts = MicrosoftSpeechT5_TTS()
@@ -65,12 +65,12 @@ def transcribe():
 
 @app.route('/llm', methods=['POST'])
 def llm_endpoint():
-	conversation.add_message(Message(text, Role.USER))
+	conversation.add_message(Message(text, Role.User))
 	prompt_generator.add_prompt(text)
 	
 	prompt = llm.generate_prompt(conversation)
 	response = llm.timed_prompt(prompt)
-	conversation.add_message(Message(response, Role.ASSISTANT))
+	conversation.add_message(Message(response, Role.Assistant))
 	
 	log_request("llm_requests", request.remote_addr, (text, prompt, response, None, None))
 	print(f"LLM was requested with this '{text}'\n\n(aka, '{prompt}')\n\nand returned '{response}'")

@@ -39,14 +39,14 @@ class StableBeluga2(HuggingFaceLLM):
 			self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
 		
 		self.role_mapping = {
-			Role.SYSTEM: "System",
-			Role.USER: "User",
-			Role.ASSISTANT: "Assistant"
+			Role.System: "System",
+			Role.User: "User",
+			Role.Assistant: "Assistant"
 		}
 	
 	def generate_prompt(self, conversation :Conversation):
 		prompt = ""
 		for message in conversation.messages:
 			prompt += f"### {self.role_mapping[message.role]}:\n{message.content}\n\n"
-		prompt += f"### {self.role_mapping[Role.ASSISTANT]}:"
+		prompt += f"### {self.role_mapping[Role.Assistant]}:"
 		return prompt
