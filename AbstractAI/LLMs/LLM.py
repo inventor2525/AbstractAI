@@ -1,5 +1,6 @@
 from AbstractAI.Helpers.LLMStats import LLMStats
 from datetime import datetime
+from .Conversation import *
 
 class LLM:
 	def __init__(self):
@@ -21,6 +22,15 @@ class LLM:
 		'''Prompt the model and get a raw response. This is a blocking function.'''
 		raise NotImplementedError
 	
+	def prompt_with_conversation(self, conversation: Conversation) -> Message:
+		prompt = self.generate_prompt(conversation)
+		result = self.prompt(prompt)
+		return Message(result, Role.ASSISTANT)
+	
+	def generate_prompt(self, conversation: Conversation) -> str:
+		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
+		raise NotImplementedError
+		
 	def timed_prompt(self, prompt: str):
 		'''Prompt the model with timing. This is a blocking function.'''
 		start_time = datetime.now()

@@ -68,7 +68,7 @@ def llm_endpoint():
 	conversation.add_message(Message(text, Role.USER))
 	prompt_generator.add_prompt(text)
 	
-	prompt = llm._generate_prompt(conversation)
+	prompt = llm.generate_prompt(conversation)
 	response = llm.timed_prompt(prompt)
 	conversation.add_message(Message(response, Role.ASSISTANT))
 	

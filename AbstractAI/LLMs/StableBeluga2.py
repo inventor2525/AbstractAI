@@ -1,4 +1,4 @@
-from .Message import Message, Role
+from .HuggingFaceLLM import *
 from torch import bfloat16
 
 class StableBeluga2(HuggingFaceLLM):
@@ -44,11 +44,7 @@ class StableBeluga2(HuggingFaceLLM):
 			Role.ASSISTANT: "Assistant"
 		}
 	
-	def prompt_with_conversation(self, conversation: Conversation):
-		prompt = self.generate_prompt(conversation)
-		return self.prompt(prompt)
-	
-	def generate_prompt(self, conversation):
+	def generate_prompt(self, conversation :Conversation):
 		prompt = ""
 		for message in conversation.messages:
 			prompt += f"### {self.role_mapping[message.role]}:\n{message.content}\n\n"

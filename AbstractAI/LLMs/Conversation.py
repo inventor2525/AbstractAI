@@ -1,5 +1,6 @@
-from .Message import Message
 from typing import List
+from .Message import *
+
 class Conversation:
 	def __init__(self):
 		self.messages:List[Message] = []

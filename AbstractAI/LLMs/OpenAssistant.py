@@ -1,4 +1,4 @@
-from .Message import Message, Role
+from HuggingFaceLLM import *
 
 class OpenAssistantLLM(HuggingFaceLLM):
 	def __init__(self, model_name: str):
@@ -16,15 +16,7 @@ class OpenAssistantLLM(HuggingFaceLLM):
 			Role.ASSISTANT: "assistant"
 		}
 	
-	def prompt_with_conversation(self, conversation: Conversation):
-		prompt = self._generate_prompt(conversation)
-		return self.prompt(prompt)
-	
-	def _generate_prompt(self, conversation: Conversation):
-		prompt = self._generate_prompt(conversation)
-		return self.prompt(prompt)
-	
-	def _generate_prompt(self, conversation):
+	def generate_prompt(self, conversation: Conversation):
 		prompt = ""
 		for message in conversation.messages:
 			prompt += f"<|{self.role_mapping[message.role]}|>{message.content}</s>"
