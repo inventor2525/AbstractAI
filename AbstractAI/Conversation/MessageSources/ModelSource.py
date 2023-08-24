@@ -18,3 +18,6 @@ class ModelSource(BaseMessageSource):
 		
 		# The conversation that was passed to the model in order to generate this message
 		self.conversation = conversation
+		
+	def recompute_hash(self):
+		self.hash = self._compute_hash((self.class_name, self.model_name, self.other_parameters, self.conversation.hash))

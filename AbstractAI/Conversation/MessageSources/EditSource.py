@@ -8,3 +8,6 @@ class EditSource(BaseMessageSource):
 		super().__init__()
 		# A reference to the version of the message this one is edited from
 		self.original = original
+		
+	def recompute_hash(self):
+		self.hash = self._compute_hash(self.original.hash)

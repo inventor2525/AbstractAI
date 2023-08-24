@@ -7,3 +7,6 @@ class UserSource(BaseMessageSource):
 		super().__init__()
 		# The user name of who wrote the message
 		self.user_name: str = user_name
+		
+	def recompute_hash(self):
+		self.hash = self._compute_hash(self.user_name)

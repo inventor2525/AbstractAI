@@ -1,8 +1,7 @@
-from datetime import datetime
+from AbstractAI.Hashable import Hashable
 
-class BaseMessageSource:
-    """Base class for message sources."""
+class BaseMessageSource(Hashable):
+	"""Base class for message sources."""
 
-    def __init__(self):
-        # The date time the message was created
-        self.creation_time: datetime = datetime.now()
+	def __init__(self):
+		pass

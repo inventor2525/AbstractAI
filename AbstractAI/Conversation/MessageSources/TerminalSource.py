@@ -12,3 +12,6 @@ class TerminalSource(BaseMessageSource):
 		super().__init__()
 		# The command passed to the terminal that generated this message.
 		self.command: str = command
+		
+	def recompute_hash(self):
+		self.hash = self._compute_hash(self.command)
