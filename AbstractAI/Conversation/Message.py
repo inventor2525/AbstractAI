@@ -1,4 +1,5 @@
 from enum import Enum
+from .MessageSources import BaseMessageSource, UserSource, ModelSource, EditSource, TerminalSource
 
 class Role(Enum):
 	System = "system"
@@ -6,7 +7,7 @@ class Role(Enum):
 	Assistant = "assistant"
 
 class Message:
-	def __init__(self, content: str, role: Role, source=None):
+	def __init__(self, content: str, role: Role, source: BaseMessageSource = None):
 		self.content = content
 		self.role = role
 		self.source = source
