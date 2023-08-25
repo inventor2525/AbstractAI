@@ -23,8 +23,8 @@ class Hashable:
 		
 	def recompute_hash(self):
 		hash_items = (
-			getattr(self, name, None) for name in 
-			chain(self._hash_properties, self._additional_hash_fields)
+			getattr(self, name, None).hash if isinstance(getattr(self, name, None), Hashable) else getattr(self, name, None) 
+			for name in chain(self._hash_properties, self._additional_hash_fields)
 		)
 		self._hash = self._compute_hash(tuple(hash_items))
 
