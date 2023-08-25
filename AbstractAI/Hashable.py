@@ -42,6 +42,8 @@ def hash_property(func):
 	def getter(self):
 		return getattr(self, property_name, None)  # Return None if backing field does not exist
 
+	getter.__doc__ = func.__doc__  # Copy the docstring from the decorated method
+
 	@getter.setter
 	def setter(self, value):
 		if not isinstance(value, type_hint):
