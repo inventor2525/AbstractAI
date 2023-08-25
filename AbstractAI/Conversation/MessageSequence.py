@@ -4,9 +4,12 @@ from AbstractAI.Hashable import Hashable
 
 class MessageSequence(Hashable):
 	'''A list of messages that can be passed to a Large Language Model'''
-	def __init__(self):
+	def __init__(self, conversation:"Conversation" = None):
 		super().__init__()
 		self.messages:List[Message] = []
+		
+		# A weak reference to what conversation this is apart of.
+		self.conversation = conversation
 	
 	@property
 	def hashes(self):

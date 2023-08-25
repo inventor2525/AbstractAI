@@ -32,7 +32,9 @@ class Message(Hashable):
 		
 	def recompute_hash(self):
 		self._hash = self._compute_hash((
-			self.prev_message.hash if self.prev_message else None, 
-			self.content, self.role, 
-			self.source.hash if self.source else None
+			self.creation_time, 
+			self.content, self.role,
+			self.source.hash if self.source else None,
+			self.prev_message.hash if self.prev_message else None,
+			self.conversation.hash if self.conversation else None
 		))
