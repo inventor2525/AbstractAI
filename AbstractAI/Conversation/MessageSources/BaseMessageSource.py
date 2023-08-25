@@ -4,4 +4,4 @@ class BaseMessageSource(Hashable):
     """Base class for message sources."""
 
     def __init__(self):
-        pass
+        super().__init__()

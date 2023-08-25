@@ -1,4 +1,5 @@
 from .BaseMessageSource import BaseMessageSource, hash_property
+from AbstractAI.Conversation.Message import Message
 from datetime import datetime
 
 class EditSource(BaseMessageSource):
