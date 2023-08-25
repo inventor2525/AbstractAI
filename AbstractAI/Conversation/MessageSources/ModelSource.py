@@ -1,5 +1,5 @@
+from . import BaseMessageSource, hash_property
 from typing import Dict
-from . import BaseMessageSource
 
 class ModelSource(BaseMessageSource):
 	"""Describes a message from a Large Language Model."""

@@ -1,6 +1,6 @@
 from typing import List
 from .Message import *
-from AbstractAI.Hashable import Hashable
+from AbstractAI.Hashable import Hashable, hash_property
 
 class MessageSequence(Hashable):
 	'''A list of messages that can be passed to a Large Language Model'''

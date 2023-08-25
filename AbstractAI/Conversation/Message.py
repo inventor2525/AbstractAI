@@ -1,5 +1,4 @@
 from enum import Enum
-from .MessageSources import BaseMessageSource, UserSource, ModelSource, EditSource, TerminalSource
 from AbstractAI.Hashable import Hashable
 from datetime import datetime
 
@@ -9,7 +8,7 @@ class Role(Enum):
 	Assistant = "assistant"
 
 class Message(Hashable):
-	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
+	def __init__(self, content: str, role: Role, source: "BaseMessageSource" = None, prev_message:"Message"=None, conversation:"Conversation"=None):
 		super().__init__()
 		
 		# The date time the message was created

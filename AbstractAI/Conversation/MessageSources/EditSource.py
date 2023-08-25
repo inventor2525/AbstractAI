@@ -1,4 +1,4 @@
-from . import BaseMessageSource
+from . import BaseMessageSource, hash_property
 from datetime import datetime
 
 class EditSource(BaseMessageSource):
@@ -6,11 +6,15 @@ class EditSource(BaseMessageSource):
 
 	def __init__(self, original:"Message", new:"Message"):
 		super().__init__()
-		# A reference to the old version of the message
 		self.original = original
-		
-		# A reference to the new version of the message
 		self.new = new
 		
-	def recompute_hash(self):
-		self._hash = self._compute_hash(self.original.hash, self.new.hash)
+	@hash_property
+	def original(self, value:"Message"):
+		'''A reference to the old version of the message'''
+		pass
+	
+	@hash_property
+	def new(self, value:"Message"):
+		'''A reference to the new version of the message'''
+		pass
