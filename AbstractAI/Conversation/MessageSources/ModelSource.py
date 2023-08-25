@@ -19,4 +19,4 @@ class ModelSource(BaseMessageSource):
 		self.conversation = conversation
 		
 	def recompute_hash(self):
-		self.hash = self._compute_hash((self.class_name, self.model_name, self.other_parameters, self.conversation.hash))
+		self._hash = self._compute_hash((self.class_name, self.model_name, self.other_parameters, self.conversation.hash))

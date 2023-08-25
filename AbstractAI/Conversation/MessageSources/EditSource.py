@@ -9,4 +9,4 @@ class EditSource(BaseMessageSource):
 		self.original = original
 		
 	def recompute_hash(self):
-		self.hash = self._compute_hash(self.original.hash)
+		self._hash = self._compute_hash(self.original.hash)

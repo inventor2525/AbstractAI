@@ -14,4 +14,4 @@ class TerminalSource(BaseMessageSource):
 		self.command: str = command
 		
 	def recompute_hash(self):
-		self.hash = self._compute_hash(self.command)
+		self._hash = self._compute_hash(self.command)

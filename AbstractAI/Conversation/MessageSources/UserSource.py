@@ -9,4 +9,4 @@ class UserSource(BaseMessageSource):
 		self.user_name: str = user_name
 		
 	def recompute_hash(self):
-		self.hash = self._compute_hash(self.user_name)
+		self._hash = self._compute_hash(self.user_name)

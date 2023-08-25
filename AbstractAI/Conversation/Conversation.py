@@ -18,7 +18,7 @@ class Conversation(Hashable):
 		return [message.hash for message in self.messages]
 		
 	def recompute_hash(self):
-		self.hash = self._compute_hash(tuple(self.hashes))
+		self._hash = self._compute_hash(tuple(self.hashes))
 		
 	def add_message(self, message: Message):
 		self.messages.append(message)
