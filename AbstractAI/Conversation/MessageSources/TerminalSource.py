@@ -1,4 +1,4 @@
-from . import BaseMessageSource, hash_property
+from .BaseMessageSource import BaseMessageSource, hash_property
 
 class TerminalSource(BaseMessageSource):
 	"""

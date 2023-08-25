@@ -1,6 +1,6 @@
 from typing import List
 from .Message import *
-from AbstractAI.Hashable import Hashable
+from AbstractAI.Hashable import Hashable, hash_property
 from .MessageSequence import MessageSequence
 from datetime import datetime
 

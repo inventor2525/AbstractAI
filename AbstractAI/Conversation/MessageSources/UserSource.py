@@ -1,4 +1,4 @@
-from . import BaseMessageSource, hash_property
+from .BaseMessageSource import BaseMessageSource, hash_property
 
 class UserSource(BaseMessageSource):
 	"""Describes the source of a message from a person."""
