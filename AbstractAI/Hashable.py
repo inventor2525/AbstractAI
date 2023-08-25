@@ -3,6 +3,11 @@ from functools import wraps
 from typing import get_type_hints
 from itertools import chain
 
+class HashableProperty(property):
+	def __init__(self, fget=None, fset=None, fdel=None, doc=None):
+		super().__init__(fget, fset, fdel, doc)
+		self.is_hashable = True
+
 class Hashable:
 	def __init__(self):
 		self._hash = None
@@ -14,7 +19,6 @@ class Hashable:
 		self._additional_hash_fields = []
 	
 	def add_hash_field(self, field_name: str):
-		'''Adds a field/property not decorated with hash_property'''
 		self._additional_hash_fields.append(field_name)
 		
 	def recompute_hash(self):
@@ -35,21 +39,43 @@ class Hashable:
 
 def hash_property(func):
 	property_name = f"_{func.__name__}"
-	type_hint = get_type_hints(func).get('value', object)  # Default to object if no type hint
+	type_hint = get_type_hints(func).get('value', object)
 
-	@property
-	@wraps(func)
 	def getter(self):
-		return getattr(self, property_name, None)  # Return None if backing field does not exist
+		return getattr(self, property_name, None)
 
-	getter.__doc__ = func.__doc__  # Copy the docstring from the decorated method
-
-	@getter.setter
 	def setter(self, value):
-		if not isinstance(value, type_hint):
+		if value is not None and not isinstance(value, type_hint):
 			raise TypeError(f"Expected type {type_hint}, got {type(value)}")
 		setattr(self, property_name, value)
 		self._hash = None
 
-	getter.is_hashable = True
-	return getter
+	return HashableProperty(getter, setter).setter(setter)
+
+if __name__ == "__main__":
+	class Child(Hashable):
+		def __init__(self):
+			super().__init__()
+
+		@hash_property
+		def value_0(self, value: int):
+			'''This is the value_0 property.'''
+			pass
+
+	# Create an instance of the Child class
+	child = Child(42)
+
+	# Access and print the value_0 property
+	print("Initial value_0:", child.value_0)
+
+	# Print the initial hash
+	print("Initial hash:", child.hash)
+
+	# Set the value_0 property
+	child.value_0 = 100
+
+	# Access and print the updated value_0 property
+	print("Updated value_0:", child.value_0)
+
+	# Print the updated hash
+	print("Updated hash:", child.hash)
