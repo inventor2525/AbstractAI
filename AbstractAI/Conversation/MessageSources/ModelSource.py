@@ -1,11 +1,10 @@
 from typing import Dict
 from . import BaseMessageSource
-from AbstractAI.Conversation.Conversation import Conversation
 
 class ModelSource(BaseMessageSource):
 	"""Describes a message from a Large Language Model."""
 
-	def __init__(self, class_name: str, model_name: str, prompt: str, other_parameters: Dict = {}, conversation:Conversation=None):
+	def __init__(self, class_name: str, model_name: str, prompt: str, other_parameters: Dict = {}, conversation:"Conversation"=None):
 		super().__init__()
 		# The python class name of the language model
 		self.class_name: str = class_name

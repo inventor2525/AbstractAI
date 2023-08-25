@@ -9,7 +9,7 @@ class Role(Enum):
 	Assistant = "assistant"
 
 class Message(Hashable):
-	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:Message=None):
+	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:"Message"=None):
 		super().__init__()
 		
 		# The date time the message was created
