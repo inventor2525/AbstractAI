@@ -54,8 +54,11 @@ def hash_property(func):
 
 if __name__ == "__main__":
 	class Child(Hashable):
-		def __init__(self):
+		def __init__(self, value1: int):
 			super().__init__()
+			self.value_0 = value1
+			self.some_field = "additional data"
+			self.add_hash_field('some_field')
 
 		@hash_property
 		def value_0(self, value: int):
@@ -76,6 +79,19 @@ if __name__ == "__main__":
 
 	# Access and print the updated value_0 property
 	print("Updated value_0:", child.value_0)
+
+	# Print the updated hash
+	print("Updated hash:", child.hash)
+	
+	
+	# Change some_field
+	child.some_field = "Other val"
+	
+	# Observe that the has was not auto updated:
+	print("Updated hash:", child.hash)
+
+	# Manually Recompute the hash for things that don't use the hash_property
+	child.recompute_hash()
 
 	# Print the updated hash
 	print("Updated hash:", child.hash)
