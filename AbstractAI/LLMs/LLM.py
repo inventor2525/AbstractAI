@@ -65,7 +65,7 @@ class LLM(ABC):
 		
 	def prompt(self, conversation: Conversation) -> LLM_RawResponse:
 		'''
-		Prompts the model with a conversation using a blocking method
+		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
 		'''
 		prompt_string = self.generate_prompt_str(conversation)
@@ -80,17 +80,24 @@ class LLM(ABC):
 		raw_response = self._prompt_str(prompt_string)
 		return self._create_response(prompt_string)
 		
-	def timed_prompt(self, prompt: Union[str, Conversation]) -> LLM_RawResponse:
-		'''Prompt the model with timing. This is a blocking function.'''
+	def timed_prompt(self, input: Union[str, Conversation]) -> LLM_RawResponse:
+		'''
+		Prompt the model with timing, can be either a string
+		or a conversation. This is a blocking function.
+		'''
 		start_time = datetime.now()
-		output = self.prompt_str(prompt)
+		response:LLM_RawResponse = None
+		if isinstance(prompt, Conversation):
+			response = self.prompt(prompt)
+		else:
+			response = self.prompt_str(prompt)
 		end_time = datetime.now()
 		
 		print(f"Started prompting at: '{start_time}'\nFinished at: '{end_time}'")
 		
 		duration_seconds = (end_time - start_time).total_seconds()
-		token_count = output.token_count
-		char_count = len(output.message.content)
+		token_count = response.token_count
+		char_count = len(response.message.content)
 		
 		self.stats.duration.add(duration_seconds)
 		self.stats.character_count.add(char_count)
@@ -98,4 +105,4 @@ class LLM(ABC):
 		self.stats.chars_per_second.add(char_count / duration_seconds)
 		self.stats.tokens_per_second.add(token_count / duration_seconds)
 		self.stats.print()
-		return generated_text
+		return response
