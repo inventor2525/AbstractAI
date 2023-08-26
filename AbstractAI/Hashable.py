@@ -39,14 +39,23 @@ class Hashable:
 
 def hash_property(func):
 	property_name = f"_{func.__name__}"
-	type_hint = get_type_hints(func).get('value', object)
+	type_hint = [None]  # Use a mutable default to store the evaluated type hint
 
 	def getter(self):
 		return getattr(self, property_name, None)
 
 	def setter(self, value):
-		if value is not None and not isinstance(value, type_hint):
-			raise TypeError(f"Expected type {type_hint}, got {type(value)}")
+		if type_hint[0] is None:
+			try:
+				type_hint_str = func.__annotations__.get('value', 'object')
+				if isinstance(type_hint_str, str):
+					type_hint[0] = eval(type_hint_str, globals(), self.__class__.__dict__)
+				else:
+					type_hint[0] = type_hint_str
+			except NameError:
+				pass  # Defer type checking until type can be resolved
+		if type_hint[0] is not None and value is not None and not isinstance(value, type_hint[0]):
+			raise TypeError(f"Expected type {type_hint[0]}, got {type(value)}")
 		setattr(self, property_name, value)
 		self._hash = None
 
