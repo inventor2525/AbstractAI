@@ -116,8 +116,8 @@ class TestConversation(unittest.TestCase):
 		msg2.content = "What's up?"
 
 		self.assertEqual(conv.hash, initial_conv_hash)
-		self.assertNotEqual(conv.message_sequence.hash, initial_msg_sequence_hash)
 		self.assertNotEqual(msg2.hash, initial_msg2_hash)
+		self.assertNotEqual(conv.message_sequence.hash, initial_msg_sequence_hash)
 		
 if __name__ == '__main__':
 	unittest.main()
