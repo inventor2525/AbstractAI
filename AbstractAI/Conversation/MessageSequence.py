@@ -22,6 +22,7 @@ class MessageSequence(Hashable):
 		self._hash = self._compute_hash(tuple(self.hashes))
 		
 	def add_message(self, message: Message):
+		self._hash = None
 		if len(self.messages)>0:
 			message.prev_message = self.messages[-1]
 		self.messages.append(message)
