@@ -9,15 +9,14 @@ class Role(Enum):
 
 class Message(Hashable):
 	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
-		super().__init__()
-		self.hash_spoiled += self._hash_spoiled
-		
+		super().__init__()		
 		self.creation_time = datetime.now()
 		self.content = content
 		self.role = role
 		self.source = source
 		self.prev_message = prev_message
 		self.conversation = conversation
+		self.hash_spoiled.add(self._hash_spoiled)
 		
 	@hash_property
 	def creation_time(self, value: datetime):
@@ -50,4 +49,5 @@ class Message(Hashable):
 		pass
 	
 	def _hash_spoiled(self):
-		self.conversation.spoil_hash()
+		if self.conversation is not None:
+			self.conversation.spoil_hash()
