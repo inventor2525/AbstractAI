@@ -8,7 +8,7 @@ class HashableProperty(property):
 		super().__init__(fget, fset, fdel, doc)
 		self.is_hashable = True
 
-class Hashable:
+class Hashable():
 	def __init__(self):
 		self._hash = None
 		self._hash_properties = [
@@ -17,6 +17,9 @@ class Hashable:
 			and getattr(getattr(self.__class__, name, None), 'is_hashable', False)
 		]
 		self._additional_hash_fields = []
+		
+		# Callbacks that notify that the hash has been spoiled.
+		self.hash_spoiled = set([])
 	
 	def add_hash_field(self, field_name: str):
 		self._additional_hash_fields.append(field_name)
@@ -36,6 +39,18 @@ class Hashable:
 		if self._hash is None:
 			self.recompute_hash()
 		return self._hash
+	
+	def spoil_hash(self):
+		'''Marks the hash as needing to be re-calculated'''
+		self._hash = None
+		to_remove = []
+		for callback in self.hash_spoiled:
+			try:
+				callback()
+			except:
+				to_remove.append(callback)
+		for r in to_remove:
+			self.hash_spoiled.remove(r)
 
 def hash_property(func):
 	property_name = f"_{func.__name__}"
@@ -57,7 +72,7 @@ def hash_property(func):
 		if type_hint[0] is not None and value is not None and not isinstance(value, type_hint[0]):
 			raise TypeError(f"Expected type {type_hint[0]}, got {type(value)}")
 		setattr(self, property_name, value)
-		self._hash = None
+		self.spoil_hash()
 
 	return HashableProperty(getter, setter).setter(setter)
 

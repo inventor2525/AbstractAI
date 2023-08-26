@@ -10,6 +10,8 @@ class Role(Enum):
 class Message(Hashable):
 	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
 		super().__init__()
+		self.hash_spoiled += self._hash_spoiled
+		
 		self.creation_time = datetime.now()
 		self.content = content
 		self.role = role
@@ -46,3 +48,6 @@ class Message(Hashable):
 	def conversation(self, value: "Conversation"):
 		"""A weak reference back to the conversation this message is apart of"""
 		pass
+	
+	def _hash_spoiled(self):
+		self.conversation.spoil_hash()

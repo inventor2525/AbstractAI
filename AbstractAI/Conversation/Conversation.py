@@ -8,6 +8,8 @@ class Conversation(Hashable):
 	'''A list of messages that can be passed to a Large Language Model'''
 	def __init__(self, name:str="", description:str="", creation_time:datetime=datetime.now()):
 		super().__init__()
+		self.hash_spoiled += self._hash_spoiled
+		
 		self.creation_time = creation_time
 		
 		self.name = name
@@ -28,3 +30,6 @@ class Conversation(Hashable):
 	# def description(self, value: str):
 	# 	"""The description of the conversation."""
 	# 	pass
+	
+	def _hash_spoiled(self):
+		self.message_sequence.spoil_hash()
