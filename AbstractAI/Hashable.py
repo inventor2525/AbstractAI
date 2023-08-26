@@ -42,6 +42,9 @@ class Hashable():
 	
 	def spoil_hash(self):
 		'''Marks the hash as needing to be re-calculated'''
+		if self._hash is None:
+			return
+			
 		self._hash = None
 		to_remove = []
 		for callback in self.hash_spoiled:
@@ -71,8 +74,23 @@ def hash_property(func):
 				pass  # Defer type checking until type can be resolved
 		if type_hint[0] is not None and value is not None and not isinstance(value, type_hint[0]):
 			raise TypeError(f"Expected type {type_hint[0]}, got {type(value)}")
-		func(self, value)  # Call the original setter function
+
+		# Call the original setter function
+		func(self, value)
+		
+		# Remove the spoil_hash from the old value if it's a Hashable
+		old_value = getattr(self, property_name, None)
+		if isinstance(old_value, Hashable) and self.spoil_hash in old_value.hash_spoiled:
+			old_value.hash_spoiled.remove(self.spoil_hash)
+
+		# Set the new value
 		setattr(self, property_name, value)
+
+		# Add the spoil_hash to the new value if it's a Hashable
+		if isinstance(value, Hashable):
+			value.hash_spoiled.add(self.spoil_hash)
+
+		# Spoil the hash of the current object
 		self.spoil_hash()
 
 	return HashableProperty(getter, setter).setter(setter)

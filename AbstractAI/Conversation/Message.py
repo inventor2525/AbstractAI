@@ -38,12 +38,7 @@ class Message(Hashable):
 	@hash_property
 	def source(self, value: BaseMessageSource):
 		"""Information about how the message was created and details about who/what created it"""
-		# Make sure that any source object's hash also spoils our hash
-		s:BaseMessageSource = getattr(self, "_source",None)
-		if s is not None and self.spoil_hash in s.hash_spoiled:
-			s.hash_spoiled.remove(self.spoil_hash)
-		if value is not None:
-			value.hash_spoiled.add(self.spoil_hash)
+		pass
 		
 	@hash_property
 	def prev_message(self, value: "Message"):
