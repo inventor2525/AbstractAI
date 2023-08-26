@@ -63,6 +63,9 @@ class TestConversation(unittest.TestCase):
 		conv_hash = conv.hash
 
 		edited_msg3 = Message("I am an updated AI.", Role.Assistant, terminal_source)
+		edited_msg3_2 = Message("I am an updated AI.", Role.Assistant, terminal_source)
+		edited_msg3_2.creation_time = edited_msg3.creation_time
+		
 		conv.message_sequence.replace_message(msg3, edited_msg3)
 
 		self.assertNotEqual(conv.message_sequence.hash, initial_message_sequence_hash)
@@ -70,7 +73,7 @@ class TestConversation(unittest.TestCase):
 		
 		initial_message_sequence_hash = conv.message_sequence.hash
 		
-		conv.message_sequence.replace_message(edited_msg3, edited_msg3)
+		conv.message_sequence.replace_message(edited_msg3, edited_msg3_2)
 		self.assertEqual(conv.message_sequence.hash, initial_message_sequence_hash)
 		self.assertEqual(conv.hash, conv_hash)
 		
