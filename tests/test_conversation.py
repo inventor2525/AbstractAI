@@ -74,5 +74,30 @@ class TestConversation(unittest.TestCase):
 		self.assertEqual(conv.message_sequence.hash, initial_message_sequence_hash)
 		self.assertEqual(conv.hash, conv_hash)
 		
+	def test_replace_function(self):
+		conv = Conversation()
+		user_source = UserSource()
+
+		messages = [
+			Message(str(i), Role.User, user_source) for i in range(1, 6)
+		]
+
+		for msg in messages:
+			conv.message_sequence.add_message(msg)
+
+		initial_message_sequence_hash = conv.message_sequence.hash
+		conv_hash = conv.hash
+
+		new_message = Message("a", Role.User, user_source)
+		conv.message_sequence.replace_message(messages[2], new_message)
+
+		self.assertEqual(len(conv.message_sequence.messages), 3)
+		self.assertEqual(conv.message_sequence.messages[0], messages[0])
+		self.assertEqual(conv.message_sequence.messages[1], messages[1])
+		self.assertEqual(conv.message_sequence.messages[2], new_message)
+
+		self.assertNotEqual(conv.message_sequence.hash, initial_message_sequence_hash)
+		self.assertEqual(conv.hash, conv_hash)
+		
 if __name__ == '__main__':
 	unittest.main()
