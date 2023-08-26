@@ -1,6 +1,6 @@
 from AbstractAI.Helpers.LLMStats import LLMStats
 from datetime import datetime
-from .Conversation import *
+from AbstractAI.Conversation import *
 
 class LLM:
 	def __init__(self):

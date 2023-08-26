@@ -46,7 +46,7 @@ class StableBeluga2(HuggingFaceLLM):
 	
 	def generate_prompt(self, conversation :Conversation):
 		prompt = ""
-		for message in conversation.messages:
+		for message in conversation.message_sequence.messages:
 			prompt += f"### {self.role_mapping[message.role]}:\n{message.content}\n\n"
 		prompt += f"### {self.role_mapping[Role.Assistant]}:"
 		return prompt
