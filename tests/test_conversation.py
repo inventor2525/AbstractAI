@@ -121,6 +121,43 @@ class TestConversation(unittest.TestCase):
 		self.assertEqual(conv.hash, initial_conv_hash)
 		self.assertNotEqual(msg2.hash, initial_msg2_hash)
 		self.assertNotEqual(conv.message_sequence.hash, initial_msg_sequence_hash)
+	
+	def test_source_changes_and_hash_recomputation(self):
+		conv = Conversation()
+		user_source = UserSource()
+		model_source = ModelSource("LargeModel", "gpt-3.5-turbo", "What is the meaning of life?")
+		terminal_source = TerminalSource("test_command")
+		edit_source = EditSource(None, None)
+
+		msg = Message("Test message", Role.User, user_source)
+
+		conv.message_sequence.add_message(msg)
+		initial_hash = msg.hash
+
+		# Change source to ModelSource
+		msg.source = model_source
+		self.assertNotEqual(msg.hash, initial_hash)
+		initial_hash = msg.hash
+
+		# Change a field in ModelSource
+		msg.source.model_name = "NewLargeModel"
+		self.assertNotEqual(msg.hash, initial_hash)
+		initial_hash = msg.hash
+
+		# Change source to TerminalSource
+		msg.source = terminal_source
+		self.assertNotEqual(msg.hash, initial_hash)
+		initial_hash = msg.hash
+
+		# Change a field in TerminalSource
+		msg.source.command = "new_test_command"
+		self.assertNotEqual(msg.hash, initial_hash)
+		initial_hash = msg.hash
+
+		# Change source to EditSource
+		msg.source = edit_source
+		self.assertNotEqual(msg.hash, initial_hash)
+		initial_hash = msg.hash
 		
 if __name__ == '__main__':
 	unittest.main()
