@@ -73,6 +73,7 @@ def hash_property(func):
 			raise TypeError(f"Expected type {type_hint[0]}, got {type(value)}")
 		setattr(self, property_name, value)
 		self.spoil_hash()
+		func(self, value)  # Call the original setter function
 
 	return HashableProperty(getter, setter).setter(setter)
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 		@hash_property
 		def value_0(self, value: int):
 			'''This is the value_0 property.'''
-			pass
+			print("Additional stuff that can happen after the setter logic happens inside hash_property")
 
 	# Create an instance of the Child class
 	child = Child(42)
