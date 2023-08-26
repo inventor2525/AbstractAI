@@ -11,9 +11,11 @@ class Message(Hashable):
 	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
 		super().__init__()		
 		self.creation_time = datetime.now()
+		
 		self.content = content
 		self.role = role
 		self.source = source
+		
 		self.prev_message = prev_message
 		self.conversation = conversation
 		self.hash_spoiled.add(self._hash_spoiled)

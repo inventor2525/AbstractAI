@@ -12,6 +12,7 @@ class Conversation(Hashable):
 		
 		self.name = name
 		self.description = description
+		
 		self.message_sequence = MessageSequence(self)
 		self.hash_spoiled.add(self._hash_spoiled)
 	
