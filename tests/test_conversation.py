@@ -67,5 +67,12 @@ class TestConversation(unittest.TestCase):
 
 		self.assertNotEqual(conv.message_sequence.hash, initial_message_sequence_hash)
 		self.assertEqual(conv.hash, conv_hash)
+		
+		initial_message_sequence_hash = conv.message_sequence.hash
+		
+		conv.message_sequence.replace_message(edited_msg3, edited_msg3)
+		self.assertEqual(conv.message_sequence.hash, initial_message_sequence_hash)
+		self.assertEqual(conv.hash, conv_hash)
+		
 if __name__ == '__main__':
 	unittest.main()
