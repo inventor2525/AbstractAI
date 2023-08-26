@@ -99,5 +99,25 @@ class TestConversation(unittest.TestCase):
 		self.assertNotEqual(conv.message_sequence.hash, initial_message_sequence_hash)
 		self.assertEqual(conv.hash, conv_hash)
 		
+	def test_altered_message_hashes(self):
+		conv = Conversation()
+		user_source = UserSource()
+
+		msg1 = Message("Hello", Role.User, user_source)
+		msg2 = Message("How are you?", Role.User, user_source)
+
+		conv.message_sequence.add_message(msg1)
+		conv.message_sequence.add_message(msg2)
+
+		initial_conv_hash = conv.hash
+		initial_msg_sequence_hash = conv.message_sequence.hash
+		initial_msg2_hash = msg2.hash
+
+		msg2.content = "What's up?"
+
+		self.assertEqual(conv.hash, initial_conv_hash)
+		self.assertNotEqual(conv.message_sequence.hash, initial_msg_sequence_hash)
+		self.assertNotEqual(msg2.hash, initial_msg2_hash)
+		
 if __name__ == '__main__':
 	unittest.main()
