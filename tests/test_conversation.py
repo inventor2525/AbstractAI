@@ -150,8 +150,10 @@ class TestConversation(unittest.TestCase):
 		initial_hash = msg.hash
 
 		# Change a field in TerminalSource
+		initial_message_sequence_hash = conv.message_sequence.hash
 		msg.source.command = "new_test_command"
 		self.assertNotEqual(msg.hash, initial_hash)
+		self.assertNotEqual(conv.message_sequence.hash, initial_message_sequence_hash)
 		initial_hash = msg.hash
 
 		# Change source to EditSource
