@@ -24,7 +24,7 @@ class MessageSequence(Hashable):
 	def add_message(self, message: Message):
 		assert message.conversation is None, "Message should only ever be inserted into one message sequence. Copy the object if you need it in 2."
 		message.conversation = self.conversation
-		self._hash = None
+		self.spoil_hash()
 		if len(self.messages)>0:
 			message.prev_message = self.messages[-1]
 		self.messages.append(message)
