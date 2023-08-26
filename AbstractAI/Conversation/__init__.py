@@ -1,3 +1,3 @@
-from .Conversation import Conversation
+from .MessageSources import BaseMessageSource, UserSource, ModelSource, EditSource, TerminalSource
 from .Message import Message, Role
-from .MessageSources import UserSource, ModelSource, EditSource, TerminalSource
+from .Conversation import Conversation

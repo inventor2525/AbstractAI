@@ -1,4 +1,5 @@
 from .BaseMessageSource import BaseMessageSource, hash_property
+from AbstractAI.Conversation.MessageSequence import MessageSequence
 from typing import Dict
 
 class ModelSource(BaseMessageSource):
@@ -11,7 +12,6 @@ class ModelSource(BaseMessageSource):
 		self.other_parameters = other_parameters
 		self.message_sequence = message_sequence
 
-		
 	@hash_property
 	def class_name(self, value: str):
 		"""The python class name of the language model"""
@@ -28,6 +28,6 @@ class ModelSource(BaseMessageSource):
 		pass
 		
 	@hash_property
-	def message_sequence(self, value: "MessageSequence"):
+	def message_sequence(self, value: MessageSequence):
 		"""The message sequence that was passed to the model in order to generate this message"""
 		pass
