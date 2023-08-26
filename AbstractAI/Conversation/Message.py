@@ -38,11 +38,11 @@ class Message(Hashable):
 		pass
 		
 	@hash_property
-	def prev_message(self, value: "Message"):
+	def prev_message(self, value):
 		"""The message that comes before this in the full tree of a conversation and all the paths it can evolve from. (Not to be confused with "Conversation" which is a single linear string of messages)"""
 		pass
 		
 	@hash_property
-	def conversation(self, value: "Conversation"):
+	def conversation(self, value):
 		"""A weak reference back to the conversation this message is apart of"""
 		pass
