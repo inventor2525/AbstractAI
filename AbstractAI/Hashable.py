@@ -71,9 +71,9 @@ def hash_property(func):
 				pass  # Defer type checking until type can be resolved
 		if type_hint[0] is not None and value is not None and not isinstance(value, type_hint[0]):
 			raise TypeError(f"Expected type {type_hint[0]}, got {type(value)}")
+		func(self, value)  # Call the original setter function
 		setattr(self, property_name, value)
 		self.spoil_hash()
-		func(self, value)  # Call the original setter function
 
 	return HashableProperty(getter, setter).setter(setter)
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 		@hash_property
 		def value_0(self, value: int):
 			'''This is the value_0 property.'''
-			print("Additional stuff that can happen after the setter logic happens inside hash_property")
+			print("Additional stuff that can happen before the setter logic happens inside hash_property")
 
 	# Create an instance of the Child class
 	child = Child(42)
