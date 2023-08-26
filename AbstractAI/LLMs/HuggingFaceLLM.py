@@ -12,10 +12,10 @@ class HuggingFaceLLM(LLM):
 		self.del_token_type_ids=True
 		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	
-	def raw_to_text(self, response) -> str:
+	def _raw_to_text(self, response) -> str:
 		return self.tokenizer.decode(response, skip_special_tokens=True)
 	
-	def raw_output_token_count(self, response) -> str:
+	def _raw_output_token_count(self, response) -> str:
 		return len(response)
 		
 	def prompt(self, prompt: str):

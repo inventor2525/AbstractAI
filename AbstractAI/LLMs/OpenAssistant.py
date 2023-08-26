@@ -16,7 +16,7 @@ class OpenAssistantLLM(HuggingFaceLLM):
 			Role.Assistant: "assistant"
 		}
 	
-	def generate_prompt(self, conversation: Conversation):
+	def generate_prompt_str(self, conversation: Conversation):
 		prompt = ""
 		for message in conversation.message_sequence.messages:
 			prompt += f"<|{self.role_mapping[message.role]}|>{message.content}</s>"
