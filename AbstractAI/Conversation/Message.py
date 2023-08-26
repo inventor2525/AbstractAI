@@ -10,30 +10,39 @@ class Role(Enum):
 class Message(Hashable):
 	def __init__(self, content: str, role: Role, source: "BaseMessageSource" = None, prev_message:"Message"=None, conversation:"Conversation"=None):
 		super().__init__()
-		
-		# The date time the message was created
-		self.creation_time: datetime = datetime.now()
-		
-		# The text of the message
+		self.creation_time = datetime.now()
 		self.content = content
-		
-		# Who the message came from
 		self.role = role
-		
-		# Information about how the message was created and details about who/what created it
 		self.source = source
-		
-		# The message that comes before this in the full tree of a conversation and all the paths it can evolve from. (Not to be confused with "Conversation" which is a single linear string of messages)
 		self.prev_message = prev_message
-		
-		# A weak reference back to the conversation this message is apart of
 		self.conversation = conversation
 		
-	def recompute_hash(self):
-		self._hash = self._compute_hash((
-			self.creation_time, 
-			self.content, self.role,
-			self.source.hash if self.source else None,
-			self.prev_message.hash if self.prev_message else None,
-			self.conversation.hash if self.conversation else None
-		))
+	@hash_property
+	def creation_time(self, value: datetime):
+		"""The date time the message was created"""
+		pass
+		
+	@hash_property
+	def content(self, value: str):
+		"""The text of the message"""
+		pass
+		
+	@hash_property
+	def role(self, value: Role):
+		"""Who the message came from"""
+		pass
+		
+	@hash_property
+	def source(self, value: "BaseMessageSource"):
+		"""Information about how the message was created and details about who/what created it"""
+		pass
+		
+	@hash_property
+	def prev_message(self, value: "Message"):
+		"""The message that comes before this in the full tree of a conversation and all the paths it can evolve from. (Not to be confused with "Conversation" which is a single linear string of messages)"""
+		pass
+		
+	@hash_property
+	def conversation(self, value: "Conversation"):
+		"""A weak reference back to the conversation this message is apart of"""
+		pass

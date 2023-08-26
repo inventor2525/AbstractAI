@@ -5,8 +5,9 @@ class UserSource(BaseMessageSource):
 
 	def __init__(self, user_name: str = "user"):
 		super().__init__()
-		# The user name of who wrote the message
-		self.user_name: str = user_name
+		self.user_name = user_name
 		
-	def recompute_hash(self):
-		self._hash = self._compute_hash(self.user_name)
+	@hash_property
+	def user_name(self, value: str):
+		"""The user name of who wrote the message"""
+		pass

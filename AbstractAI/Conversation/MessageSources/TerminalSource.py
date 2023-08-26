@@ -10,8 +10,9 @@ class TerminalSource(BaseMessageSource):
 
 	def __init__(self, command: str):
 		super().__init__()
-		# The command passed to the terminal that generated this message.
-		self.command: str = command
-		
-	def recompute_hash(self):
-		self._hash = self._compute_hash(self.command)
+		self.command = command
+	
+	@hash_property
+	def command(self, value: str):
+		"""The command passed to the terminal that generated this message."""
+		pass

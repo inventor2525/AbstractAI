@@ -13,6 +13,18 @@ class Conversation(Hashable):
 		self.name = name
 		self.description = description
 		self.message_sequence = MessageSequence()
-		
-	def recompute_hash(self):
-		self._hash = self._compute_hash((self.creation_time))
+	
+	@hash_property
+	def creation_time(self, value: datetime):
+		"""The description of the conversation."""
+		pass
+	
+	# @hash_property
+	# def name(self, value: str):
+	# 	"""The name of the conversation."""
+	# 	pass
+	
+	# @hash_property
+	# def description(self, value: str):
+	# 	"""The description of the conversation."""
+	# 	pass
