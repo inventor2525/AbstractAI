@@ -34,3 +34,9 @@ class Conversation(Hashable):
 	def _hash_spoiled(self):
 		if self.message_sequence is not None:
 			self.message_sequence.spoil_hash()
+	
+	def add_message(self, message:Message):
+		self.message_sequence.add_message(message)
+		
+	def replace_message(self, old_message:Message, new_message:Message):
+		self.message_sequence.replace_message(old_message, new_message)

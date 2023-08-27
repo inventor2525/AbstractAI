@@ -39,7 +39,7 @@ app = Flask(__name__)
 
 stt = WhisperSTT(args.model_name)
 
-llm, prompt_generator = LoadLLM(args.llm_name, "You are a helpful AI.")
+llm = LoadLLM(args.llm_name, "You are a helpful AI.")
 conversation = Conversation()
 conversation.add_message(Message("You are a helpful AI.", Role.System))
 llm.start()
@@ -65,16 +65,14 @@ def transcribe():
 
 @app.route('/llm', methods=['POST'])
 def llm_endpoint():
-	conversation.add_message(Message(text, Role.User))
-	prompt_generator.add_prompt(text)
+	conversation.add_message(Message(text, Role.User, UserSource()))
 	
-	prompt = llm.generate_prompt(conversation)
-	response = llm.timed_prompt(prompt)
-	conversation.add_message(Message(response, Role.Assistant))
+	response = llm.timed_prompt(conversation)
+	conversation.add_message(response.message)
 	
 	log_request("llm_requests", request.remote_addr, (text, prompt, response, None, None))
 	print(f"LLM was requested with this '{text}'\n\n(aka, '{prompt}')\n\nand returned '{response}'")
-	return jsonify({'response': response})
+	return jsonify({'response': response.message.content})
 
 def split_codeblocks(text):
 	'''Separates out the code blocks from input text.'''
