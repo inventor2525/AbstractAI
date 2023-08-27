@@ -69,7 +69,8 @@ class ModelSourceTable(BaseMessageSourceTable):
 	model_name = Column(String)
 	other_parameters = Column(JSON)
 	message_sequence_hash = Column(String, ForeignKey('MessageSequences.hash'))
-
+	models_raw_output = Column(JSON)
+	
 class TerminalSourceTable(BaseMessageSourceTable):
 	__tablename__ = 'MessageSource_Terminal'
 	command = Column(String)

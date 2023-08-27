@@ -4,6 +4,7 @@ from AbstractAI.Conversation import *
 from abc import ABC, abstractmethod, abstractproperty
 from .LLM_RawResponse import LLM_RawResponse
 from typing import Union, Dict
+import json
 
 class LLM(ABC):
 	def __init__(self, model_name:str="Empty Model"):
@@ -52,7 +53,8 @@ class LLM(ABC):
 		# Store info about where the message came from:
 		source = ModelSource(
 			type(self), self.model_name, prompt, 
-			self.other_parameters, message_sequence=self.message_sequence
+			self.other_parameters, message_sequence=self.message_sequence,
+			models_raw_output=raw_response
 		)
 		
 		# Create the message object:

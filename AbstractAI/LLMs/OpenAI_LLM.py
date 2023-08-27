@@ -47,7 +47,6 @@ class OpenAI_LLM(LLM):
 		
 		self.other_parameters = {
 			"temperature":self.temperature,
-			"max_tokens":max_tokens,
-			"response":raw_response #TODO:put this in model source and also save the tokens from other things
+			"max_tokens":max_tokens
 		}
 		return self._create_response(json.dumps(message_list), raw_response, conversation)
