@@ -34,6 +34,6 @@ class ModelSource(BaseMessageSource):
 		pass
 	
 	@hash_property
-	def models_raw_output(self, value: str):
+	def models_raw_output(self, value: dict):
 		"""This is the json encoded raw output of the model, for OpenAI for instance it is the response from the chat completion. For Hugging face, it's the tokens as json."""
 		pass

@@ -28,6 +28,7 @@ class OpenAI_LLM(LLM):
 		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
 		'''
+		max_tokens = 512
 		message_list = []
 		for message in conversation.message_sequence.messages:
 			message_dict = {
@@ -35,11 +36,11 @@ class OpenAI_LLM(LLM):
 				"content":message.content
 			}
 			if message.role != Role.Assistant and message.role != Role.User:
-				message_dict["name"] = str(message.role).lower()
+				message_dict["name"] = str(message.role.value).lower()
 			message_list.append(message_dict)
 		
 		raw_response = openai.ChatCompletion.create(
-			model=self.model,
+			model=self.model_name,
 			messages=message_list,
 			temperature=self.temperature,
 			max_tokens=max_tokens,
@@ -49,4 +50,7 @@ class OpenAI_LLM(LLM):
 			"temperature":self.temperature,
 			"max_tokens":max_tokens
 		}
-		return self._create_response(json.dumps(message_list), raw_response, conversation)
+		return self._create_response(json.dumps(message_list), dict(raw_response), conversation)
+	
+	def generate_prompt_str(self, conversation: Conversation) -> str:
+		return None

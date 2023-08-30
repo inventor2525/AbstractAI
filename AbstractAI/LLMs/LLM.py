@@ -39,28 +39,30 @@ class LLM(ABC):
 	
 	@property
 	def other_parameters(self) -> Dict:
-		return {}
+		op = getattr(self, "_other_parameters", None)
+		if op is None:
+			self._other_parameters = {}
+			return self._other_parameters
+		return op
 		
+	@other_parameters.setter
+	def other_parameters(self, value):
+		self._other_parameters = value
+	
 	def _create_response(self, prompt: str, raw_response:object, conversation:Conversation=None) -> LLM_RawResponse:
 		text_response = self._raw_to_text(raw_response)
 		token_count = self._raw_output_token_count(raw_response)
 		
-		# Get the previous message:
-		prev_message = None
-		if conversation is not None:
-			prev_message = conversation.message_sequence.messages[-1]		
-		
 		# Store info about where the message came from:
 		source = ModelSource(
-			type(self), self.model_name, prompt, 
-			self.other_parameters, message_sequence=self.message_sequence,
+			type(self).__name__, self.model_name, prompt, 
+			self.other_parameters, message_sequence=conversation.message_sequence,
 			models_raw_output=raw_response
 		)
 		
 		# Create the message object:
 		message = Message(
-			text_response, Role.Assistant, 
-			source, prev_message, conversation
+			text_response, Role.Assistant, source
 		)
 		
 		return LLM_RawResponse(raw_response, message, token_count)
