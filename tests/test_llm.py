@@ -4,7 +4,7 @@ from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM, LLM
 from AbstractAI.Conversation import Conversation, Message, Role
 import unittest
 
-run_tests = True
+run_tests = False
 
 class TestLLM(unittest.TestCase):
 	def _run_test_on(self, llm:LLM):

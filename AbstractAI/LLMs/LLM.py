@@ -74,7 +74,7 @@ class LLM(ABC):
 		'''
 		prompt_string = self.generate_prompt_str(conversation)
 		raw_response = self._prompt_str(prompt_string)
-		return self._create_response(prompt_string, conversation)
+		return self._create_response(prompt_string, raw_response, conversation)
 		
 	def prompt_str(self, prompt_string:str) -> LLM_RawResponse:
 		'''
@@ -82,7 +82,7 @@ class LLM(ABC):
 		without any additional formatting being added.
 		'''
 		raw_response = self._prompt_str(prompt_string)
-		return self._create_response(prompt_string)
+		return self._create_response(prompt_string, raw_response)
 		
 	def timed_prompt(self, input: Union[str, Conversation]) -> LLM_RawResponse:
 		'''
