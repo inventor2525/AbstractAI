@@ -18,8 +18,8 @@ class HuggingFaceLLM(LLM):
 	def _raw_output_token_count(self, response) -> str:
 		return len(response)
 		
-	def prompt(self, prompt: str):
-		inputs = self.tokenizer(prompt, return_tensors="pt")
+	def _prompt_str(self, prompt_string: str):
+		inputs = self.tokenizer(prompt_string, return_tensors="pt")
 		inputs_len = len(inputs['input_ids'][0])
 		inputs = inputs.to(self.device)
 		
