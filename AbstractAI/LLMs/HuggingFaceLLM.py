@@ -18,6 +18,9 @@ class HuggingFaceLLM(LLM):
 	def _raw_output_token_count(self, response) -> str:
 		return len(response)
 		
+	def _serialize_raw_response(self, response:torch.Tensor) -> str:
+		return json.dumps(response.tolist(), indent=4)
+	
 	def _prompt_str(self, prompt_string: str):
 		inputs = self.tokenizer(prompt_string, return_tensors="pt")
 		inputs_len = len(inputs['input_ids'][0])
