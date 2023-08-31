@@ -16,27 +16,37 @@ class HashableTable(Base):
 		return from_hashable(hashable_obj, cls)
 		
 def transfer_fields_properties(source:object, target:object):
-	source_attributes = [attr for attr in dir(source) if not callable(getattr(source, attr)) and not attr.startswith("__")]
-	target_attributes = [attr for attr in dir(target) if not callable(getattr(target, attr)) and not attr.startswith("__")]
+	source_attributes = [attr for attr in dir(source) if not callable(getattr(source, attr)) and not attr.startswith("_")]
+	target_attributes = [attr for attr in dir(target) if not callable(getattr(target, attr)) and not attr.startswith("_")]
 
 	for attr in source_attributes:
 		if attr in target_attributes:
 			setattr(target, attr, getattr(source, attr))
+	return source_attributes, target_attributes
 			
-def to_hashable(schema_obj:HashableTable, hashable_class:Type[HashableTable]) -> Hashable:
+def to_hashable(cc:ConversationCollection, schema_obj:HashableTable, hashable_class:Type[HashableTable]) -> Hashable:
 	hashable_obj = hashable_class()
-	transfer_fields_properties(schema_obj, hashable_obj)
-	for attr in dir(hashable_obj):
-		if attr.endswith("_hash"):
-			setattr(hashable_obj, attr, getattr(schema_obj, attr[:-5]).hash)
+	s_as, h_as = transfer_fields_properties(schema_obj, hashable_obj)
+	
+	for hash_attr in h_as:
+		schema_attr = f"{hash_attr}_hash"
+		if schema_attr in s_as:
+			hash_val = getattr(schema_obj, schema_attr, None)
+			setattr(hashable_obj, hash_attr, cc.get_any(hash_val))
 	return hashable_obj
 
 def from_hashable(hashable_obj:Hashable, schema_class:type) -> HashableTable:
 	schema_obj = schema_class()
-	transfer_fields_properties(hashable_obj, schema_obj)
-	for attr in dir(schema_obj):
-		if attr.endswith("_hash"):
-			setattr(schema_obj, attr, getattr(hashable_obj, attr[:-5]).hash)
+	h_as, s_as = transfer_fields_properties(hashable_obj, schema_obj)
+	
+	for hash_attr in h_as:
+		schema_attr = f"{hash_attr}_hash"
+		if schema_attr in s_as:
+			inner_hashable = getattr(hashable_obj, hash_attr, None)
+			inner_hash = None
+			if inner_hashable is not None:
+				inner_hash = inner_hashable.hash
+			setattr(schema_obj, schema_attr, inner_hash)
 	return schema_obj
 
 class ConversationCollection():
@@ -45,6 +55,8 @@ class ConversationCollection():
 	def get_message(self, hash:str) -> Message:
 		pass
 	def get_message_sequence(self, hash:str) -> MessageSequence:
+		pass
+	def get_any(self, hash:str) -> Hashable:
 		pass
 	
 class ConversationTable(Base):
