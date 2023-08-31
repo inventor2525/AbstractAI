@@ -5,15 +5,15 @@ from sqlalchemy.orm import relationship, sessionmaker
 from typing import Type
 
 Base = declarative_base()
-class HashableTable(Base):
-	__abstract__ = True
-
-	def to_hashable(self, cc: ConversationCollection) -> Hashable:
-		return to_hashable(self, self.__class__)
-
-	@classmethod
-	def from_hashable(cls, hashable_obj: Hashable) -> "HashableTable":
-		return from_hashable(hashable_obj, cls)
+class ConversationCollection():
+	def get_conversation(self, hash:str) -> Conversation:
+		pass
+	def get_message(self, hash:str) -> Message:
+		pass
+	def get_message_sequence(self, hash:str) -> MessageSequence:
+		pass
+	def get_any(self, hash:str) -> Hashable:
+		pass
 		
 def transfer_fields_properties(source:object, target:object):
 	source_attributes = [attr for attr in dir(source) if not callable(getattr(source, attr)) and not attr.startswith("_")]
@@ -24,7 +24,7 @@ def transfer_fields_properties(source:object, target:object):
 			setattr(target, attr, getattr(source, attr))
 	return source_attributes, target_attributes
 			
-def to_hashable(cc:ConversationCollection, schema_obj:HashableTable, hashable_class:Type[HashableTable]) -> Hashable:
+def to_hashable(cc:ConversationCollection, schema_obj:"HashableTable", hashable_class:Type[Hashable]) -> Hashable:
 	hashable_obj = hashable_class()
 	s_as, h_as = transfer_fields_properties(schema_obj, hashable_obj)
 	
@@ -35,7 +35,7 @@ def to_hashable(cc:ConversationCollection, schema_obj:HashableTable, hashable_cl
 			setattr(hashable_obj, hash_attr, cc.get_any(hash_val))
 	return hashable_obj
 
-def from_hashable(hashable_obj:Hashable, schema_class:type) -> HashableTable:
+def from_hashable(hashable_obj:Hashable, schema_class:Type["HashableTable"]) -> "HashableTable":
 	schema_obj = schema_class()
 	h_as, s_as = transfer_fields_properties(hashable_obj, schema_obj)
 	
@@ -48,17 +48,17 @@ def from_hashable(hashable_obj:Hashable, schema_class:type) -> HashableTable:
 				inner_hash = inner_hashable.hash
 			setattr(schema_obj, schema_attr, inner_hash)
 	return schema_obj
-
-class ConversationCollection():
-	def get_conversation(self, hash:str) -> Conversation:
-		pass
-	def get_message(self, hash:str) -> Message:
-		pass
-	def get_message_sequence(self, hash:str) -> MessageSequence:
-		pass
-	def get_any(self, hash:str) -> Hashable:
-		pass
 	
+class HashableTable(Base):
+	__abstract__ = True
+
+	def to_hashable(self, cc: ConversationCollection) -> Hashable:
+		return to_hashable(self, self.__class__)
+
+	@classmethod
+	def from_hashable(cls, hashable_obj: Hashable) -> "HashableTable":
+		return from_hashable(hashable_obj, cls)
+		
 class ConversationTable(Base):
 	__tablename__ = 'Conversations'
 	hash = Column(String, primary_key=True)
@@ -67,7 +67,6 @@ class ConversationTable(Base):
 	description = Column(String)
 	message_sequence_hash = Column(String)
 
-		
 class MessageSequenceTable(HashableTable):
 	__tablename__ = 'MessageSequences'
 	hash = Column(String, primary_key=True)
