@@ -119,18 +119,16 @@ class Database(ConversationCollection):
 		obj_table, obj = self._shallow_get(hash, table_class)
 		to_deep_load = [(obj_table, obj)]
 		while len(to_deep_load) > 0:
-			table_obj, obj = to_deep_load.pop()
+			obj_table, obj = to_deep_load.pop()
 			for inner_obj_attr, inner_table_attr in get_all_hashable_attributes(table_obj, obj):
 				inner_hash = getattr(table_obj, inner_table_attr, None)
 				if inner_hash is None:
 					setattr(obj, inner_obj_attr, None)
 					continue
-				if inner_hash in self.any:
+				elif inner_hash in self.any:
 					setattr(obj, inner_obj_attr, self.any[inner_hash][1])
 				else:
-					#Get the Hashable derived type of inner_obj_attr using the HashableTable class's foreign key:
-					#!!!!!!!!!TODO!!!!!!!!!!
-					inner_table_class = HashableTable.get_table_class(getattr(obj, inner_obj_attr).__class__)
+					inner_table_class = get_attributes_foreignkey_table_class(table_obj.__class__, inner_table_attr)
 					inner_table, inner_obj = self._shallow_get(inner_hash, inner_table_class)
 					setattr(obj, inner_obj_attr, inner_obj)
 					to_deep_load.append((inner_table, inner_obj))
@@ -144,7 +142,7 @@ class Database(ConversationCollection):
 		
 	def get_message(self, hash:str) -> Message:
 		self._session = self.session_maker()
-		self.any.clear()
+		#self.any.clear()
 		
 		msg = self._get_message(hash)
 		

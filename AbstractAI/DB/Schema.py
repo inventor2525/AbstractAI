@@ -1,6 +1,6 @@
 from sqlalchemy import  Column, Integer, String, ForeignKey, DateTime, JSON, Enum
 from sqlalchemy.ext.declarative import declarative_base
-from typing import Type
+from typing import Type, Iterable, Tuple
 
 from .ConversationCollection import *
 
@@ -21,7 +21,8 @@ def get_all_subclasses(cls):
 def attributes_of(obj):
 	return [attr for attr in dir(obj) if not callable(getattr(obj, attr)) and not attr.startswith("_")]
 
-def get_all_hashable_attributes(table_obj:"HashableTable", hashable_obj:Hashable):
+def get_all_hashable_attributes(table_obj:"HashableTable", hashable_obj:Hashable) -> Iterable[Tuple[str, str]]:
+	'''returns attr, attr_hash pairs'''
 	table_obj_attributes = set(attributes_of(table_obj))
 	hashable_obj_attributes = attributes_of(hashable_obj)
 	
@@ -63,7 +64,19 @@ def from_hashable(hashable_obj:Hashable, schema_class:Type["HashableTable"]) -> 
 				inner_hash = inner_hashable.hash
 			setattr(schema_obj, schema_attr, inner_hash)
 	return schema_obj
-	
+
+def get_table_class_by_table_name(table_name:str) -> Type[Base]:
+	return {
+		m.class_.__tablename__:m.class_
+		for m in Base.registry.mappers
+		if not m.class_.__name__.startswith('_')
+	}[table_name]
+
+def get_attributes_foreignkey_table_class(table_class:Type[Base], attr_name:str) -> Type[Base]:
+	attr_foreign_key = next(iter(getattr(table_class, attr_name).foreign_keys),None)
+	attrs_target_table_name = attr_foreign_key.column.table.name
+	return get_table_class_by_table_name( attrs_target_table_name )
+
 class HashableTable(Base):
 	__abstract__ = True
 	__target_class__ = object
@@ -90,7 +103,7 @@ class ConversationTable(HashableTable):
 	creation_time = Column(DateTime)
 	name = Column(String)
 	description = Column(String)
-	message_sequence_hash = Column(String)
+	message_sequence_hash = Column(String, ForeignKey('MessageSequences.hash'))
 
 class MessageSequenceTable(HashableTable):
 	__tablename__ = 'MessageSequences'
