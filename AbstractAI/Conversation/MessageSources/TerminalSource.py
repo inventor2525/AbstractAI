@@ -8,7 +8,7 @@ class TerminalSource(BaseMessageSource):
 	running a command.
 	"""
 
-	def __init__(self, command: str):
+	def __init__(self, command: str=""):
 		super().__init__()
 		self.command = command
 	

@@ -6,7 +6,7 @@ class ModelSource(BaseMessageSource):
 	"""Describes a message from a Large Language Model."""
 
 	def __init__(
-		self, class_name: str, model_name: str, prompt: str, 
+		self, class_name: str="", model_name: str="", prompt: str="", 
 		models_raw_output:object=None, other_parameters: Dict = {}, 
 		message_sequence:"MessageSequence"=None,
 		models_serialized_raw_output:str=None):

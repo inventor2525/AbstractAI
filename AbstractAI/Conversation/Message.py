@@ -10,7 +10,7 @@ class Role(Enum):
 	Assistant = "assistant"
 
 class Message(Hashable):
-	def __init__(self, content: str, role: Role, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
+	def __init__(self, content: str="", role: Role=Role.User, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
 		super().__init__()		
 		self.creation_time = datetime.now()
 		

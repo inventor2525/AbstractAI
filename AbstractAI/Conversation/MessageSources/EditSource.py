@@ -5,7 +5,7 @@ from datetime import datetime
 class EditSource(BaseMessageSource):
 	"""A message source representing an edited message."""
 
-	def __init__(self, original:"Message", new:"Message"):
+	def __init__(self, original:"Message"=None, new:"Message"=None):
 		super().__init__()
 		self.original = original
 		self.new = new
