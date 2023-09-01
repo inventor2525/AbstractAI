@@ -1,20 +1,10 @@
-from AbstractAI.Conversation import *
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, JSON
+from sqlalchemy import  Column, Integer, String, ForeignKey, DateTime, JSON
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
 from typing import Type
 
-Base = declarative_base()
-class ConversationCollection():
-	def get_conversation(self, hash:str) -> Conversation:
-		pass
-	def get_message(self, hash:str) -> Message:
-		pass
-	def get_message_sequence(self, hash:str) -> MessageSequence:
-		pass
-	def get_any(self, hash:str) -> Hashable:
-		pass
-		
+from .ConversationCollection import *
+
+Base = declarative_base()		
 def transfer_fields_properties(source:object, target:object):
 	source_attributes = [attr for attr in dir(source) if not callable(getattr(source, attr)) and not attr.startswith("_")]
 	target_attributes = [attr for attr in dir(target) if not callable(getattr(target, attr)) and not attr.startswith("_")]
@@ -59,7 +49,7 @@ class HashableTable(Base):
 	def from_hashable(cls, hashable_obj: Hashable) -> "HashableTable":
 		return from_hashable(hashable_obj, cls)
 		
-class ConversationTable(Base):
+class ConversationTable(HashableTable):
 	__tablename__ = 'Conversations'
 	hash = Column(String, primary_key=True)
 	creation_time = Column(DateTime)
@@ -78,7 +68,7 @@ class MessageSequenceTable(HashableTable):
 		return ms
 
 	@classmethod
-	def from_hashable(cls, hashable_obj:MessageSequence) -> MessageSequenceTable:
+	def from_hashable(cls, hashable_obj:MessageSequence) -> "MessageSequenceTable":
 		ms = super().from_hashable(hashable_obj)
 		#TODO: save the message hashes for this message sequence in MessageSequenceMappingTable
 		return ms
@@ -86,17 +76,10 @@ class MessageSequenceTable(HashableTable):
 class MessageSequenceMappingTable(Base):
 	__tablename__ = '_MessageSequenceMapping'
 	id = Column(Integer, primary_key=True)
-	hash = Column(String, ForeignKey('MessageSequences.hash'))
+	message_sequence_hash = Column(String, ForeignKey('MessageSequences.hash'))
 	message_hash = Column(String, ForeignKey('Messages.hash'))
-
-	def to_hashable(self, cc:ConversationCollection):
-		raise Exception("Only use to_hashable on MessageSequenceTable")
-
-	@classmethod
-	def from_hashable(cls, hashable_obj):
-		raise Exception("Only use from_hashable on MessageSequenceTable")
 		
-class MessageTable(Base):
+class MessageTable(HashableTable):
 	__tablename__ = 'Messages'
 	hash = Column(String, primary_key=True)
 	creation_time = Column(DateTime)
@@ -109,25 +92,25 @@ class MessageTable(Base):
 	prev_message_hash = Column(String, ForeignKey('Messages.hash'))
 	conversation_hash = Column(String, ForeignKey('Conversations.hash'))
 
-	@property
-	def source(self):
-		session = Session()  # Assuming Session is your SQLAlchemy session class
-		if self.source_type == 'user_source':
-			return session.query(UserSource).filter_by(hash=self.source_hash).first()
-		elif self.source_type == 'model_source':
-			return session.query(ModelSource).filter_by(hash=self.source_hash).first()
-		# ... handle other source types ...
+	# @property
+	# def source(self):
+	# 	session = Session()  # Assuming Session is your SQLAlchemy session class
+	# 	if self.source_type == 'user_source':
+	# 		return session.query(UserSource).filter_by(hash=self.source_hash).first()
+	# 	elif self.source_type == 'model_source':
+	# 		return session.query(ModelSource).filter_by(hash=self.source_hash).first()
+	# 	# ... handle other source types ...
 
-	@source.setter
-	def source(self, value):
-		if isinstance(value, UserSource):
-			self.source_type = 'user_source'
-		elif isinstance(value, ModelSource):
-			self.source_type = 'model_source'
-		# ... handle other source types ...
-		self.source_hash = value.hash
+	# @source.setter
+	# def source(self, value):
+	# 	if isinstance(value, UserSource):
+	# 		self.source_type = 'user_source'
+	# 	elif isinstance(value, ModelSource):
+	# 		self.source_type = 'model_source'
+	# 	# ... handle other source types ...
+	# 	self.source_hash = value.hash
 	
-class BaseMessageSourceTable(Base):
+class BaseMessageSourceTable(HashableTable):
 	__abstract__ = True
 	hash = Column(String, primary_key=True)
 

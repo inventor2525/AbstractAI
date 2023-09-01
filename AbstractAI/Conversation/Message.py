@@ -2,6 +2,8 @@ from enum import Enum
 from .MessageSources.BaseMessageSource import BaseMessageSource, Hashable, hash_property
 from datetime import datetime
 
+from typing import Iterable
+
 class Role(Enum):
 	System = "system"
 	User = "user"
@@ -53,3 +55,30 @@ class Message(Hashable):
 	def _hash_spoiled(self):
 		if self.conversation is not None:
 			self.conversation.spoil_hash()
+		
+	@staticmethod	
+	def expand_previous_messages(messages:Iterable["Message"]) -> Iterable["Message"]:
+		'''
+		Expands the previous_message property of each message
+		in messages to include all previous messages, and returns
+		the expanded list of messages from the earliest to the latest.
+		'''
+		all_messages = []
+		closed_list = set()
+		def in_closed_list(msg:Message) -> bool:
+			if msg in closed_list:
+				return True
+			closed_list.add(msg)
+			all_messages.append(msg)
+			return False
+			
+		for message in messages:
+			if in_closed_list(message):
+				continue
+			
+			prev_message = message.prev_message
+			while prev_message is not None:
+				if in_closed_list(prev_message):
+					break
+				prev_message = prev_message.prev_message
+		return reversed(all_messages)
