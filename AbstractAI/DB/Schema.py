@@ -17,10 +17,19 @@ def get_all_subclasses(cls):
 		to_check.extend(current_subclasses)
 		
 	return all_subclasses
-		
+
+def attributes_of(obj):
+	return [attr for attr in dir(obj) if not callable(getattr(obj, attr)) and not attr.startswith("_")]
+
+def get_all_hashable_attributes(table_obj:"HashableTable", hashable_obj:Hashable):
+	table_obj_attributes = set(attributes_of(table_obj))
+	hashable_obj_attributes = attributes_of(hashable_obj)
+	
+	return [(attr, f"{attr}_hash") for attr in hashable_obj_attributes if f"{attr}_hash" in table_obj_attributes]
+	
 def transfer_fields_properties(source:object, target:object):
-	source_attributes = [attr for attr in dir(source) if not callable(getattr(source, attr)) and not attr.startswith("_")]
-	target_attributes = [attr for attr in dir(target) if not callable(getattr(target, attr)) and not attr.startswith("_")]
+	source_attributes = attributes_of(source)
+	target_attributes = attributes_of(target)
 
 	for attr in source_attributes:
 		if attr in target_attributes:
@@ -34,7 +43,7 @@ def to_hashable(cc:ConversationCollection, schema_obj:"HashableTable", hashable_
 	hashable_obj = hashable_class()
 	s_as, h_as = transfer_fields_properties(schema_obj, hashable_obj)
 	
-	for hash_attr in h_as:
+	for hash_attr in h_as: #TODO: consolidate this with get_all_hashable_attributes
 		schema_attr = f"{hash_attr}_hash"
 		if schema_attr in s_as:
 			hash_val = getattr(schema_obj, schema_attr, None)
@@ -45,7 +54,7 @@ def from_hashable(hashable_obj:Hashable, schema_class:Type["HashableTable"]) -> 
 	schema_obj = schema_class()
 	h_as, s_as = transfer_fields_properties(hashable_obj, schema_obj)
 	
-	for hash_attr in h_as:
+	for hash_attr in h_as: #TODO: consolidate this with get_all_hashable_attributes
 		schema_attr = f"{hash_attr}_hash"
 		if schema_attr in s_as:
 			inner_hashable = getattr(hashable_obj, hash_attr, None)

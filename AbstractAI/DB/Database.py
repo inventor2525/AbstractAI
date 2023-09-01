@@ -10,7 +10,7 @@ class Database(ConversationCollection):
 		Base.metadata.create_all(self.engine)
 		self.session_maker = sessionmaker(bind=self.engine)
 		
-		self.any:Dict[str, Hashable] = {}
+		self.any:Dict[str, Tuple[HashableTable, Hashable]] = {}
 	
 	#TODO: handle none checks
 	
@@ -69,7 +69,7 @@ class Database(ConversationCollection):
 			return None
 			
 		if hash in self.any:
-			return self.any[hash]
+			return self.any[hash][1]
 			
 		if self._hash_in_table(hash, ConversationTable):
 			return self.get_conversation(hash)
@@ -84,31 +84,62 @@ class Database(ConversationCollection):
 					break
 		
 		raise KeyError(f"hash {hash} not found.")
-	
+	#def shallow_load(...):
+	#  get from any dict if exists
+	#  load non-hashable fields
+	#  set to any dict
 	def _shallow_get(self, hash:str, table_class:Type[HashableTable]) -> Tuple[HashableTable, Hashable]:
 		if hash is None:
 			return None, None
-		
 		if hash in self.any:
 			return self.any[hash]
 			
-		obj = self._session.query(table_class).filter(table_class.hash == hash).one()
-		return obj, obj.to_hashable(self)
+		obj_table = self._session.query(table_class).filter(table_class.hash == hash).one()
+		obj = obj_table.to_hashable(self)
+		self.any[hash] = (obj_table, obj)
+		
+		return (obj_table, obj)
 	
+	#
+	#def deep_load(hash):
+	#  table_obj, obj = shallow load 
+	#  to_deep_load = [(table_obj,obj)]
+	#  while to_deep_load:
+		#  for hashable_field in hashable_fields:
+		#     deep = hashable field in any
+		#     set:  shallow load hashable field
+		#     if deep:
+		#         deep load hashable field
+	def _deep_get(self, hash:str, table_class:Type[HashableTable]) -> Tuple[HashableTable, Hashable]:
+		if hash is None:
+			return None, None
+		if hash in self.any:
+			return self.any[hash]
+		
+		obj_table, obj = self._shallow_get(hash, table_class)
+		to_deep_load = [(obj_table, obj)]
+		while len(to_deep_load) > 0:
+			table_obj, obj = to_deep_load.pop()
+			for inner_obj_attr, inner_table_attr in get_all_hashable_attributes(table_obj, obj):
+				inner_hash = getattr(table_obj, inner_table_attr, None)
+				if inner_hash is None:
+					setattr(obj, inner_obj_attr, None)
+					continue
+				if inner_hash in self.any:
+					setattr(obj, inner_obj_attr, self.any[inner_hash][1])
+				else:
+					#Get the Hashable derived type of inner_obj_attr using the HashableTable class's foreign key:
+					#!!!!!!!!!TODO!!!!!!!!!!
+					inner_table_class = HashableTable.get_table_class(getattr(obj, inner_obj_attr).__class__)
+					inner_table, inner_obj = self._shallow_get(inner_hash, inner_table_class)
+					setattr(obj, inner_obj_attr, inner_obj)
+					to_deep_load.append((inner_table, inner_obj))
+			
+		return (obj_table, obj)
+	#
+	# idea: implement custom deep loaders for each hashable type
 	def _get_message(self, hash:str) -> Message:
-		msg_table, msg = self._shallow_get(hash, MessageTable)
-		self.any[hash] = msg
-		
-		#Query the database for source_hash at the table named based on source_type:
-		source_type = HashableTable.get_table_class(globals()[msg_table._source_type])
-		source_table, source = self._shallow_get(msg_table._source_hash, source_type)	
-		self.any[msg_table._source_hash] = source
-		msg.source = source
-		
-		conversation_table, conversation = self._shallow_get(msg_table.conversation_hash, ConversationTable)
-		self.any[conversation.hash] = conversation
-		msg.conversation = conversation
-		
+		msg_table, msg = self._deep_get(hash, MessageTable)
 		return msg
 		
 	def get_message(self, hash:str) -> Message:
