@@ -86,23 +86,37 @@ class Database(ConversationCollection):
 		raise KeyError(f"hash {hash} not found.")
 	
 	def _shallow_get(self, hash:str, table_class:Type[HashableTable]) -> Tuple[HashableTable, Hashable]:
+		if hash is None:
+			return None, None
+		
+		if hash in self.any:
+			return self.any[hash]
+			
 		obj = self._session.query(table_class).filter(table_class.hash == hash).one()
 		return obj, obj.to_hashable(self)
-		
-	def get_message(self, hash:str) -> Message:
-		self._session = self.session_maker()
-		self.any.clear()
+	
+	def _get_message(self, hash:str) -> Message:
 		msg_table, msg = self._shallow_get(hash, MessageTable)
 		self.any[hash] = msg
 		
 		#Query the database for source_hash at the table named based on source_type:
 		source_type = HashableTable.get_table_class(globals()[msg_table._source_type])
 		source_table, source = self._shallow_get(msg_table._source_hash, source_type)	
+		self.any[msg_table._source_hash] = source
 		msg.source = source
 		
 		conversation_table, conversation = self._shallow_get(msg_table.conversation_hash, ConversationTable)
 		self.any[conversation.hash] = conversation
 		msg.conversation = conversation
 		
+		return msg
+		
+	def get_message(self, hash:str) -> Message:
+		self._session = self.session_maker()
+		self.any.clear()
+		
+		msg = self._get_message(hash)
+		
 		self._session.close()
 		return msg
+	

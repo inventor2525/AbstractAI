@@ -124,9 +124,6 @@ class MessageTable(HashableTable):
 	
 	@property
 	def source(self):
-		#Query the database for source_hash at the table named based on source_type:
-		# source_type = globals()[f"{self.source_type}Table"]
-		# return static_session.query(source_type).filter(source_type.hash == self.source_hash).first()		
 		return None
 	@source.setter
 	def source(self, value):
