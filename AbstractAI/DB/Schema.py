@@ -24,7 +24,10 @@ def transfer_fields_properties(source:object, target:object):
 
 	for attr in source_attributes:
 		if attr in target_attributes:
-			setattr(target, attr, getattr(source, attr))
+			try:
+				setattr(target, attr, getattr(source, attr))
+			except:
+				pass
 	return source_attributes, target_attributes
 			
 def to_hashable(cc:ConversationCollection, schema_obj:"HashableTable", hashable_class:Type[Hashable]) -> Hashable:
@@ -57,11 +60,18 @@ class HashableTable(Base):
 	__target_class__ = object
 	
 	def to_hashable(self, cc: ConversationCollection) -> Hashable:
-		return to_hashable(cc, self, self.__target_class__)
+		return to_hashable(cc, self, self.get_target_class())
 
 	@classmethod
 	def from_hashable(cls, hashable_obj: Hashable) -> "HashableTable":
 		return from_hashable(hashable_obj, cls)
+	
+	def get_target_class(self) -> Type[Hashable]:
+		return self.__target_class__
+	
+	@staticmethod
+	def get_table_class(hashable_obj:Type[Hashable]) -> Type["HashableTable"]:
+		return globals()[f"{hashable_obj.__name__}Table"]
 		
 class ConversationTable(HashableTable):
 	__tablename__ = 'Conversations'

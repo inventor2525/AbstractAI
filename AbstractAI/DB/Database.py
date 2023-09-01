@@ -2,7 +2,7 @@ from sqlalchemy.orm import relationship, sessionmaker, Session
 from sqlalchemy import create_engine, exists
 from .Schema import *
 
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Tuple
 
 class Database(ConversationCollection):
 	def __init__(self, db_url:str):
@@ -65,6 +65,9 @@ class Database(ConversationCollection):
 		self._session.close()
 	
 	def get_any(self, hash:str) -> Hashable:
+		if hash is None:
+			return None
+			
 		if hash in self.any:
 			return self.any[hash]
 			
@@ -81,10 +84,25 @@ class Database(ConversationCollection):
 					break
 		
 		raise KeyError(f"hash {hash} not found.")
+	
+	def _shallow_get(self, hash:str, table_class:Type[HashableTable]) -> Tuple[HashableTable, Hashable]:
+		obj = self._session.query(table_class).filter(table_class.hash == hash).one()
+		return obj, obj.to_hashable(self)
 		
 	def get_message(self, hash:str) -> Message:
 		self._session = self.session_maker()
-		msg_table = self._session.query(MessageTable).filter(MessageTable.hash == hash).one()
-		msg = msg_table.to_hashable(self)
+		self.any.clear()
+		msg_table, msg = self._shallow_get(hash, MessageTable)
+		self.any[hash] = msg
+		
+		#Query the database for source_hash at the table named based on source_type:
+		source_type = HashableTable.get_table_class(globals()[msg_table._source_type])
+		source_table, source = self._shallow_get(msg_table._source_hash, source_type)	
+		msg.source = source
+		
+		conversation_table, conversation = self._shallow_get(msg_table.conversation_hash, ConversationTable)
+		self.any[conversation.hash] = conversation
+		msg.conversation = conversation
+		
 		self._session.close()
 		return msg
