@@ -4,7 +4,20 @@ from typing import Type
 
 from .ConversationCollection import *
 
-Base = declarative_base()		
+Base = declarative_base()
+def get_all_subclasses(cls):
+	all_subclasses = []
+	to_check = [cls]
+	
+	while to_check:
+		current_class = to_check.pop()
+		current_subclasses = current_class.__subclasses__()
+		
+		all_subclasses.extend(current_subclasses)
+		to_check.extend(current_subclasses)
+		
+	return all_subclasses
+		
 def transfer_fields_properties(source:object, target:object):
 	source_attributes = [attr for attr in dir(source) if not callable(getattr(source, attr)) and not attr.startswith("_")]
 	target_attributes = [attr for attr in dir(target) if not callable(getattr(target, attr)) and not attr.startswith("_")]
