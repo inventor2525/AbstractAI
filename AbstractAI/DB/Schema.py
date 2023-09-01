@@ -1,4 +1,4 @@
-from sqlalchemy import  Column, Integer, String, ForeignKey, DateTime, JSON
+from sqlalchemy import  Column, Integer, String, ForeignKey, DateTime, JSON, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from typing import Type
 
@@ -78,37 +78,30 @@ class MessageSequenceMappingTable(Base):
 	id = Column(Integer, primary_key=True)
 	message_sequence_hash = Column(String, ForeignKey('MessageSequences.hash'))
 	message_hash = Column(String, ForeignKey('Messages.hash'))
-		
+	
 class MessageTable(HashableTable):
 	__tablename__ = 'Messages'
 	hash = Column(String, primary_key=True)
 	creation_time = Column(DateTime)
 	content = Column(String)
-	role = Column(String)
+	role = Column(Enum(Role))
 	
 	_source_type = Column(String)
 	_source_hash = Column(String)
 	
 	prev_message_hash = Column(String, ForeignKey('Messages.hash'))
 	conversation_hash = Column(String, ForeignKey('Conversations.hash'))
-
-	# @property
-	# def source(self):
-	# 	session = Session()  # Assuming Session is your SQLAlchemy session class
-	# 	if self.source_type == 'user_source':
-	# 		return session.query(UserSource).filter_by(hash=self.source_hash).first()
-	# 	elif self.source_type == 'model_source':
-	# 		return session.query(ModelSource).filter_by(hash=self.source_hash).first()
-	# 	# ... handle other source types ...
-
-	# @source.setter
-	# def source(self, value):
-	# 	if isinstance(value, UserSource):
-	# 		self.source_type = 'user_source'
-	# 	elif isinstance(value, ModelSource):
-	# 		self.source_type = 'model_source'
-	# 	# ... handle other source types ...
-	# 	self.source_hash = value.hash
+	
+	@property
+	def source(self):
+		#Query the database for source_hash at the table named based on source_type:
+		# source_type = globals()[f"{self.source_type}Table"]
+		# return static_session.query(source_type).filter(source_type.hash == self.source_hash).first()		
+		return None
+	@source.setter
+	def source(self, value):
+		self._source_type = value.__class__.__name__
+		self._source_hash = value.hash
 	
 class BaseMessageSourceTable(HashableTable):
 	__abstract__ = True
@@ -134,3 +127,8 @@ class TerminalSourceTable(BaseMessageSourceTable):
 class UserSourceTable(BaseMessageSourceTable):
 	__tablename__ = 'MessageSource_User'
 	user_name = Column(String)
+	
+def to_table_object(obj) -> HashableTable:
+	'''Auto locates the table object for the passed object and calls from_hashable on it.'''
+	table_type = globals()[f"{obj.__class__.__name__}Table"]
+	return table_type.from_hashable(obj)

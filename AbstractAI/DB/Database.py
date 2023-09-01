@@ -1,4 +1,4 @@
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker, Session
 from sqlalchemy import create_engine
 from .Schema import *
 
@@ -13,6 +13,9 @@ class Database(ConversationCollection):
 		self.any:Dict[str, Callable] = {}
 	
 	#TODO: handle none checks
+	
+	def _shallow_merge(self, obj:object):
+		self._session.merge( to_table_object(obj) )
 		
 	def _add_conversation(self, conversation:Conversation):
 		self._session.add( ConversationTable.from_hashable(conversation) )
@@ -20,7 +23,7 @@ class Database(ConversationCollection):
 	def _add_message(self, message:Message):
 		#TODO: ensure sure weak reference to conversation is saved?
 		
-		#TODO: handle source
+		self._shallow_merge(message.source)
 		self._session.add( MessageTable.from_hashable(message) )
 	
 	def _add_message_sequence(self, message_sequence:MessageSequence):
@@ -65,3 +68,7 @@ class Database(ConversationCollection):
 			#TODO: try all tables for key here
 			raise KeyError(f"hash {hash} not found.")
 		return getter(hash)
+		
+	def get_message(self, hash:str) -> Message:
+		self._session = self.session_maker()
+		return MessageTable.from_hashable( self._session.query(MessageTable).filter(MessageTable.hash == hash).one() )
