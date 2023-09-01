@@ -15,3 +15,11 @@ conv.message_sequence.add_message(msg2)
 conv.message_sequence.add_message(msg3)
 
 db.add_conversation(conv)
+
+m1 = db.get_message(msg1.hash)
+m2 = db.get_message(msg2.hash)
+m3 = db.get_message(msg3.hash)
+
+assert m1.content == "Hello"
+assert m2.content == "How are you?"
+assert m3.content == "I am an AI."

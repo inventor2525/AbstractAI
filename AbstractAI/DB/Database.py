@@ -49,17 +49,20 @@ class Database(ConversationCollection):
 		self._shallow_merge(conversation)
 		self._add_message_sequence(conversation.message_sequence)
 		self._session.commit()
+		self._session.close()
 	
 	def add_message(self, message:Message):
 		self._session = self.session_maker()
 		for m in Message.expand_previous_messages([message]):
 			self._add_message(m)
 		self._session.commit()
+		self._session.close()
 	
 	def add_message_sequence(self, message_sequence:MessageSequence):
 		self._session = self.session_maker()
 		self._add_message_sequence(message_sequence)
 		self._session.commit()
+		self._session.close()
 	
 	def get_any(self, hash:str) -> Hashable:
 		if hash in self.any:
@@ -81,4 +84,7 @@ class Database(ConversationCollection):
 		
 	def get_message(self, hash:str) -> Message:
 		self._session = self.session_maker()
-		return MessageTable.from_hashable( self._session.query(MessageTable).filter(MessageTable.hash == hash).one() )
+		msg_table = self._session.query(MessageTable).filter(MessageTable.hash == hash).one()
+		msg = msg_table.to_hashable(self)
+		self._session.close()
+		return msg

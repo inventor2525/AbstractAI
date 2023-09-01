@@ -54,9 +54,10 @@ def from_hashable(hashable_obj:Hashable, schema_class:Type["HashableTable"]) -> 
 	
 class HashableTable(Base):
 	__abstract__ = True
-
+	__target_class__ = object
+	
 	def to_hashable(self, cc: ConversationCollection) -> Hashable:
-		return to_hashable(self, self.__class__)
+		return to_hashable(cc, self, self.__target_class__)
 
 	@classmethod
 	def from_hashable(cls, hashable_obj: Hashable) -> "HashableTable":
@@ -64,6 +65,8 @@ class HashableTable(Base):
 		
 class ConversationTable(HashableTable):
 	__tablename__ = 'Conversations'
+	__target_class__ = Conversation
+	
 	hash = Column(String, primary_key=True)
 	creation_time = Column(DateTime)
 	name = Column(String)
@@ -72,6 +75,8 @@ class ConversationTable(HashableTable):
 
 class MessageSequenceTable(HashableTable):
 	__tablename__ = 'MessageSequences'
+	__target_class__ = MessageSequence
+	
 	hash = Column(String, primary_key=True)
 	conversation_hash = Column(String, ForeignKey('Conversations.hash'))
 
@@ -94,6 +99,8 @@ class MessageSequenceMappingTable(Base):
 	
 class MessageTable(HashableTable):
 	__tablename__ = 'Messages'
+	__target_class__ = Message
+	
 	hash = Column(String, primary_key=True)
 	creation_time = Column(DateTime)
 	content = Column(String)
@@ -122,11 +129,15 @@ class BaseMessageSourceTable(HashableTable):
 
 class EditSourceTable(BaseMessageSourceTable):
 	__tablename__ = 'MessageSource_Edit'
+	__target_class__ = EditSource
+	
 	original_hash = Column(String, ForeignKey('Messages.hash'))
 	new_hash = Column(String, ForeignKey('Messages.hash'))
 
 class ModelSourceTable(BaseMessageSourceTable):
 	__tablename__ = 'MessageSource_Model'
+	__target_class__ = ModelSource
+	
 	class_name = Column(String)
 	model_name = Column(String)
 	other_parameters = Column(JSON)
@@ -135,10 +146,14 @@ class ModelSourceTable(BaseMessageSourceTable):
 	
 class TerminalSourceTable(BaseMessageSourceTable):
 	__tablename__ = 'MessageSource_Terminal'
+	__target_class__ = TerminalSource
+	
 	command = Column(String)
 		
 class UserSourceTable(BaseMessageSourceTable):
 	__tablename__ = 'MessageSource_User'
+	__target_class__ = UserSource
+	
 	user_name = Column(String)
 	
 def to_table_object(obj) -> HashableTable:
