@@ -39,6 +39,7 @@ class Database(ConversationCollection):
 		for message in Message.expand_previous_messages(message_sequence.messages):
 			self._add_message(message)
 			
+		for message in message_sequence.messages:
 			m = MessageSequenceMappingTable()
 			m.message_sequence_hash = message_sequence.hash
 			m.message_hash = message.hash
