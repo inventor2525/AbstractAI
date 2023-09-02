@@ -16,7 +16,9 @@ class Message(Hashable):
 		
 		self.content = content
 		self.role = role
-		self.source = source
+		
+		# Information about how the message was created and details about who/what created it
+		self.source:BaseMessageSource = source
 		
 		self.prev_message = prev_message
 		self.conversation = conversation
@@ -36,11 +38,11 @@ class Message(Hashable):
 	def role(self, value: Role):
 		"""Who the message came from"""
 		pass
-		
-	@hash_property
-	def source(self, value: BaseMessageSource):
-		"""Information about how the message was created and details about who/what created it"""
-		pass
+	
+	# @hash_property
+	# def source(self, value: BaseMessageSource):
+	# 	"""Information about how the message was created and details about who/what created it"""
+	# 	pass
 		
 	@hash_property
 	def prev_message(self, value: "Message"):
