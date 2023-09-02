@@ -90,10 +90,7 @@ class Database(ConversationCollection):
 					break
 		
 		raise KeyError(f"hash {hash} not found.")
-	#def shallow_load(...):
-	#  get from any dict if exists
-	#  load non-hashable fields
-	#  set to any dict
+	
 	def _shallow_get(self, hash:str, table_class:Type[HashableTable]) -> Tuple[HashableTable, Hashable]:
 		if hash is None:
 			return None, None
@@ -106,16 +103,6 @@ class Database(ConversationCollection):
 		
 		return (obj_table, obj)
 	
-	#
-	#def deep_load(hash):
-	#  table_obj, obj = shallow load 
-	#  to_deep_load = [(table_obj,obj)]
-	#  while to_deep_load:
-		#  for hashable_field in hashable_fields:
-		#     deep = hashable field in any
-		#     set:  shallow load hashable field
-		#     if deep:
-		#         deep load hashable field
 	def _deep_get(self, hash:str, table_class:Type[HashableTable]) -> Tuple[HashableTable, Hashable]:
 		if hash is None:
 			return None, None
@@ -141,12 +128,7 @@ class Database(ConversationCollection):
 			self.helpers.get(obj_table.__class__, lambda _,__: None)(obj_table, obj)
 			
 		return (outer_obj_table, outer_obj)
-	#
-	# idea: implement custom deep loaders for each hashable type
-	def _get_message(self, hash:str) -> Message:
-		msg_table, msg = self._deep_get(hash, MessageTable)
-		return msg
-		
+	
 	def _get_message_helper(self, msg_table:MessageTable, msg:Message):
 		source_table = get_table_class_by_hashable_name(msg_table._source_type)
 		msg.source = self._deep_get(msg_table._source_hash, source_table)[1]
@@ -161,8 +143,17 @@ class Database(ConversationCollection):
 		self._session = self.session_maker()
 		#self.any.clear()
 		
-		msg = self._get_message(hash)
+		msg_table, msg = self._deep_get(hash, MessageTable)
 		
 		self._session.close()
 		return msg
+	
+	def get_conversation(self, hash:str) -> Conversation:
+		self._session = self.session_maker()
+		self.any.clear()
+		
+		conv_table, conv = self._deep_get(hash, ConversationTable)
+		
+		self._session.close()
+		return conv
 	
