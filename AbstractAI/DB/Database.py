@@ -139,8 +139,13 @@ class Database(ConversationCollection):
 	# idea: implement custom deep loaders for each hashable type
 	def _get_message(self, hash:str) -> Message:
 		msg_table, msg = self._deep_get(hash, MessageTable)
-		return msg
+		#Query the database for source_hash at the table named based on source_type:
+		source_table = globals()[f"{msg_table._source_type}Table"]
 		
+		msg.source = self._deep_get(msg_table._source_hash, source_table)[1]
+		
+		return msg
+	
 	def get_message(self, hash:str) -> Message:
 		self._session = self.session_maker()
 		#self.any.clear()
