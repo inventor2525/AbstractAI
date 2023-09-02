@@ -11,6 +11,11 @@ class Database(ConversationCollection):
 		self.session_maker = sessionmaker(bind=self.engine)
 		
 		self.any:Dict[str, Tuple[HashableTable, Hashable]] = {}
+		
+		self.helpers = {
+			MessageTable: self._get_message_helper,
+			MessageSequenceTable: self._get_message_sequence_helper
+		}
 	
 	#TODO: handle none checks
 	
@@ -133,18 +138,24 @@ class Database(ConversationCollection):
 					inner_table, inner_obj = self._shallow_get(inner_hash, inner_table_class)
 					setattr(obj, inner_obj_attr, inner_obj)
 					to_deep_load.append((inner_table, inner_obj))
+			self.helpers.get(obj_table.__class__, lambda _,__: None)(obj_table, obj)
 			
 		return (outer_obj_table, outer_obj)
 	#
 	# idea: implement custom deep loaders for each hashable type
 	def _get_message(self, hash:str) -> Message:
 		msg_table, msg = self._deep_get(hash, MessageTable)
-		#Query the database for source_hash at the table named based on source_type:
-		source_table = globals()[f"{msg_table._source_type}Table"]
-		
-		msg.source = self._deep_get(msg_table._source_hash, source_table)[1]
-		
 		return msg
+		
+	def _get_message_helper(self, msg_table:MessageTable, msg:Message):
+		source_table = get_table_class_by_hashable_name(msg_table._source_type)
+		msg.source = self._deep_get(msg_table._source_hash, source_table)[1]
+	
+	def _get_message_sequence_helper(self, msg_sequence_table:MessageSequenceTable, msg_sequence:MessageSequence):
+		msg_seq_mappings = self._session.query(MessageSequenceMappingTable).filter(MessageSequenceMappingTable.message_sequence_hash == msg_sequence_table.hash).all()
+		for msg_seq_mapping in msg_seq_mappings:
+			msg_table, msg = self._deep_get(msg_seq_mapping.message_hash, MessageTable)
+			msg_sequence.messages.append(msg)
 	
 	def get_message(self, hash:str) -> Message:
 		self._session = self.session_maker()

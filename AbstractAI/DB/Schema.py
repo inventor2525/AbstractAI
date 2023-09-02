@@ -184,8 +184,16 @@ class UserSourceTable(BaseMessageSourceTable):
 	__target_class__ = UserSource
 	
 	user_name = Column(String)
+
+def get_table_class_by_hashable_name(hashable_name:str) -> Type[Base]:
+	# return {
+	# 	m.class_.__name__:m.class_
+	# 	for m in Base.registry.mappers
+	# 	if not m.class_.__name__.startswith('_')
+	# }[hashable_name]   ????
+	return globals()[f"{hashable_name}Table"]
 	
 def to_table_object(obj) -> HashableTable:
 	'''Auto locates the table object for the passed object and calls from_hashable on it.'''
-	table_type = globals()[f"{obj.__class__.__name__}Table"]
+	table_type = get_table_class_by_hashable_name(obj.__class__.__name__)
 	return table_type.from_hashable(obj)
