@@ -2,7 +2,7 @@ from .HuggingFaceLLM import *
 from torch import bfloat16
 
 class StableBeluga2(HuggingFaceLLM):
-	def __init__(self, model_name:str):
+	def __init__(self, model_name:str="stabilityai/StableBeluga-7B"):
 		super().__init__()
 		self.model_name = model_name
 	
