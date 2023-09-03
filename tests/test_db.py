@@ -130,6 +130,37 @@ class TestDB(unittest.TestCase):
 		for orig_msg, loaded_msg in zip(conv.message_sequence.messages, loaded_conv.message_sequence.messages):
 			self.assertTrue(compare_messages(orig_msg, loaded_msg))
 			self.assertTrue(compare_sources(orig_msg.source, loaded_msg.source))
+	
+	def test_multiple_conversations(self):
+		db = Database("sqlite:///test.sql")
+
+		# Create mock conversations
+		conv1 = Conversation(name="Conv1")
+		conv2 = Conversation(name="Conv2")
+
+		user_source = UserSource()
+		terminal_source = TerminalSource("test_command")
+
+		msg1 = Message("Hello", Role.User, user_source)
+		msg2 = Message("How are you?", Role.User, user_source)
+		msg3 = Message("I am an AI.", Role.Assistant, terminal_source)
+
+		conv1.message_sequence.add_message(msg1)
+		conv1.message_sequence.add_message(msg2)
+
+		conv2.message_sequence.add_message(msg3)
+
+		# Save the conversations to the database
+		db.add_conversation(conv1)
+		db.add_conversation(conv2)
+
+		# Load the conversations from the database
+		loaded_conv1 = db.get_conversation(conv1.hash)
+		loaded_conv2 = db.get_conversation(conv2.hash)
+
+		# Compare the loaded conversations with the original ones
+		self.assertTrue(compare_conversations(conv1, loaded_conv1))
+		self.assertTrue(compare_conversations(conv2, loaded_conv2))
 
 if __name__ == "__main__":
 	unittest.main()
