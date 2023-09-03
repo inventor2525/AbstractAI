@@ -6,8 +6,10 @@ from datetime import datetime
 
 class Conversation(Hashable):
 	'''A list of messages that can be passed to a Large Language Model'''
-	def __init__(self, name:str="", description:str="", creation_time:datetime=datetime.now()):
+	def __init__(self, name:str="", description:str="", creation_time:datetime=None):
 		super().__init__()
+		if creation_time is None:
+			creation_time = datetime.now()
 		self.creation_time = creation_time
 		
 		self.name = name
