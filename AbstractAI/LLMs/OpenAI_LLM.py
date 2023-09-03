@@ -54,3 +54,6 @@ class OpenAI_LLM(LLM):
 	
 	def generate_prompt_str(self, conversation: Conversation) -> str:
 		return None
+	
+	def _serialize_raw_response(self, response:object) -> str:
+		return json.dumps(response, indent=4)
