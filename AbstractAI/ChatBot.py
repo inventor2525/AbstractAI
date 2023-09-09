@@ -3,8 +3,9 @@ from AbstractAI.LLMs.LLM import LLM, LLM_RawResponse
 from AbstractAI.DB.ConversationCollection import ConversationCollection
 
 class ChatBot:
-	def __init__(self, model:LLM, db:ConversationCollection, conversation:Conversation=None):
+	def __init__(self, model:LLM, db:ConversationCollection, conversation:Conversation=None, fallback_model:LLM=None):
 		self.model = model
+		self.fallback_model = fallback_model
 		self.db = db
 		
 		if conversation is None:
@@ -27,8 +28,19 @@ class ChatBot:
 		self.conversation.add_message(msg)
 		self.db.add_conversation(self.conversation)
 		
-		self.last_response = self.model.prompt(self.conversation)
+		self.last_response = LLM_RawResponse("Output Error")
 		
+		try:
+			self.last_response = self.model.prompt(self.conversation)
+		except:
+			if self.fallback_model is not None:
+				try:
+					self.last_response = self.fallback_model.prompt(self.conversation)
+				except:
+					pass
+			else:
+				pass
+				
 		self.conversation.add_message(self.last_response.message)
 		self.db.add_conversation(self.conversation)
 		return self.last_response.message.content
