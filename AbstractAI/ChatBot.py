@@ -28,7 +28,7 @@ class ChatBot:
 		self.conversation.add_message(msg)
 		self.db.add_conversation(self.conversation)
 		
-		self.last_response = LLM_RawResponse("Output Error")
+		self.last_response = LLM_RawResponse("Output Error", None, 0)
 		
 		try:
 			self.last_response = self.model.prompt(self.conversation)
