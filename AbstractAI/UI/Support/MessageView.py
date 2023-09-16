@@ -4,17 +4,25 @@ from AbstractAI.Conversation.MessageSources import *
 from .RoleColorPallet import RoleColorPallet
 
 message_color_pallet = RoleColorPallet()
-
-class MessageView(ColoredFrame):
+class BaseMessageView(ColoredFrame):
+	def __init__(self, background_color, parent, message: Message):
+		super().__init__(background_color, parent)
+		self.message = message
+		
+class MessageView(BaseMessageView):
 	rowHeightChanged = pyqtSignal()
-	message_changed = pyqtSignal(Message, str) # Message, old hash
+	
+	# Signal fired when a message change is confirmed by the user, passes the new message
+	message_changed = pyqtSignal(Message)
+	
+	# Signal fired when a message is deleted by the user, passes the message view to be deleted
+	message_deleted_clicked = pyqtSignal(BaseMessageView)
 	
 	def __init__(self, message: Message, parent=None):
 		background_color = message_color_pallet.get_color(message.source)
-		super().__init__(background_color, parent)
+		super().__init__(background_color, parent, message)
 		
 		self.parent = parent
-		self.message = message
 		
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
@@ -74,7 +82,7 @@ class MessageView(ColoredFrame):
 		self.delete_btn.clicked.connect(self.delete_message)
 		self.delete_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.delete_btn, alignment=Qt.AlignTop)
-		self.delete_btn.clicked.connect(lambda: self.parent.delete_message(self))
+		self.delete_btn.clicked.connect(lambda: self.message_deleted_clicked.emit(self))
 		
 		# Confirm button (checkmark)
 		self.confirm_btn = QPushButton("✓")
@@ -94,7 +102,7 @@ class MessageView(ColoredFrame):
 	
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked
-		# self.parent.message_changed.emit(self.message)
+		self.message_changed.emit(self.message)
 	
 	def update_text_edit_height(self):
 		new_height = int(self.delete_btn.sizeHint().height() * 3)
@@ -113,7 +121,7 @@ class MessageView(ColoredFrame):
 		
 	def on_text_changed(self):
 		text = self.text_edit.toPlainText()
-		if text != self.message['content']:
+		if text != self.message.content:
 			self.confirm_btn.setVisible(True)
 			# self.text_edit.setStyleSheet("border: 3px solid rgba(0, 0, 255, 0.3);")
 			self.text_edit.setStyleSheet("QTextEdit {border: 3px solid rgba(0, 0, 255, 0.3);}")
@@ -127,17 +135,20 @@ class MessageView(ColoredFrame):
 			self.text_edit.updateGeometry()
 			self.rowHeightChanged.emit()
 		
-		self.token_count_label.setText(f"{tokens_in_string(text)} tokens")
+		# self.token_count_label.setText(f"{tokens_in_string(text)} tokens")
 		
 	def delete_message(self):
 		pass
 
 	def confirm_changes(self):
-		old_hash = self.message.hash
-		self.message.json['content'] = self.text_edit.toPlainText()
+		self.message = Message(
+			self.text_edit.toPlainText(), self.message.role,
+			EditSource(original=self.message), self.message.prev_message,
+			self.message.conversation
+		)
+		
 		self.confirm_btn.setVisible(False)
 		self.text_edit.setStyleSheet("")
-		self.message.recompute_hash()
 		
-		self.message_changed.emit(self.message, old_hash)
+		self.message_changed.emit(self.message)
 

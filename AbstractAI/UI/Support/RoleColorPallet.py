@@ -28,7 +28,9 @@ class RoleColorPallet:
 	def get_color(self, source:BaseMessageSource) -> QColor:
 		if source is None:
 			return QColor(Qt.white)
-			
+		
+		#TODO: Get the non EditSource message source from source
+		
 		inner = self._colors.get(type(source), "#FFFFFF")
 		if isinstance(inner, dict):
 			# source is a user source (so far)

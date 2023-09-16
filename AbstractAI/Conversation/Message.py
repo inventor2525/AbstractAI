@@ -17,6 +17,10 @@ class Message(Hashable):
 		self.content = content
 		self.role = role
 		
+		from .MessageSources.EditSource import EditSource
+		if isinstance(source, EditSource):
+			source.new = self
+			
 		# Information about how the message was created and details about who/what created it
 		self.source:BaseMessageSource = source
 		
