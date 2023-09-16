@@ -1,12 +1,16 @@
-from .ColoredFrame import ColoredFrame
-from AbstractAI.Conversation.Message import Message, Role, UserSource
+from .ColoredFrame import *
+from AbstractAI.Conversation.Message import Message, Role
+from AbstractAI.Conversation.MessageSources import *
+from .RoleColorPallet import RoleColorPallet
+
+message_color_pallet = RoleColorPallet()
 
 class MessageView(ColoredFrame):
 	rowHeightChanged = pyqtSignal()
 	message_changed = pyqtSignal(Message, str) # Message, old hash
 	
 	def __init__(self, message: Message, parent=None):
-		background_color = QColor( parent.color_palette.get(message.full_role.lower(), QColor(Qt.white)) )
+		background_color = message_color_pallet.get_color(message.source)
 		super().__init__(background_color, parent)
 		
 		self.parent = parent
@@ -19,40 +23,40 @@ class MessageView(ColoredFrame):
 		self.layout.addLayout(self.left_layout)
 		
 		# Role (and optional name) label
-		self.role_label = QLabel()
-		#Get the role from the message, capitalizing the first letter of each word:
-		pascal_role = " ".join([word.capitalize() for word in message.full_role.split(" ")])
-		self.role_label.setText(f"{pascal_role}:")
-		self.role_label.setFixedWidth(100)
-		self.role_label.setWordWrap(True)
-		self.left_layout.addWidget(self.role_label)
+		# self.role_label = QLabel()
+		# #Get the role from the message, capitalizing the first letter of each word:
+		# pascal_role = " ".join([word.capitalize() for word in message.full_role.split(" ")])
+		# self.role_label.setText(f"{pascal_role}:")
+		# self.role_label.setFixedWidth(100)
+		# self.role_label.setWordWrap(True)
+		# self.left_layout.addWidget(self.role_label)
 		
 		# Date label
 		self.date_label = QLabel()
-		self.date_label.setText(message.date.strftime("%Y-%m-%d %H:%M:%S"))
+		self.date_label.setText(message.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
 		self.date_label.setFixedWidth(100)
 		self.date_label.setWordWrap(True)
 		self.left_layout.addWidget(self.date_label)
 		
-		# Token count label
-		self.token_count_label = QLabel()
-		self.token_count_label.setText(f"{tokens_in_message(message)} tokens")
-		self.token_count_label.setFixedWidth(100)
-		self.token_count_label.setWordWrap(True)
-		self.left_layout.addWidget(self.token_count_label)
+		# # Token count label
+		# self.token_count_label = QLabel()
+		# self.token_count_label.setText(f"{tokens_in_message(message)} tokens")
+		# self.token_count_label.setFixedWidth(100)
+		# self.token_count_label.setWordWrap(True)
+		# self.left_layout.addWidget(self.token_count_label)
 		
-		# Should send toggle
-		self.should_send_checkbox = QCheckBox("Send")
-		self.should_send_checkbox.setChecked(message.should_send)
-		self.should_send_checkbox.stateChanged.connect(self.on_should_send_changed)
-		self.left_layout.addWidget(self.should_send_checkbox)
+		# # Should send toggle
+		# self.should_send_checkbox = QCheckBox("Send")
+		# self.should_send_checkbox.setChecked(message.should_send)
+		# self.should_send_checkbox.stateChanged.connect(self.on_should_send_changed)
+		# self.left_layout.addWidget(self.should_send_checkbox)
 		
 		# Spacer
 		self.left_layout.addStretch()
 		
 		# Editable text box
 		self.text_edit = QTextEdit()
-		self.text_edit.setPlainText(message['content'])
+		self.text_edit.setPlainText(message.content)
 		self.text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
 		self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
