@@ -1,13 +1,14 @@
 from .ColoredFrame import *
 from AbstractAI.Conversation.Message import Message, Role
 from AbstractAI.Conversation.MessageSources import *
+from .MessageSourceView import MessageSourceView
 from .RoleColorPallet import RoleColorPallet
 
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
 	def __init__(self, background_color, parent, message: Message):
 		super().__init__(background_color, parent)
-		self.message = message
+		self._message = message
 		
 class MessageView(BaseMessageView):
 	rowHeightChanged = pyqtSignal()
@@ -29,6 +30,9 @@ class MessageView(BaseMessageView):
 		
 		self.left_layout = QVBoxLayout()
 		self.layout.addLayout(self.left_layout)
+		
+		self.message_source_view = MessageSourceView(message.source)
+		self.left_layout.addWidget(self.message_source_view)
 		
 		# Role (and optional name) label
 		# self.role_label = QLabel()
@@ -147,8 +151,27 @@ class MessageView(BaseMessageView):
 			self.message.conversation
 		)
 		
-		self.confirm_btn.setVisible(False)
-		self.text_edit.setStyleSheet("")
-		
 		self.message_changed.emit(self.message)
 
+	@property
+	def message(self):
+		return self._message
+	@message.setter
+	def message(self, value:Message):
+		self._message = value
+		self.message_source_view.message_source = value.source
+		self.confirm_btn.setVisible(False)
+		
+		# self.role_label.setText(f"{value.full_role}:")
+		# self.token_count_label.setText(f"{tokens_in_message(value)} tokens")
+		
+		self.text_edit.setPlainText(value.content)
+		self.text_edit.setStyleSheet("")
+		self.update_text_edit_height()
+		
+		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
+		
+		# self.should_send_checkbox.setChecked(value.should_send)
+		
+		self.background_color = message_color_pallet.get_color(value.source)
+		self.update()

@@ -3,7 +3,7 @@ from AbstractAI.UI.Support.MessageView import *
 #create a QT window with a message view in it:
 app = QApplication(sys.argv)
 
-message = Message("Hello, world!", Role.User, UserSource("User"))
+message = Message("Hello, world!", Role.Assistant, UserSource("System"))
 message_view = MessageView(message)
 
 
