@@ -7,18 +7,9 @@ class ConversationView(QListWidget):
 	def __init__(self, conversation: Conversation, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		
-		self.colors = QColor.colorNames()#  ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'gray']
-		
-		self._color_palette = {
-			"system": "lightgrey",
-			"user human": "#9DFFA6",
-			"user terminal": "#FFEBE4",
-			"assistant": "#FFC4B0",
-		}
-		
 		self.conversation = conversation
 		
-		for message in conversation.messages:
+		for message in conversation.message_sequence.messages:
 			self.render_message(message)
 			
 		self.setAutoScroll(False)
@@ -26,23 +17,6 @@ class ConversationView(QListWidget):
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
 		self.itemSelectionChanged.connect(self.update_selection)
 	
-	@property
-	def color_palette(self):
-		if not hasattr(self, '_color_palette') or self._color_palette is None:
-			self._color_palette = {}
-			message_types = set()
-
-			# Extract message types from the messages in the conversation
-			for message in self.conversation.messages:
-				message_types.add(message.full_role.lower())
-
-			# Assign colors to message types
-			for i, message_type in enumerate(sorted(message_types)):
-				message_type = message_type.lower()
-				self._color_palette[message_type] = self.colors[i % len(self.colors)]
-
-		return self._color_palette
-		
 	def update_selection(self):
 		for index in range(self.count()):
 			item = self.item(index)
@@ -82,16 +56,11 @@ class ConversationView(QListWidget):
 				self.clearSelection()
 	
 	def render_message(self, message: Message):
-		message_type = message.full_role.lower()
-		if message_type not in self.color_palette:
-			self._color_palette[message_type] = self.colors[len(self._color_palette) % len(self.colors)]
-			
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
 		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
 		def message_changed(message: Message, old_hash: str):
 			self.message_changed.emit(message, old_hash)
-			self.conversation.recompute_hash()
 			self.update_row_height(item)
 		item_widget.message_changed.connect(message_changed)
 		item.setSizeHint(item_widget.sizeHint())
