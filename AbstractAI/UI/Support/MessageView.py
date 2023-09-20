@@ -159,7 +159,7 @@ class MessageView(BaseMessageView):
 	@message.setter
 	def message(self, value:Message):
 		self._message = value
-		self.message_source_view.message_source = value.source
+		self.message_source_view.set_message_source(value.source)
 		self.confirm_btn.setVisible(False)
 		
 		# self.role_label.setText(f"{value.full_role}:")
