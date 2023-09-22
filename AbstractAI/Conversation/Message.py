@@ -2,7 +2,7 @@ from enum import Enum
 from .MessageSources.BaseMessageSource import BaseMessageSource, Hashable, hash_property
 from datetime import datetime
 
-from typing import Iterable
+from typing import Iterable, List
 
 class Role(Enum):
 	System = "system"
@@ -23,6 +23,8 @@ class Message(Hashable):
 		self.prev_message = prev_message
 		self.conversation = conversation
 		self.hash_spoiled.add(self._hash_spoiled)
+		
+		self.children:List[Message] = []
 		
 	@hash_property
 	def creation_time(self, value: datetime):

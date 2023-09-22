@@ -8,6 +8,7 @@ conv = Conversation()
 conv.add_message( Message("You are a helpful assistant", Role.System, UserSource("System")) )
 conv.add_message( Message("Say hello", Role.User, UserSource()) )
 conv.add_message( Message("Hello!", Role.Assistant, ModelSource("LLM","A model")) )
+conv.update_message_graph()
 
 #message_view = MessageView(message)
 conversation_view = ConversationView(conv)
