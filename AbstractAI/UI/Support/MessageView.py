@@ -66,6 +66,42 @@ class MessageView(BaseMessageView):
 		# Spacer
 		self.left_layout.addStretch()
 		
+		# Horizontal layout for left and right arrow buttons
+		self.arrow_layout = QHBoxLayout()
+		
+		# Left arrow button for selecting previous version of message:
+		self.left_arrow_btn = QToolButton()
+		self.left_arrow_btn.setArrowType(Qt.LeftArrow)
+		self.left_arrow_btn.setFixedHeight(15)
+		self.left_arrow_btn.setFixedWidth(15)
+		def left_arrow_clicked():
+			self.message.conversation.update_message_graph()
+			if self.message.prev_message is not None:
+				index = self.message.prev_message.children.index(self.message)-1
+				if index < 0:
+					index = 0
+				self.message = self.message.prev_message.children[index]
+				
+		self.left_arrow_btn.clicked.connect(left_arrow_clicked)
+		self.arrow_layout.addWidget(self.left_arrow_btn)
+		
+		# Right arrow button for selecting next version of message:
+		self.right_arrow_btn = QToolButton()
+		self.right_arrow_btn.setArrowType(Qt.RightArrow)
+		self.right_arrow_btn.setFixedHeight(15)
+		self.right_arrow_btn.setFixedWidth(15)
+		def right_arrow_clicked():
+			self.message.conversation.update_message_graph()
+			if self.message.prev_message is not None:
+				index = self.message.prev_message.children.index(self.message)+1
+				if index >= len(self.message.prev_message.children):
+					index = len(self.message.prev_message.children)-1
+				self.message = self.message.prev_message.children[index]
+		self.right_arrow_btn.clicked.connect(right_arrow_clicked)
+		self.arrow_layout.addWidget(self.right_arrow_btn)
+		
+		self.left_layout.addLayout(self.arrow_layout)
+		
 		# Editable text box
 		self.text_edit = QTextEdit()
 		self.text_edit.setPlainText(message.content)
