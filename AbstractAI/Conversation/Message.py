@@ -2,7 +2,7 @@ from enum import Enum
 from .MessageSources.BaseMessageSource import BaseMessageSource, Hashable, hash_property
 from datetime import datetime
 
-from typing import Iterable
+from typing import Iterable, List
 
 class Role(Enum):
 	System = "system"
@@ -16,13 +16,15 @@ class Message(Hashable):
 		
 		self.content = content
 		self.role = role
-		
+			
 		# Information about how the message was created and details about who/what created it
 		self.source:BaseMessageSource = source
 		
 		self.prev_message = prev_message
 		self.conversation = conversation
 		self.hash_spoiled.add(self._hash_spoiled)
+		
+		self.children:List[Message] = []
 		
 	@hash_property
 	def creation_time(self, value: datetime):
@@ -84,3 +86,15 @@ class Message(Hashable):
 					break
 				prev_message = prev_message.prev_message
 		return reversed(all_messages)
+	
+	def create_edited(self, new_content:str) -> "Message":
+		'''Create a new message that is an edited version of this message'''
+		
+		from .MessageSources.EditSource import EditSource
+		source = EditSource(original=self)
+		new_message = Message(
+			new_content, self.role,
+			source, self.prev_message, self.conversation
+		)
+		source.new = new_message
+		return new_message

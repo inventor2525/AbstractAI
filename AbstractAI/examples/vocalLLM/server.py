@@ -65,6 +65,7 @@ def transcribe():
 
 @app.route('/llm', methods=['POST'])
 def llm_endpoint():
+	text = request.json['text']
 	conversation.add_message(Message(text, Role.User, UserSource()))
 	
 	response = llm.timed_prompt(conversation)
