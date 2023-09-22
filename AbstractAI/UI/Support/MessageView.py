@@ -106,7 +106,6 @@ class MessageView(BaseMessageView):
 	
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked
-		self.message_changed.emit(self.message)
 	
 	def update_text_edit_height(self):
 		new_height = int(self.delete_btn.sizeHint().height() * 3)
@@ -142,7 +141,7 @@ class MessageView(BaseMessageView):
 		# self.token_count_label.setText(f"{tokens_in_string(text)} tokens")
 		
 	def delete_message(self):
-		pass
+		self.message_deleted_clicked.emit(self)
 
 	def confirm_changes(self):
 		self.message = Message(

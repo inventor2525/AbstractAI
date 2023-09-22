@@ -39,6 +39,9 @@ class Conversation(Hashable):
 	
 	def add_message(self, message:Message):
 		self.message_sequence.add_message(message)
+	
+	def remove_message(self, message:Message):
+		self.message_sequence.remove_message(message)
 		
-	def replace_message(self, old_message:Message, new_message:Message):
-		self.message_sequence.replace_message(old_message, new_message)
+	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
+		self.message_sequence.replace_message(old_message, new_message, keeping_latter)

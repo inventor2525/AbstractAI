@@ -24,6 +24,20 @@ window.setLayout(layout)
 #add the message view to the layout:
 layout.addWidget(conversation_view)
 
+#button to display the messages in the conversation:
+def print_messages(messages):
+	print("=====================================")
+	for message in messages:
+		print(message.content)
+		print(message.source)
+		print(message.creation_time)
+		print(message.role)
+		print()
+	print("=====================================")
+button = QPushButton("Print Messages")
+button.clicked.connect(lambda: print_messages(conv.message_sequence.messages))
+layout.addWidget(button)
+
 #show the window:
 window.show()
 

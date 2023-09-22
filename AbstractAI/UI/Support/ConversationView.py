@@ -2,7 +2,7 @@ from AbstractAI.Conversation import *
 from .MessageView import *
 
 class ConversationView(QListWidget):
-	message_changed = pyqtSignal(Message, str) # Message, old hash
+	message_changed = pyqtSignal(Message) # Message
 	
 	def __init__(self, conversation: Conversation, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -51,7 +51,7 @@ class ConversationView(QListWidget):
 				item = self.takeItem(row)
 
 				message_to_remove = message_widget.message
-				self.conversation.messages.remove(message_to_remove)
+				self.conversation.remove_message(message_to_remove)
 				
 				self.clearSelection()
 	
@@ -59,13 +59,15 @@ class ConversationView(QListWidget):
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
 		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
-		def message_changed(message: Message, old_hash: str):
-			self.message_changed.emit(message, old_hash)
+		def message_changed(message: Message):
+			self.conversation.replace_message(message.source.original, message.source.new, True)
+			self.message_changed.emit(message)
 			self.update_row_height(item)
 		item_widget.message_changed.connect(message_changed)
 		item.setSizeHint(item_widget.sizeHint())
 		self.addItem(item)
 		self.setItemWidget(item, item_widget)
+		item_widget.message_deleted_clicked.connect(self.delete_message)
 		self.scrollToBottom()
 				
 	def add_message(self, message: Message):
