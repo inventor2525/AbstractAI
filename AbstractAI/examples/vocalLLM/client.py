@@ -3,7 +3,7 @@ import argparse
 import requests
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QTextEdit, QLabel, QPushButton, QHBoxLayout, QWidget
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
-from AbstractAI.SpeechToText.RemoteSTT import RemoteSTT
+from AbstractAI.SpeechToText.STT_Client import STT_Client
 from AbstractAI.TextToSpeech.RemoteTTS import RemoteTTS
 from AbstractAI.Helpers.AudioPlayer import *
 from pydub.exceptions import CouldntDecodeError
@@ -16,7 +16,7 @@ class Application(QMainWindow):
 		self.port = port
 
 		self.recorder = AudioRecorder()
-		self.stt = RemoteSTT(host, port)
+		self.stt = STT_Client(host, port)
 
 		self.tts = RemoteTTS(host, port)
 		self.audio_player = AudioPlayer()

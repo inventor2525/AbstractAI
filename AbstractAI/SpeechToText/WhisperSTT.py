@@ -21,3 +21,7 @@ class WhisperSTT(STT):
 	
 	def transcribe_str(self, file_name: str) -> str:
 		return self.transcribe(file_name)['text']
+	
+	@staticmethod
+	def list_models():
+		return ["large", "medium", "small", "base", "tiny", "large.en", "medium.en", "small.en", "base.en", "tiny.en"]
