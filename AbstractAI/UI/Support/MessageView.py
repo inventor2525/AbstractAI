@@ -83,7 +83,6 @@ class MessageView(BaseMessageView):
 				self.message = self.message.prev_message.children[index]
 				
 		self.left_arrow_btn.clicked.connect(left_arrow_clicked)
-		self.arrow_layout.addWidget(self.left_arrow_btn)
 		
 		# Right arrow button for selecting next version of message:
 		self.right_arrow_btn = QToolButton()
@@ -98,6 +97,13 @@ class MessageView(BaseMessageView):
 					index = len(self.message.prev_message.children)-1
 				self.message = self.message.prev_message.children[index]
 		self.right_arrow_btn.clicked.connect(right_arrow_clicked)
+		
+		# create another 2 buttons to the left of the left and
+		# right of the right that also swap the children out:
+		# TODO: make these buttons work
+		# TODO: track the changes in the message sequence and have proper notifications
+		
+		self.arrow_layout.addWidget(self.left_arrow_btn)
 		self.arrow_layout.addWidget(self.right_arrow_btn)
 		
 		self.left_layout.addLayout(self.arrow_layout)
