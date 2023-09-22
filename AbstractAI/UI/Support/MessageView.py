@@ -144,11 +144,7 @@ class MessageView(BaseMessageView):
 		self.message_deleted_clicked.emit(self)
 
 	def confirm_changes(self):
-		self.message = Message(
-			self.text_edit.toPlainText(), self.message.role,
-			EditSource(original=self.message), self.message.prev_message,
-			self.message.conversation
-		)
+		self.message = self.message.create_edited(self.text_edit.toPlainText())
 		
 		self.message_changed.emit(self.message)
 

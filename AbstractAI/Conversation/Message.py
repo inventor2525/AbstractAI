@@ -16,10 +16,6 @@ class Message(Hashable):
 		
 		self.content = content
 		self.role = role
-		
-		from .MessageSources.EditSource import EditSource
-		if isinstance(source, EditSource):
-			source.new = self
 			
 		# Information about how the message was created and details about who/what created it
 		self.source:BaseMessageSource = source
@@ -88,3 +84,15 @@ class Message(Hashable):
 					break
 				prev_message = prev_message.prev_message
 		return reversed(all_messages)
+	
+	def create_edited(self, new_content:str) -> "Message":
+		'''Create a new message that is an edited version of this message'''
+		
+		from .MessageSources.EditSource import EditSource
+		source = EditSource(original=self)
+		new_message = Message(
+			new_content, self.role,
+			source, self.prev_message, self.conversation
+		)
+		source.new = new_message
+		return new_message
