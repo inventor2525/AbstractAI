@@ -1,4 +1,4 @@
-from HuggingFaceLLM import *
+from .HuggingFaceLLM import *
 
 class OpenAssistantLLM(HuggingFaceLLM):
 	def __init__(self, model_name: str):
