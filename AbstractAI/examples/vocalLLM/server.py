@@ -9,6 +9,7 @@ from AbstractAI.LLMs.LoadLLM import *
 from pydub import AudioSegment
 from io import BytesIO
 import re
+from AbstractAI.ChatBot import *
 
 def init_db(model_name, llm_name):
 	db_path = os.path.join(os.path.expanduser("~"), "ai_log.db")
@@ -39,10 +40,12 @@ app = Flask(__name__)
 
 stt = WhisperSTT(args.model_name)
 
-llm = LoadLLM(args.llm_name, "You are a helpful AI.")
 conversation = Conversation()
 conversation.add_message(Message("You are a helpful AI.", Role.System))
+llm = LoadLLM(args.llm_name)
 llm.start()
+
+bot = ChatBot(llm, Database("sqlite:///chatbot.sql"), conversation)
 
 tts = MicrosoftSpeechT5_TTS()
 
@@ -66,14 +69,11 @@ def transcribe():
 @app.route('/llm', methods=['POST'])
 def llm_endpoint():
 	text = request.json['text']
-	conversation.add_message(Message(text, Role.User, UserSource()))
-	
-	response = llm.timed_prompt(conversation)
-	conversation.add_message(response.message)
+	response = bot.prompt(prompt=text)
 	
 	log_request("llm_requests", request.remote_addr, (text, prompt, response, None, None))
 	print(f"LLM was requested with this '{text}'\n\n(aka, '{prompt}')\n\nand returned '{response}'")
-	return jsonify({'response': response.message.content})
+	return jsonify({'response': response})
 
 def split_codeblocks(text):
 	'''Separates out the code blocks from input text.'''
