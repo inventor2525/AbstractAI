@@ -52,10 +52,7 @@ class MicrosoftSpeechT5_TTS(TextToSpeech):
 					speech_segments.append(generate_speech_for_group(group))
 					group = [word]
 					token_count = len(input_ids[0])
-
-				# Debugging: Print token counts
-				print(f"Token count: {token_count}, New token count: {new_token_count}")
-
+					
 		# Handle the last group
 		if group:
 			speech_segments.append(generate_speech_for_group(group))
