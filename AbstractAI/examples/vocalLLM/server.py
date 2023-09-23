@@ -10,6 +10,7 @@ from pydub import AudioSegment
 from io import BytesIO
 import re
 from AbstractAI.ChatBot import *
+from AbstractAI.DB.Database import *
 
 def init_db(model_name, llm_name):
 	db_path = os.path.join(os.path.expanduser("~"), "ai_log.db")
@@ -41,9 +42,8 @@ app = Flask(__name__)
 stt = WhisperSTT(args.model_name)
 
 conversation = Conversation()
-conversation.add_message(Message("You are a helpful AI.", Role.System))
+conversation.add_message(Message("You are a helpful AI.", Role.System, UserSource("System")))
 llm = LoadLLM(args.llm_name)
-llm.start()
 
 bot = ChatBot(llm, Database("sqlite:///chatbot.sql"), conversation)
 
@@ -70,7 +70,7 @@ def transcribe():
 def llm_endpoint():
 	text = request.json['text']
 	response = bot.prompt(prompt=text)
-	
+	prompt = text
 	log_request("llm_requests", request.remote_addr, (text, prompt, response, None, None))
 	print(f"LLM was requested with this '{text}'\n\n(aka, '{prompt}')\n\nand returned '{response}'")
 	return jsonify({'response': response})
