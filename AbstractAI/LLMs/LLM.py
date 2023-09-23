@@ -87,17 +87,17 @@ class LLM(ABC):
 		raw_response = self._prompt_str(prompt_string)
 		return self._create_response(prompt_string, raw_response)
 		
-	def timed_prompt(self, input: Union[str, Conversation]) -> LLM_RawResponse:
+	def timed_prompt(self, model_input: Union[str, Conversation]) -> LLM_RawResponse:
 		'''
 		Prompt the model with timing, can be either a string
 		or a conversation. This is a blocking function.
 		'''
 		start_time = datetime.now()
 		response:LLM_RawResponse = None
-		if isinstance(prompt, Conversation):
-			response = self.prompt(prompt)
+		if isinstance(input, Conversation):
+			response = self.prompt(model_input)
 		else:
-			response = self.prompt_str(prompt)
+			response = self.prompt_str(model_input)
 		end_time = datetime.now()
 		
 		print(f"Started prompting at: '{start_time}'\nFinished at: '{end_time}'")
