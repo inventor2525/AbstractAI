@@ -63,12 +63,18 @@ class Application(QMainWindow):
         
         for device in [evdev.InputDevice(path) for path in evdev.list_devices()]:
             print(f"Path: {device.path}, Name: {device.name}, Phys: {device.phys}, Uniq: {device.uniq}, Info: {device.info}")
-            if device.name == "ThinkPad Extra Buttons":
+            
+            def add_device(device):
                 self.devices.append(device)
-                print("Found the ThinkPad Extra Buttons")
+                print(f"Found the device: {device.name}")
+            def conditional_add(device, name):
+                if device.name == name:
+                    add_device(device)
+            
+            conditional_add(device, "ThinkPad Extra Buttons")
+            conditional_add(device, "AT Translated Set 2 keyboard")
             if device.name == "Apple, Inc Apple Keyboard" and device.phys.endswith("input0"):
-                self.devices.append(device)
-                print("Found the Apple Keyboard")
+                add_device(device)
         
         if not self.devices:
             print("Could not find event numbers for the devices")
@@ -107,7 +113,7 @@ class Application(QMainWindow):
                 for event in dev.read():
                     if event.type == ecodes.EV_KEY:
                         key_event = categorize(event)
-                        if key_event.keycode in ['KEY_PROG1', 'KEY_F19']:
+                        if key_event.keycode in ['KEY_PROG1', 'KEY_F19', 'KEY_CALC']:
                             if key_event.keystate == key_event.key_down:
                                 print("==========================")
                                 self.toggle_recording()
@@ -167,10 +173,10 @@ class Application(QMainWindow):
         return distance_to_center <= self.diam / 2
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Remote Speech-to-Text Client with ThinkPad Button Integration')
-    parser.add_argument('host', type=str, help='The server\'s IP address or hostname (e.g., \'localhost\' or \'0.0.0.0\').')
-    parser.add_argument('port', type=int, help='The port number on which the server is running (e.g., 8000).', default=8000)
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description='Remote Speech-to-Text Client with ThinkPad Button Integration')
+    # parser.add_argument('host', type=str, help='The server\'s IP address or hostname (e.g., \'localhost\' or \'0.0.0.0\').')
+    # parser.add_argument('port', type=int, help='The port number on which the server is running (e.g., 8000).', default=8000)
+    # args = parser.parse_args()
 
     app = QApplication(sys.argv)
     window = Application(args.host, args.port)

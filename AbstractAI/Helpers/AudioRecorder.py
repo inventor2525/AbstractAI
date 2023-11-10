@@ -6,7 +6,17 @@ import threading
 
 class AudioRecorder:
 	def __init__(self):
-		self.stream = sd.InputStream(samplerate=16000, channels=1, dtype='float32')
+		devices = sd.query_devices()
+		input_device_index = None
+		sample_rate = 0
+		for i, device in enumerate(devices):
+			if device['max_input_channels'] > 0:
+				input_device_index = i
+				self.sample_rate = device['default_samplerate']
+				break
+		if input_device_index is None:
+			raise ValueError("No input devices found.")
+		self.stream = sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='float32', device=input_device_index)
 		self.recording_thread = self.RecordingThread(self)
 		self.lock = threading.Lock()
 		self.recording_thread.start()
@@ -51,7 +61,7 @@ class AudioRecorder:
 			audio_segment = AudioSegment(
 				data=audio_data,
 				sample_width=2,
-				frame_rate=16000,
+				frame_rate=self.sample_rate,
 				channels=1
 			)
 			Stopwatch.singleton.stop("Saving")
