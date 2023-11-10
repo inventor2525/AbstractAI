@@ -26,7 +26,13 @@ setup(
 		'openai-whisper',
 		'datasets',
 		'soundfile',
-		'nltk'
+		'nltk',
+		'PyQt5',
+		'sounddevice',
+		'pydub',
+		'evdev',
+		'pyperclip',
+		'pyautogui'
 	],
 	python_requires='~=3.10'
 )
