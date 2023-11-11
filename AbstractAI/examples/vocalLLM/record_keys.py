@@ -25,7 +25,7 @@ import time
 import sys
 import argparse
 import requests
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
 from PyQt5.QtCore import Qt, QTimer, QPoint
 from PyQt5.QtGui import QPainter, QColor, QMouseEvent
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
@@ -89,15 +89,18 @@ class Application(QMainWindow):
         self.is_recording = False
         self.is_processing = False
         self.was_processing = False
-        
-        self.move(0, 0)
-
+        self.positionOnPrimaryMonitor()
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setBrush(self.dot_color)
         painter.setPen(Qt.NoPen)
         painter.drawEllipse(int(-self.diam/2), int(-self.diam/2), self.diam, self.diam)
     
+    def positionOnPrimaryMonitor(self):
+        primaryMonitor = QDesktopWidget().primaryScreen()
+        screenGeometry = QDesktopWidget().screenGeometry(primaryMonitor)
+        self.move(screenGeometry.topLeft())
+        
     def update_color(self):
         if self.is_processing:
             self.dot_color = QColor(100, 100, 255)
