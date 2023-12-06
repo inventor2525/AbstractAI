@@ -29,7 +29,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
 from PyQt5.QtCore import Qt, QTimer, QPoint
 from PyQt5.QtGui import QPainter, QColor, QMouseEvent
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
-from AbstractAI.SpeechToText.STT_Client import STT_Client
+from AbstractAI.examples.vocalLLM.STT_client import WhisperSTT
+
 import evdev
 from evdev import InputDevice, categorize, ecodes
 import pyperclip
@@ -56,7 +57,6 @@ class Application(QMainWindow):
         self.host = host
         self.port = port
         self.recorder = AudioRecorder()
-        self.stt = STT_Client(host, port)
         
         # Initialize multiple devices
         self.devices = []
@@ -127,7 +127,7 @@ class Application(QMainWindow):
     
     def process_audio(self, file_name):
         self.is_processing = True
-        result = self.stt.transcribe_str(file_name)
+        result = WhisperSTT.transcribe_str(file_name)
         
         # remove spaces and new lines at the beginning and end of the string:
         result = result.strip()
@@ -178,12 +178,7 @@ class Application(QMainWindow):
         return distance_to_center <= self.diam / 2
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description='Remote Speech-to-Text Client with ThinkPad Button Integration')
-    # parser.add_argument('host', type=str, help='The server\'s IP address or hostname (e.g., \'localhost\' or \'0.0.0.0\').')
-    # parser.add_argument('port', type=int, help='The port number on which the server is running (e.g., 8000).', default=8000)
-    # args = parser.parse_args()
-
-    app = QApplication(sys.argv)
-    window = Application("http://209.20.158.138", 8000)# Application(args.host, args.port)
-    window.show()
-    sys.exit(app.exec_())
+    parser = argparse.ArgumentParser(description='Remote Speech-to-Text Client with ThinkPad Button Integration')
+    parser.add_argument('host', type=str, help='The server\'s IP address or hostname (e.g., \'localhost\' or \'0.0.0.0\').')
+    parser.add_argument('port', type=int, help='The port number on which the server is running (e.g., 8000).', default=8000)
+    args = parser.parse_args()
