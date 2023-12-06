@@ -90,6 +90,7 @@ class Application(QMainWindow):
         self.is_processing = False
         self.was_processing = False
         self.positionOnPrimaryMonitor()
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setBrush(self.dot_color)
@@ -111,6 +112,7 @@ class Application(QMainWindow):
         self.update()
     
     def check_button(self):
+        self.positionOnPrimaryMonitor()
         for dev in self.devices:
             try:
                 for event in dev.read():
@@ -182,6 +184,6 @@ if __name__ == "__main__":
     # args = parser.parse_args()
 
     app = QApplication(sys.argv)
-    window = Application(args.host, args.port)
+    window = Application("http://209.20.158.138", 8000)# Application(args.host, args.port)
     window.show()
     sys.exit(app.exec_())
