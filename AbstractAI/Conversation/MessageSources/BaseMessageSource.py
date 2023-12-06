@@ -1,11 +1,10 @@
-from AbstractAI.Hashable import Hashable, hash_property
+from AbstractAI.Conversation.ModelBase import *
 
-class BaseMessageSource(Hashable):
+@DATA
+class MessageSource:
     """
     Base class for message sources.
     
     These will contain information about where a message came from.
     """
-
-    def __init__(self):
-        super().__init__()
+    pass

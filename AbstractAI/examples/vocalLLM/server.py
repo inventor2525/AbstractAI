@@ -10,7 +10,6 @@ from pydub import AudioSegment
 from io import BytesIO
 import re
 from AbstractAI.ChatBot import *
-from AbstractAI.DB.Database import *
 
 def init_db(model_name, llm_name):
 	db_path = os.path.join(os.path.expanduser("~"), "ai_log.db")

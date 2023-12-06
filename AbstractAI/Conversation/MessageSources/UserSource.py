@@ -1,13 +1,8 @@
-from .BaseMessageSource import BaseMessageSource, hash_property
+from AbstractAI.Conversation.ModelBase import *
+from .BaseMessageSource import MessageSource
 
-class UserSource(BaseMessageSource):
-	"""Describes the source of a message from a person."""
-
-	def __init__(self, user_name: str = "user"):
-		super().__init__()
-		self.user_name = user_name
-		
-	@hash_property
-	def user_name(self, value: str):
-		"""The user name of who wrote the message"""
-		pass
+@DATA
+class UserSource(MessageSource):
+	'''Describes the source of a message from a person.'''
+	user_name: str
+	session_start_time: datetime = field(default_factory=get_local_time)

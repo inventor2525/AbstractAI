@@ -77,10 +77,10 @@ class MessageView(BaseMessageView):
 		def left_arrow_clicked():
 			self.message.conversation.update_message_graph()
 			if self.message.prev_message is not None:
-				index = self.message.prev_message.children.index(self.message)-1
+				index = self.message.prev_message._children.index(self.message)-1
 				if index < 0:
 					index = 0
-				self.message = self.message.prev_message.children[index]
+				self.message = self.message.prev_message._children[index]
 				
 		self.left_arrow_btn.clicked.connect(left_arrow_clicked)
 		
@@ -92,10 +92,10 @@ class MessageView(BaseMessageView):
 		def right_arrow_clicked():
 			self.message.conversation.update_message_graph()
 			if self.message.prev_message is not None:
-				index = self.message.prev_message.children.index(self.message)+1
-				if index >= len(self.message.prev_message.children):
-					index = len(self.message.prev_message.children)-1
-				self.message = self.message.prev_message.children[index]
+				index = self.message.prev_message._children.index(self.message)+1
+				if index >= len(self.message.prev_message._children):
+					index = len(self.message.prev_message._children)-1
+				self.message = self.message.prev_message._children[index]
 		self.right_arrow_btn.clicked.connect(right_arrow_clicked)
 		
 		# create another 2 buttons to the left of the left and

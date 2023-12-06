@@ -1,68 +1,45 @@
-from typing import List
-from .Message import Message
-from AbstractAI.Hashable import Hashable, hash_property
+from AbstractAI.Conversation.ModelBase import *
 from .MessageSequence import MessageSequence
-from datetime import datetime
+from .Message import Message
 
-class Conversation(Hashable):
-	'''A list of messages that can be passed to a Large Language Model'''
-	def __init__(self, name:str="", description:str="", creation_time:datetime=None):
-		super().__init__()
-		if creation_time is None:
-			creation_time = datetime.now()
-		self.creation_time = creation_time
-		
-		self.name = name
-		self.description = description
-		
-		self.all_messages:List[Message] = []
-		self.message_sequence = MessageSequence(self)
-		self.hash_spoiled.add(self._hash_spoiled)
-		
-		self.root_messages:List[Message] = []
+from datetime import datetime
+from typing import List
+
+@DATA
+class Conversation:
+	name: str
+	description: str
 	
-	@hash_property
-	def creation_time(self, value: datetime):
-		"""The description of the conversation."""
-		pass
+	creation_time: datetime = field(default_factory=get_local_time)
 	
-	# @hash_property
-	# def name(self, value: str):
-	# 	"""The name of the conversation."""
-	# 	pass
+	message_sequence:MessageSequence = None
 	
-	# @hash_property
-	# def description(self, value: str):
-	# 	"""The description of the conversation."""
-	# 	pass
-	
-	def _hash_spoiled(self):
-		if self.message_sequence is not None:
-			self.message_sequence.spoil_hash()
+	_all_messages: List[Message] = field(default_factory=list)
+	_root_messages: List[Message] = field(default_factory=list)
 	
 	def add_message(self, message:Message):
 		self.message_sequence.add_message(message)
-		self.all_messages.append(message)
+		self._all_messages.append(message)
 	
 	def remove_message(self, message:Message):
 		self.message_sequence.remove_message(message)
 		
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
 		self.message_sequence.replace_message(old_message, new_message, keeping_latter)
-		self.all_messages.append(new_message)
+		self._all_messages.append(new_message)
 		
 	def update_message_graph(self):
-		self.root_messages = []
+		self._root_messages = []
 		
-		for message in self.all_messages:
+		for message in self._all_messages:
 			if message.prev_message is None:
-				self.root_messages.append(message)
+				self._root_messages.append(message)
 			
-			message.children = []
-			for possible_child in self.all_messages:
+			message._children = []
+			for possible_child in self._all_messages:
 				if possible_child.prev_message is message:
-					message.children.append(possible_child)
+					message._children.append(possible_child)
 					
-			message.children.sort(key=lambda m: m.creation_time)
+			message._children.sort(key=lambda m: m.creation_time)
 		
-		self.root_messages.sort(key=lambda m: m.creation_time)
+		self._root_messages.sort(key=lambda m: m.creation_time)

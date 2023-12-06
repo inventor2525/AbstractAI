@@ -1,65 +1,21 @@
-from enum import Enum
-from .MessageSources.BaseMessageSource import BaseMessageSource, Hashable, hash_property
+from AbstractAI.Conversation.ModelBase import *
+from .MessageSources import MessageSource, UserSource, ModelSource, EditSource
 from datetime import datetime
 
-from typing import Iterable, List
+from typing import Iterable, List, Union
 
-class Role(Enum):
-	System = "system"
-	User = "user"
-	Assistant = "assistant"
+@DATA
+class Message:
+	content: str
+	source: MessageSource = None
+	
+	creation_time: datetime = field(default_factory=get_local_time)
+	
+	prev_message: "Message" = None
+	conversation: "Conversation" = None
+	
+	_children: List["Message"] = field(default_factory=list)
 
-class Message(Hashable):
-	def __init__(self, content: str="", role: Role=Role.User, source: BaseMessageSource = None, prev_message:"Message"=None, conversation:"Conversation"=None):
-		super().__init__()		
-		self.creation_time = datetime.now()
-		
-		self.content = content
-		self.role = role
-			
-		# Information about how the message was created and details about who/what created it
-		self.source:BaseMessageSource = source
-		
-		self.prev_message = prev_message
-		self.conversation = conversation
-		self.hash_spoiled.add(self._hash_spoiled)
-		
-		self.children:List[Message] = []
-		
-	@hash_property
-	def creation_time(self, value: datetime):
-		"""The date time the message was created"""
-		pass
-		
-	@hash_property
-	def content(self, value: str):
-		"""The text of the message"""
-		pass
-		
-	@hash_property
-	def role(self, value: Role):
-		"""Who the message came from"""
-		pass
-	
-	# @hash_property
-	# def source(self, value: BaseMessageSource):
-	# 	"""Information about how the message was created and details about who/what created it"""
-	# 	pass
-		
-	@hash_property
-	def prev_message(self, value: "Message"):
-		"""The message that comes before this in the full tree of a conversation and all the paths it can evolve from. (Not to be confused with "Conversation" which is a single linear string of messages)"""
-		pass
-		
-	@hash_property
-	def conversation(self, value: "Conversation"):
-		"""A weak reference back to the conversation this message is apart of"""
-		pass
-	
-	def _hash_spoiled(self):
-		if self.conversation is not None:
-			self.conversation.spoil_hash()
-		
 	@staticmethod	
 	def expand_previous_messages(messages:Iterable["Message"]) -> Iterable["Message"]:
 		'''
@@ -87,14 +43,12 @@ class Message(Hashable):
 				prev_message = prev_message.prev_message
 		return reversed(all_messages)
 	
-	def create_edited(self, new_content:str) -> "Message":
+	def create_edited(self, new_content:str, source_of_edit:Union[UserSource, ModelSource]) -> "Message":
 		'''Create a new message that is an edited version of this message'''
 		
-		from .MessageSources.EditSource import EditSource
-		source = EditSource(original=self)
+		source = EditSource(original=self, source_of_edit=source_of_edit)
 		new_message = Message(
-			new_content, self.role,
-			source, self.prev_message, self.conversation
+			new_content, source, self.prev_message, self.conversation
 		)
 		source.new = new_message
 		return new_message

@@ -32,7 +32,8 @@ setup(
 		'pydub',
 		'evdev',
 		'pyperclip',
-		'pyautogui'
+		'pyautogui',
+        'pexpect'
 	],
 	python_requires='~=3.10'
 )

@@ -25,7 +25,7 @@ class RoleColorPallet:
 		}
 		self._rolling_pallet = RollingColorPallet()
 	
-	def get_color(self, source:BaseMessageSource) -> QColor:
+	def get_color(self, source:MessageSource) -> QColor:
 		if source is None:
 			return QColor(Qt.white)
 		

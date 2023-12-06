@@ -5,7 +5,7 @@ def pascal_case(string:str) -> str:
 	return " ".join([word.capitalize() for word in string.split(" ")])
 	
 class MessageSourceView(QWidget):
-	def __init__(self, message_source:BaseMessageSource):
+	def __init__(self, message_source:MessageSource):
 		super().__init__()
 		
 		self.layout = QVBoxLayout()
@@ -17,7 +17,7 @@ class MessageSourceView(QWidget):
 		
 		self.set_message_source(message_source)
 	
-	def _get_source_label(self, message_source:BaseMessageSource) -> str:
+	def _get_source_label(self, message_source:MessageSource) -> str:
 		if message_source is None:
 			return "Unknown\nSource:"
 		elif isinstance(message_source, UserSource):
@@ -53,7 +53,7 @@ class MessageSourceView(QWidget):
 		else:
 			return "Unknown\nSource:"
 		
-	def set_message_source(self, message_source:BaseMessageSource):
+	def set_message_source(self, message_source:MessageSource):
 		self.message_source = message_source
 		self.label.setText(self._get_source_label(message_source))
 	
