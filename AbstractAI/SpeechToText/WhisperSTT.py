@@ -5,6 +5,10 @@ import torch
 from .STT import STT
 from ClassyFlaskDB.Flaskify import Route, Flaskify
 from typing import List
+from pydub import AudioSegment
+
+import os
+from datetime import datetime
 
 @Flaskify()
 class WhisperSTT(STT):
@@ -50,8 +54,13 @@ class WhisperSTT(STT):
 
 	@Route()
 	@staticmethod
-	def transcribe(file_name: str) -> dict:
-		return WhisperSTT.singleton().transcribe(file_name)
+	def transcribe(audio:AudioSegment) -> dict:
+		timestamp = datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
+		file_name = os.path.join(os.path.expanduser("~"), 'recordings', f'{ip_address}__{timestamp}.mp3')
+		os.makedirs(os.path.dirname(file_name), exist_ok=True)
+		
+		audio.save(file_name)
+		return WhisperSTT.singleton().transcribe_str(file_name)
 	
 	@Route()
 	@staticmethod
