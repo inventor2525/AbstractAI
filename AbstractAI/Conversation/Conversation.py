@@ -12,7 +12,7 @@ class Conversation:
 	
 	creation_time: datetime = field(default_factory=get_local_time)
 	
-	message_sequence:MessageSequence = None
+	message_sequence: MessageSequence = field(default_factory=MessageSequence)
 	
 	_all_messages: List[Message] = field(default_factory=list)
 	_root_messages: List[Message] = field(default_factory=list)
@@ -43,3 +43,6 @@ class Conversation:
 			message._children.sort(key=lambda m: m.creation_time)
 		
 		self._root_messages.sort(key=lambda m: m.creation_time)
+
+	def __post_init__(self):
+		self.message_sequence.conversation = self

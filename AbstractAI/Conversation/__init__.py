@@ -1,4 +1,5 @@
 from .MessageSources import MessageSource, UserSource, ModelSource, EditSource, TerminalSource
-from .Message import Message, Role
+from .Message import Message
 from .Conversation import Conversation, MessageSequence
-from AbstractAI.Hashable import Hashable
+from .ConversationCollection import ConversationCollection
+from .ModelBase import DATA

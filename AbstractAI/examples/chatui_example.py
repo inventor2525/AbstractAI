@@ -4,10 +4,10 @@ from AbstractAI.UI.Support.ConversationView import *
 #create a QT window with a message view in it:
 app = QApplication(sys.argv)
 
-conv = Conversation()
-conv.add_message( Message("You are a helpful assistant", Role.System, UserSource("System")) )
-conv.add_message( Message("Say hello", Role.User, UserSource()) )
-conv.add_message( Message("Hello!", Role.Assistant, ModelSource("LLM","A model")) )
+conv = Conversation("Test Conversation", "A test conversation")
+conv.add_message( Message("You are a helpful assistant", UserSource("System")) )
+conv.add_message( Message("Say hello", UserSource()) )
+conv.add_message( Message("Hello!", ModelSource("LLM","A model")) )
 conv.update_message_graph()
 
 #message_view = MessageView(message)
@@ -32,7 +32,6 @@ def print_messages(messages):
 		print(message.content)
 		print(message.source)
 		print(message.creation_time)
-		print(message.role)
 		print()
 	print("=====================================")
 button = QPushButton("Print Messages")

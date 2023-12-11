@@ -1,9 +1,16 @@
+from enum import Enum
 from AbstractAI.Conversation.ModelBase import *
 from .MessageSources import MessageSource, UserSource, ModelSource, EditSource
+from .MessageSources.EditSource import EditSource
 from datetime import datetime
 
 from typing import Iterable, List, Union
 
+class Role(Enum):
+	System = "system"
+	User = "user"
+	Assistant = "assistant"
+	
 @DATA
 class Message:
 	content: str
@@ -43,12 +50,12 @@ class Message:
 				prev_message = prev_message.prev_message
 		return reversed(all_messages)
 	
-	def create_edited(self, new_content:str, source_of_edit:Union[UserSource, ModelSource]) -> "Message":
+	def create_edited(self, new_content:str, source_of_edit:Union[UserSource, "ModelSource"]=None) -> "Message":
 		'''Create a new message that is an edited version of this message'''
 		
 		source = EditSource(original=self, source_of_edit=source_of_edit)
-		new_message = Message(
-			new_content, source, self.prev_message, self.conversation
-		)
+		new_message = Message(new_content, source)
+		new_message.prev_message = self.prev_message
+		new_message.conversation = self.conversation
 		source.new = new_message
 		return new_message

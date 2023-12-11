@@ -41,7 +41,7 @@ app = Flask(__name__)
 stt = WhisperSTT(args.model_name)
 
 conversation = Conversation()
-conversation.add_message(Message("You are a helpful AI.", Role.System, UserSource("System")))
+conversation.add_message(Message("You are a helpful AI.", UserSource("System")))
 llm = LoadLLM(args.llm_name)
 
 bot = ChatBot(llm, Database("sqlite:///chatbot.sql"), conversation)

@@ -25,7 +25,3 @@ class ConversationCollection():
 	@abstractmethod
 	def get_message_sequence(self, hash:str) -> MessageSequence:
 		pass
-	
-	@abstractmethod
-	def get_any(self, hash:str) -> Hashable:
-		pass
