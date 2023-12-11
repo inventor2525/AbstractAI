@@ -7,8 +7,8 @@ from typing import List
 
 @DATA
 class Conversation:
-	name: str
-	description: str
+	name: str = "Conversation"
+	description: str = ""
 	
 	creation_time: datetime = field(default_factory=get_local_time)
 	

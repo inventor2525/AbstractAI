@@ -7,9 +7,9 @@ class TestConversation(unittest.TestCase):
 		user_source = UserSource()
 		terminal_source = TerminalSource("test_command")
 
-		msg1 = Message("Hello", Role.User, user_source)
-		msg2 = Message("How are you?", Role.User, user_source)
-		msg3 = Message("I am an AI.", Role.Assistant, terminal_source)
+		msg1 = Message("Hello", user_source)
+		msg2 = Message("How are you?", user_source)
+		msg3 = Message("I am an AI.", terminal_source)
 
 		conv.message_sequence.add_message(msg1)
 		conv.message_sequence.add_message(msg2)
@@ -25,9 +25,9 @@ class TestConversation(unittest.TestCase):
 		user_source = UserSource()
 		terminal_source = TerminalSource("test_command")
 
-		msg1 = Message("Hello", Role.User, user_source)
-		msg2 = Message("How are you?", Role.User, user_source)
-		msg3 = Message("I am an AI.", Role.Assistant, terminal_source)
+		msg1 = Message("Hello", user_source)
+		msg2 = Message("How are you?", user_source)
+		msg3 = Message("I am an AI.", terminal_source)
 
 		initial_hash = conv.message_sequence.hash
 		conv_hash = conv.hash
@@ -51,9 +51,9 @@ class TestConversation(unittest.TestCase):
 		user_source = UserSource()
 		terminal_source = TerminalSource("test_command")
 
-		msg1 = Message("Hello", Role.User, user_source)
-		msg2 = Message("How are you?", Role.User, user_source)
-		msg3 = Message("I am an AI.", Role.Assistant, terminal_source)
+		msg1 = Message("Hello", user_source)
+		msg2 = Message("How are you?", user_source)
+		msg3 = Message("I am an AI.", terminal_source)
 
 		conv.message_sequence.add_message(msg1)
 		conv.message_sequence.add_message(msg2)
@@ -62,8 +62,8 @@ class TestConversation(unittest.TestCase):
 		initial_message_sequence_hash = conv.message_sequence.hash
 		conv_hash = conv.hash
 
-		edited_msg3 = Message("I am an updated AI.", Role.Assistant, terminal_source)
-		edited_msg3_2 = Message("I am an updated AI.", Role.Assistant, terminal_source)
+		edited_msg3 = Message("I am an updated AI.", terminal_source)
+		edited_msg3_2 = Message("I am an updated AI.", terminal_source)
 		edited_msg3_2.creation_time = edited_msg3.creation_time
 		
 		conv.message_sequence.replace_message(msg3, edited_msg3)
@@ -82,7 +82,7 @@ class TestConversation(unittest.TestCase):
 		user_source = UserSource()
 
 		messages = [
-			Message(str(i), Role.User, user_source) for i in range(1, 6)
+			Message(str(i), user_source) for i in range(1, 6)
 		]
 
 		for msg in messages:
@@ -91,7 +91,7 @@ class TestConversation(unittest.TestCase):
 		initial_message_sequence_hash = conv.message_sequence.hash
 		conv_hash = conv.hash
 
-		new_message = Message("a", Role.User, user_source)
+		new_message = Message("a", user_source)
 		conv.message_sequence.replace_message(messages[2], new_message)
 
 		self.assertEqual(len(conv.message_sequence.messages), 3)
@@ -106,8 +106,8 @@ class TestConversation(unittest.TestCase):
 		conv = Conversation()
 		user_source = UserSource()
 
-		msg1 = Message("Hello", Role.User, user_source)
-		msg2 = Message("How are you?", Role.User, user_source)
+		msg1 = Message("Hello", user_source)
+		msg2 = Message("How are you?", user_source)
 
 		conv.message_sequence.add_message(msg1)
 		conv.message_sequence.add_message(msg2)
@@ -129,7 +129,7 @@ class TestConversation(unittest.TestCase):
 		terminal_source = TerminalSource("test_command")
 		edit_source = EditSource(None, None)
 
-		msg = Message("Test message", Role.User, user_source)
+		msg = Message("Test message", user_source)
 
 		conv.message_sequence.add_message(msg)
 		initial_hash = msg.hash

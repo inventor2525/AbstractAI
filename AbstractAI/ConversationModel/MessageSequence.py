@@ -5,7 +5,6 @@ from typing import List
 @DATA
 class MessageSequence:
 	messages: List[Message] = field(default_factory=list)
-	conversation: "Conversation" = None
 		
 	def add_message(self, message: Message):
 		message.conversation = self.conversation
