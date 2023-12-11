@@ -1,5 +1,5 @@
 from AbstractAI.ConversationModel.ModelBase import *
-from .BaseMessageSource import MessageSource
+from .MessageSource import MessageSource
 
 @DATA
 class UserSource(MessageSource):
