@@ -1,4 +1,4 @@
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 from abc import ABC, abstractmethod
 
 class ConversationCollection():

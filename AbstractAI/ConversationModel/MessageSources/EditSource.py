@@ -1,5 +1,5 @@
 from .BaseMessageSource import MessageSource
-from AbstractAI.Conversation.ModelBase import *
+from AbstractAI.ConversationModel.ModelBase import *
 from datetime import datetime
 
 @DATA

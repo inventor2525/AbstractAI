@@ -1,4 +1,4 @@
-from AbstractAI.Conversation.MessageSources import *
+from AbstractAI.ConversationModel.MessageSources import *
 from ._CommonImports import *
 
 def pascal_case(string:str) -> str:

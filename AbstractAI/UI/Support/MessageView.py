@@ -1,6 +1,6 @@
 from .ColoredFrame import *
-from AbstractAI.Conversation.Message import Message, Role
-from AbstractAI.Conversation.MessageSources import *
+from AbstractAI.ConversationModel.Message import Message, Role
+from AbstractAI.ConversationModel.MessageSources import *
 from .MessageSourceView import MessageSourceView
 from .RoleColorPallet import RoleColorPallet
 

@@ -1,6 +1,6 @@
 from AbstractAI.Helpers.LLMStats import LLMStats
 from datetime import datetime
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 from abc import ABC, abstractmethod, abstractproperty
 from .LLM_RawResponse import LLM_RawResponse
 from typing import Union, Dict

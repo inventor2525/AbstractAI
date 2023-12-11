@@ -1,5 +1,5 @@
 import unittest
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 from AbstractAI.DB.Database import Database
 from typing import Callable
 # Compare functions

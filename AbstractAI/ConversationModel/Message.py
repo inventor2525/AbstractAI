@@ -1,5 +1,5 @@
 from enum import Enum
-from AbstractAI.Conversation.ModelBase import *
+from AbstractAI.ConversationModel.ModelBase import *
 from .MessageSources import MessageSource, UserSource, ModelSource, EditSource
 from .MessageSources.EditSource import EditSource
 from datetime import datetime

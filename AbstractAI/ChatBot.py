@@ -1,6 +1,6 @@
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 from AbstractAI.LLMs.LLM import LLM, LLM_RawResponse
-from AbstractAI.Conversation.ConversationCollection import ConversationCollection
+from AbstractAI.ConversationModel.ConversationCollection import ConversationCollection
 
 class ChatBot:
 	def __init__(self, model:LLM, conversations:ConversationCollection, conversation:Conversation=None, fallback_model:LLM=None):

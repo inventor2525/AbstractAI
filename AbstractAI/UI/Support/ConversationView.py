@@ -1,4 +1,4 @@
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 from .MessageView import *
 
 class ConversationView(QListWidget):

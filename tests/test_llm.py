@@ -1,7 +1,7 @@
 import openai
 from AbstractAI.LLMs.StableBeluga2 import StableBeluga2
 from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM, LLM
-from AbstractAI.Conversation import Conversation, Message, Role
+from AbstractAI.ConversationModel import Conversation, Message, Role
 import unittest
 
 run_tests = False

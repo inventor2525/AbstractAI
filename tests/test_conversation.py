@@ -1,5 +1,5 @@
 import unittest
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 
 class TestConversation(unittest.TestCase):
 	def test_add_messages(self):

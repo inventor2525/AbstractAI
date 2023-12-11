@@ -1,4 +1,4 @@
-from AbstractAI.Conversation.Message import Message
+from AbstractAI.ConversationModel.Message import Message
 
 class LLM_RawResponse:
 	def __init__(self, raw_response:object, message:Message, token_count:int):

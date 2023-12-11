@@ -1,5 +1,5 @@
 from .BaseMessageSource import MessageSource
-from AbstractAI.Conversation.ModelBase import *
+from AbstractAI.ConversationModel.ModelBase import *
 
 @DATA
 class TerminalSource(MessageSource):

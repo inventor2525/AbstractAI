@@ -1,5 +1,5 @@
-from AbstractAI.Conversation.MessageSources import *
-from AbstractAI.Conversation.Message import Role
+from AbstractAI.ConversationModel.MessageSources import *
+from AbstractAI.ConversationModel.Message import Role
 from PyQt5.QtGui import QColor
 
 class RollingColorPallet:

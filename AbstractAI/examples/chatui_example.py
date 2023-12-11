@@ -1,5 +1,12 @@
 from AbstractAI.UI.Support.MessageView import *
 from AbstractAI.UI.Support.ConversationView import *
+from sqlalchemy import create_engine
+
+import json
+from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
+
+engine = create_engine('sqlite:///:memory:')
+DATA.finalize(engine)
 
 #create a QT window with a message view in it:
 app = QApplication(sys.argv)
@@ -26,16 +33,19 @@ window.setLayout(layout)
 layout.addWidget(conversation_view)
 
 #button to display the messages in the conversation:
-def print_messages(messages):
+def print_conversation(conversation):
 	print("=====================================")
-	for message in messages:
+	for message in conv.message_sequence.messages:
 		print(message.content)
 		print(message.source)
 		print(message.creation_time)
 		print()
 	print("=====================================")
-button = QPushButton("Print Messages")
-button.clicked.connect(lambda: print_messages(conv.message_sequence.messages))
+	print(json.dumps(conv.to_json(), indent=4, cls=FlaskifyJSONEncoder))
+	print("=====================================")
+
+button = QPushButton("Print Conversation")
+button.clicked.connect(lambda: print_conversation(conv))
 layout.addWidget(button)
 
 #show the window:

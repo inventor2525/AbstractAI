@@ -1,4 +1,4 @@
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 from ._CommonImports import *
 
 class RoleComboBox(QComboBox):

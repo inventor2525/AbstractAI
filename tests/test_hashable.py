@@ -1,5 +1,5 @@
 import unittest
-from AbstractAI.Conversation import *
+from AbstractAI.ConversationModel import *
 
 class TestHashable(unittest.TestCase):
 	def test_edit_source_hash(self):
