@@ -1,5 +1,7 @@
 from .ConversationView import ConversationView
 from .RoleComboBox import RoleComboBox
+from AbstractAI.UI.Support._CommonImports import *
+from AbstractAI.ConversationModel import *
 
 class ChatUI(QWidget):
 	#qt signal for sending messages
@@ -7,11 +9,9 @@ class ChatUI(QWidget):
 	message_changed = pyqtSignal(Message, str) # Message, old hash
 	confirm_command = pyqtSignal()
 	
-	
-	def __init__(self, db:ConversationDB, conversation: Conversation, roles:List[str], max_new_message_lines=5):
+	def __init__(self, conversation: Conversation, roles:List[str]=["Human", "Terminal", "Assistant"], max_new_message_lines=5):
 		super().__init__()
 		
-		self.db = db
 		self.conversation = conversation
 		self.roles = roles
 		
@@ -27,22 +27,7 @@ class ChatUI(QWidget):
 		self.setWindowTitle('Chat')
 
 		self.layout = QVBoxLayout()
-		self.setLayout(self.layout)
-		
-		# Create a labeled text field to enter the startup command for the conversation:
-		self.startup_command_layout = QHBoxLayout()
-		self.startup_command_label = QLabel("Startup Command:")
-		self.startup_command_layout.addWidget(self.startup_command_label)
-		self.startup_command_field = QLineEdit()
-		self.startup_command_field.setText(self.db.get_conversation_startup_script(self.conversation))
-		self.startup_command_field.textChanged.connect(self.startup_command_changed)
-		self.startup_command_layout.addWidget(self.startup_command_field)
-		self.layout.addLayout(self.startup_command_layout)
-		
-		# Add a clear all button:
-		self.clear_all_button = QPushButton("Clear All")
-		self.clear_all_button.clicked.connect(self.clear_all)
-		self.startup_command_layout.addWidget(self.clear_all_button)
+		self.setLayout(self.layout)		
 		
 		# Create a list view to display the conversation:
 		self.list_view = ConversationView(self.conversation)
@@ -51,7 +36,7 @@ class ChatUI(QWidget):
 		
 		# Create a text field to enter new messages:
 		self.input_layout = QHBoxLayout()
-		self.role_combobox = RoleComboBox(self.roles, default_value="Human")
+		self.role_combobox = RoleComboBox(self.roles, default_value=self.roles[0])
 		self.input_layout.addWidget(self.role_combobox, alignment=Qt.AlignBottom)
 
 		self.input_field = QTextEdit()
@@ -162,9 +147,6 @@ class ChatUI(QWidget):
 	def has_unrun_command(self, value:bool):
 		self._has_unrun_command = value
 		self.update_send_button_text()
-		
-	def startup_command_changed(self, text):
-		self.db.set_conversation_startup_script(self.conversation, text)
 	
 	def clear_all(self):		
 		message_box = QMessageBox()
