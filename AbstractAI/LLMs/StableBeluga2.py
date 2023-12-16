@@ -6,6 +6,12 @@ class StableBeluga2(HuggingFaceLLM):
 	def __init__(self, model_name:str="stabilityai/StableBeluga-7B"):
 		super().__init__()
 		self.model_name = model_name
+		
+		self.role_mapping = {
+			CommonRoles.System: "System",
+			CommonRoles.User: "User",
+			CommonRoles.Assistant: "Assistant"
+		}
 	
 	def start(self):
 		super().start()
@@ -38,12 +44,6 @@ class StableBeluga2(HuggingFaceLLM):
 		else:
 			self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
 			self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
-		
-		self.role_mapping = {
-			CommonRoles.System: "System",
-			CommonRoles.User: "User",
-			CommonRoles.Assistant: "Assistant"
-		}
 	
 	def generate_prompt_str(self, conversation :Conversation):
 		prompt = ""

@@ -66,7 +66,9 @@ class System():
 	@StaticRoute()
 	def load_LLM(llm_name:str) -> None:
 		if llm_name not in System.LLMs:
-			System.LLMs[llm_name] = LoadLLM(llm_name)
+			llm = LoadLLM(llm_name)
+			llm.start()
+			System.LLMs[llm_name] = llm
 	
 	@StaticRoute()
 	def unload_LLM(llm_name:str) -> None:
