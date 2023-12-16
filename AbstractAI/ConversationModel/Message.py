@@ -1,15 +1,9 @@
-from enum import Enum
 from AbstractAI.ConversationModel.ModelBase import *
 from .MessageSources import MessageSource, UserSource, ModelSource, EditSource
 from .MessageSources.EditSource import EditSource
 from datetime import datetime
 
 from typing import Iterable, List, Union
-
-class Role(Enum):
-	System = "system"
-	User = "user"
-	Assistant = "assistant"
 	
 @DATA
 class Message:

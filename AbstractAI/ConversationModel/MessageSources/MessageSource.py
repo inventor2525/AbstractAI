@@ -7,4 +7,4 @@ class MessageSource:
     
     These will contain information about where a message came from.
     """
-    pass
+    system_message: bool = field(default=False, kw_only=True)

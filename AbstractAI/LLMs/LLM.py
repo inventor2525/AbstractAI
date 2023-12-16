@@ -56,17 +56,20 @@ class LLM(ABC):
 		text_response = self._raw_to_text(raw_response)
 		token_count = self._raw_output_token_count(raw_response)
 		
+		message_sequence = None
+		if conversation is not None:
+			message_sequence = conversation.message_sequence
+		
 		# Store info about where the message came from:
 		source = ModelSource(
-			type(self).__name__, self.model_name, prompt, raw_response,
-			self.other_parameters, message_sequence=conversation.message_sequence,
+			type(self).__name__, self.model_name, 
+			self.other_parameters, message_sequence=message_sequence,
+			prompt=prompt,
 			models_serialized_raw_output=self._serialize_raw_response(raw_response)
 		)
 		
 		# Create the message object:
-		message = Message(
-			text_response, Role.Assistant, source
-		)
+		message = Message(text_response, source)
 		
 		return LLM_RawResponse(raw_response, message, token_count)
 		

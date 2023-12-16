@@ -1,4 +1,5 @@
 from .LLM import *
+from AbstractAI.LLMs.CommonRoles import CommonRoles
 import tiktoken
 import openai
 import json
@@ -11,6 +12,12 @@ class OpenAI_LLM(LLM):
 		
 		self.temperature = temperature
 		self.encoding = tiktoken.encoding_for_model(self.model_name)
+		
+		self.role_mapping = {
+			CommonRoles.System: "system",
+			CommonRoles.User: "user",
+			CommonRoles.Assistant: "assistant"
+		}
 	
 	def _raw_to_text(self, response) -> str:
 		return response["choices"][0]["message"]["content"]
@@ -31,12 +38,13 @@ class OpenAI_LLM(LLM):
 		max_tokens = 512
 		message_list = []
 		for message in conversation.message_sequence.messages:
-			message_dict = {
-				"role": "assistant" if message.role == Role.Assistant else "user",
-				"content":message.content
-			}
-			if message.role != Role.Assistant and message.role != Role.User:
-				message_dict["name"] = str(message.role.value).lower()
+			message_dict = {"content":message.content}
+			
+			role, name = CommonRoles.from_source(message.source)
+			message_dict["role"] = role
+			if name is not None:
+				message_dict["name"] = name
+			
 			message_list.append(message_dict)
 		
 		raw_response = openai.ChatCompletion.create(

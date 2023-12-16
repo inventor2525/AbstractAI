@@ -1,3 +1,5 @@
+import os
+import signal
 import pexpect
 import asyncio
 import re

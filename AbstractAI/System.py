@@ -3,6 +3,7 @@ from typing import List
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
 from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import MicrosoftSpeechT5_TTS, TextToSpeech
+from AbstractAI.Helpers.nvidia_smi import nvidia_smi
 from AbstractAI.LLMs.LoadLLM import *
 from pydub import AudioSegment
 import re
@@ -11,7 +12,7 @@ import re
 class System():
 	whisper : WhisperSTT
 	tts : MicrosoftSpeechT5_TTS
-	LLMs : dict = {}
+	LLMs : Dict[str,LLM] = {}
 
 	@staticmethod
 	def start_server():
@@ -19,6 +20,13 @@ class System():
 		System.whisper.load_model("large")
 
 		System.tts = MicrosoftSpeechT5_TTS()
+
+	##################################################
+	## System
+	##################################################
+	@StaticRoute()
+	def server_nvidia_smi() -> str:
+		return nvidia_smi()
 
 	##################################################
 	## Speech to Text
@@ -63,3 +71,7 @@ class System():
 	@StaticRoute()
 	def prompt_str(llm_name:str, prompt:str) -> Message:
 		return System.LLMs[llm_name].prompt_str(prompt).message
+	
+	@StaticRoute()
+	def prompt_chat(llm_name:str, conversation:Conversation) -> Message:
+		return System.LLMs[llm_name].prompt(conversation).message

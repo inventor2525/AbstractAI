@@ -26,7 +26,7 @@ print("..............................................................")
 print("..............................................................")
 print("..............................................................")
 
-nvidia_smi()
+print(nvidia_smi())
 	
 # Use the classes
 print("Start Loading...", datetime.now())
@@ -34,7 +34,7 @@ llm, prompt_generator = LoadLLM(model_name, system_message)
 llm.start()
 print("Done Loading!", datetime.now())
 
-nvidia_smi()
+print(nvidia_smi())
 
 def generate_text(user_prompt: str):
 	print("Prompting...\n\n\n\n\n")
@@ -45,7 +45,7 @@ def generate_text(user_prompt: str):
 	
 	prompt_generator.add_response(response)
 	print(prompt_generator.conversation)
-	nvidia_smi()
+	print(nvidia_smi())
 
 # Call the function for different prompts
 for i in range(0,2):

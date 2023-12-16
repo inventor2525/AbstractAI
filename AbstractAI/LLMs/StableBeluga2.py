@@ -1,4 +1,5 @@
 from .HuggingFaceLLM import *
+from .CommonRoles import CommonRoles
 from torch import bfloat16
 
 class StableBeluga2(HuggingFaceLLM):
@@ -39,14 +40,15 @@ class StableBeluga2(HuggingFaceLLM):
 			self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
 		
 		self.role_mapping = {
-			Role.System: "System",
-			Role.User: "User",
-			Role.Assistant: "Assistant"
+			CommonRoles.System: "System",
+			CommonRoles.User: "User",
+			CommonRoles.Assistant: "Assistant"
 		}
 	
 	def generate_prompt_str(self, conversation :Conversation):
 		prompt = ""
 		for message in conversation.message_sequence.messages:
-			prompt += f"### {self.role_mapping[message.role]}:\n{message.content}\n\n"
-		prompt += f"### {self.role_mapping[Role.Assistant]}:"
+			message_role = CommonRoles.from_source(message.source)
+			prompt += f"### {self.role_mapping[message_role]}:\n{message.content}\n\n"
+		prompt += f"### {self.role_mapping[CommonRoles.Assistant]}:"
 		return prompt

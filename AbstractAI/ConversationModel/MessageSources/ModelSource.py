@@ -10,8 +10,6 @@ class ModelSource(MessageSource):
 	model_name: str
 	model_parameters: dict = field(default_factory=dict)
 	message_sequence: MessageSequence = None
+	prompt: str = None
 
 	models_serialized_raw_output: str = None
-
-	# internal field for later use by the model
-	_models_raw_output: object = None
