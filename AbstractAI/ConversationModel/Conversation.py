@@ -14,8 +14,8 @@ class Conversation:
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)
 	
-	_all_messages: List[Message] = field(default_factory=list)
-	_root_messages: List[Message] = field(default_factory=list)
+	#_all_messages: List[Message] = field(default_factory=list)
+	#_root_messages: List[Message] = field(default_factory=list)
 
 	def __post_init__(self):
 		self.message_sequence.conversation = self
@@ -25,14 +25,14 @@ class Conversation:
 		
 	def add_message(self, message:Message):
 		self.message_sequence.add_message(message)
-		self._all_messages.append(message)
+		#self._all_messages.append(message)
 	
 	def remove_message(self, message:Message):
 		self.message_sequence.remove_message(message)
 		
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
 		self.message_sequence.replace_message(old_message, new_message, keeping_latter)
-		self._all_messages.append(new_message)
+		#self._all_messages.append(new_message)
 		
 	def update_message_graph(self):
 		self._root_messages = []
