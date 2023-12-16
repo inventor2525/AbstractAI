@@ -10,5 +10,5 @@ if __name__ == '__main__':
 	c = Conversation("Conversation", "First conversation")
 	c.add_message(Message("Hello", UserSource("Charlie")))
 
-	m = System.prompt_chat(c)
+	m = System.prompt_chat("stabilityai/StableBeluga-7B", c)
 	print(m.content)
