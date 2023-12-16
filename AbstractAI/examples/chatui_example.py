@@ -33,17 +33,6 @@ window.setLayout(layout)
 layout.addWidget(conversation_view)
 
 #button to display the messages in the conversation:
-def print_conversation(conversation):
-	print("=====================================")
-	for message in conv.message_sequence.messages:
-		print(message.content)
-		print(message.source)
-		print(message.creation_time)
-		print()
-	print("=====================================")
-	print(json.dumps(conv.to_json(), indent=4, cls=FlaskifyJSONEncoder))
-	print("=====================================")
-
 button = QPushButton("Print Conversation")
 button.clicked.connect(lambda: print_conversation(conv))
 layout.addWidget(button)
