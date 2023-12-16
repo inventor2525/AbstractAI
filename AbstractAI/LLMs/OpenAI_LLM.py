@@ -40,10 +40,10 @@ class OpenAI_LLM(LLM):
 		for message in conversation.message_sequence.messages:
 			message_dict = {"content":message.content}
 			
-			role, name = CommonRoles.from_source(message.source)
-			message_dict["role"] = role
-			if name is not None:
-				message_dict["name"] = name
+			message_role, user_name = CommonRoles.from_source(message.source)
+			message_dict["role"] = self.role_mapping[message_role]
+			if user_name is not None:
+				message_dict["name"] = user_name
 			
 			message_list.append(message_dict)
 		
