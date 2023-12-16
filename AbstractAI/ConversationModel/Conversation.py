@@ -16,7 +16,13 @@ class Conversation:
 	
 	_all_messages: List[Message] = field(default_factory=list)
 	_root_messages: List[Message] = field(default_factory=list)
-	
+
+	def __post_init__(self):
+		self.message_sequence.conversation = self
+		
+	def new_message_sequence(self):
+		self.message_sequence = self.message_sequence.copy()
+		
 	def add_message(self, message:Message):
 		self.message_sequence.add_message(message)
 		self._all_messages.append(message)
@@ -43,6 +49,3 @@ class Conversation:
 			message._children.sort(key=lambda m: m.creation_time)
 		
 		self._root_messages.sort(key=lambda m: m.creation_time)
-
-	def __post_init__(self):
-		self.message_sequence.conversation = self

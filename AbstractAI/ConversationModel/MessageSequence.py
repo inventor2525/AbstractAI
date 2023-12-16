@@ -2,10 +2,11 @@ from AbstractAI.ConversationModel.ModelBase import *
 from .Message import Message
 from typing import List
 
-@DATA
+@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
 class MessageSequence:
 	messages: List[Message] = field(default_factory=list)
-		
+	conversation: "Conversation" = None
+	
 	def add_message(self, message: Message):
 		message.conversation = self.conversation
 		
@@ -38,3 +39,10 @@ class MessageSequence:
 				self.messages = new_messages
 				self.add_message(new_message)
 		self.new_id()
+	
+	def copy():
+		new_sequence = MessageSequence()
+		new_sequence.messages = self.messages[:]
+		new_sequence.conversation = self.conversation
+		new_sequence.new_id()
+		return new_sequence

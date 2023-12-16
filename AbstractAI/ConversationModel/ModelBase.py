@@ -1,4 +1,4 @@
-from ClassyFlaskDB.DATA import DATADecorator, field
+from ClassyFlaskDB.DATA import DATADecorator, field, ID_Type
 from datetime import datetime
 import tzlocal
 
