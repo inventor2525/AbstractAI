@@ -8,6 +8,11 @@ from AbstractAI.LLMs.LoadLLM import *
 from pydub import AudioSegment
 import re
 
+# Finish creating the conversation model:
+from sqlalchemy import create_engine
+engine = create_engine('sqlite:///:memory:')
+DATA.finalize(engine)
+
 @Flaskify()
 class System():
 	whisper : WhisperSTT
