@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
+from ClassyFlaskDB.DATA import DATAEngine
 from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
 from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import MicrosoftSpeechT5_TTS, TextToSpeech
 from AbstractAI.Helpers.nvidia_smi import nvidia_smi
@@ -9,9 +10,7 @@ from pydub import AudioSegment
 import re
 
 # Finish creating the conversation model:
-from sqlalchemy import create_engine
-engine = create_engine('sqlite:///:memory:')
-DATA.finalize(engine)
+data_engine = DATAEngine(DATA)
 
 @Flaskify()
 class System():

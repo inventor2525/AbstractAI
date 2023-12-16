@@ -1,5 +1,4 @@
 from AbstractAI.ConversationModel.MessageSources import *
-from AbstractAI.ConversationModel.Message import Role
 from AbstractAI.UI.Support._CommonImports import *
 
 class RollingColorPallet:

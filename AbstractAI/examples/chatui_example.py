@@ -1,12 +1,10 @@
 from AbstractAI.UI.Support.MessageView import *
 from AbstractAI.UI.Support.ConversationView import *
-from sqlalchemy import create_engine
 
 import json
 from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
-
-engine = create_engine('sqlite:///:memory:')
-DATA.finalize(engine)
+from ClassyFlaskDB.DATA import DATAEngine
+data_engine = DATAEngine(DATA)
 
 #create a QT window with a message view in it:
 app = QApplication(sys.argv)

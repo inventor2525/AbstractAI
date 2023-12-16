@@ -37,15 +37,15 @@ class Conversation:
 	def update_message_graph(self):
 		self._root_messages = []
 		
-		for message in self._all_messages:
-			if message.prev_message is None:
-				self._root_messages.append(message)
+		# for message in self._all_messages:
+		# 	if message.prev_message is None:
+		# 		self._root_messages.append(message)
 			
-			message._children = []
-			for possible_child in self._all_messages:
-				if possible_child.prev_message is message:
-					message._children.append(possible_child)
+		# 	message._children = []
+		# 	for possible_child in self._all_messages:
+		# 		if possible_child.prev_message is message:
+		# 			message._children.append(possible_child)
 					
-			message._children.sort(key=lambda m: m.creation_time)
+		# 	message._children.sort(key=lambda m: m.creation_time)
 		
 		self._root_messages.sort(key=lambda m: m.creation_time)
