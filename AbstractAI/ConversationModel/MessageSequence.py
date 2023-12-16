@@ -40,7 +40,7 @@ class MessageSequence:
 				self.add_message(new_message)
 		self.new_id()
 	
-	def copy():
+	def copy(self):
 		new_sequence = MessageSequence()
 		new_sequence.messages = self.messages[:]
 		new_sequence.conversation = self.conversation
