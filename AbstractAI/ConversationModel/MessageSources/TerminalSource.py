@@ -1,7 +1,7 @@
 from .MessageSource import MessageSource
 from AbstractAI.ConversationModel.ModelBase import *
 
-@DATA
+@ConversationDATA
 class TerminalSource(MessageSource):
 	"""
 	Describes the source of a message from a terminal command result.

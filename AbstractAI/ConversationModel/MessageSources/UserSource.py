@@ -3,7 +3,7 @@ from .MessageSource import MessageSource
 
 DefaultUser = "User"
 
-@DATA
+@ConversationDATA
 class UserSource(MessageSource):
 	'''Describes the source of a message from a person.'''
 	user_name: str = DefaultUser

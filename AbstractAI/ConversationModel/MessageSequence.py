@@ -2,7 +2,7 @@ from AbstractAI.ConversationModel.ModelBase import *
 from .Message import Message
 from typing import List
 
-@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
+@ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
 class MessageSequence:
 	messages: List[Message] = field(default_factory=list)
 	conversation: "Conversation" = None

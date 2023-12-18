@@ -5,7 +5,7 @@ from .Message import Message
 from datetime import datetime
 from typing import List
 
-@DATA
+@ConversationDATA
 class Conversation:
 	name: str = "Conversation"
 	description: str = ""

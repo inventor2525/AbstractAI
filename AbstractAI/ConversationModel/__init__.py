@@ -2,7 +2,7 @@ from .MessageSources import MessageSource, UserSource, ModelSource, EditSource, 
 from .Message import Message
 from .Conversation import Conversation, MessageSequence
 from .ConversationCollection import ConversationCollection
-from .ModelBase import DATA
+from .ModelBase import ConversationDATA
 
 def print_conversation(conversation:Conversation):
 	import json

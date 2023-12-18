@@ -3,7 +3,7 @@ from AbstractAI.ConversationModel.ModelBase import *
 from AbstractAI.ConversationModel.MessageSequence import MessageSequence
 from typing import Dict
 
-@DATA
+@ConversationDATA
 class ModelSource(MessageSource):
 	'''Describes a message from a Large Language Model.'''
 	class_name: str

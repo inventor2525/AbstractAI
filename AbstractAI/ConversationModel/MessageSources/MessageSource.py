@@ -1,6 +1,6 @@
 from AbstractAI.ConversationModel.ModelBase import *
 
-@DATA
+@ConversationDATA
 class MessageSource:
     """
     Base class for message sources.
