@@ -1,5 +1,4 @@
-from flask import Flask
-from ClassyFlaskDB.Flaskify import Flaskify
+from ClassyFlaskDB.Flaskify import *
 
 if __name__ == '__main__':
 	# Make a server:

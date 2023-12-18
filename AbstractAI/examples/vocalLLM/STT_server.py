@@ -1,5 +1,4 @@
-from flask import Flask
-from ClassyFlaskDB.Flaskify import Flaskify
+from ClassyFlaskDB.Flaskify import *
 
 app = Flask(__name__)
 Flaskify.make_server(app)
