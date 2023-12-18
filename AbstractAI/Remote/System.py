@@ -12,7 +12,7 @@ import re
 # Finish creating the conversation model:
 data_engine = DATAEngine(DATA)
 
-@Flaskify()
+@Flaskify
 class System():
 	whisper : WhisperSTT
 	tts : MicrosoftSpeechT5_TTS
@@ -28,29 +28,29 @@ class System():
 	##################################################
 	## System
 	##################################################
-	@StaticRoute()
+	@StaticRoute
 	def server_nvidia_smi() -> str:
 		return nvidia_smi()
 
 	##################################################
 	## Speech to Text
 	##################################################
-	@StaticRoute()
+	@StaticRoute
 	def load_STT_model(stt_model_name:str) -> None:
 		System.whisper.load_model(stt_model_name)
 	
-	@StaticRoute()
+	@StaticRoute
 	def list_STT_models() -> list:
 		return System.whisper.list_models()
 	
-	@StaticRoute()
+	@StaticRoute
 	def transcribe(audio:AudioSegment) -> str:
 		return System.whisper.transcribe_str(audio)
 	
 	##################################################
 	## Text to Speech
 	##################################################		
-	@StaticRoute()
+	@StaticRoute
 	def speak(text:str) -> AudioSegment:
 		separated_text,_ = TextToSpeech.split_codeblocks(text)
 		return System.tts.text_to_speech(separated_text)
@@ -58,27 +58,27 @@ class System():
 	##################################################
 	## LLM
 	##################################################
-	@StaticRoute()
+	@StaticRoute
 	def list_LLMs() -> List[str]:
 		return System.LLMs.keys()
 	
-	@StaticRoute()
+	@StaticRoute
 	def load_LLM(llm_name:str) -> None:
 		if llm_name not in System.LLMs:
 			llm = LoadLLM(llm_name)
 			llm.start()
 			System.LLMs[llm_name] = llm
 	
-	@StaticRoute()
+	@StaticRoute
 	def unload_LLM(llm_name:str) -> None:
 		if llm_name in System.LLMs:
 			del System.LLMs[llm_name]
 	
-	@StaticRoute()
+	@StaticRoute
 	def prompt_str(llm_name:str, prompt:str) -> Message:
 		return System.LLMs[llm_name].prompt_str(prompt).message
 	
-	@StaticRoute()
+	@StaticRoute
 	def prompt_chat(llm_name:str, conversation:Conversation) -> Message:
 		print_conversation(conversation)
 		response = System.LLMs[llm_name].prompt(conversation)
