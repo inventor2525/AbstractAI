@@ -78,9 +78,9 @@ class System():
 		return System.LLMs[llm_name].prompt_str(prompt).message
 	
 	@StaticRoute
-	def prompt_chat(llm_name:str, conversation:Conversation) -> Message:
+	def prompt_chat(llm_name:str, conversation:Conversation, start_str:str) -> Message:
 		print_conversation(conversation)
-		response = System.LLMs[llm_name].prompt(conversation)
+		response = System.LLMs[llm_name].prompt(conversation, start_str)
 		print(f"Tokens in response: {response.token_count}")
 		conversation.new_message_sequence()
 		conversation.add_message(response.message)
