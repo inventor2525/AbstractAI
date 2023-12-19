@@ -33,5 +33,7 @@ class CommonRoles(Enum):
 			elif isinstance(source, TerminalSource):
 				role = CommonRoles.User
 				name = "terminal"
+			elif isinstance(source, HardCodedSource):
+				role = CommonRoles.User
 		
 		return role, name

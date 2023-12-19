@@ -42,13 +42,12 @@ class StableBeluga2(HuggingFaceLLM):
 				#use_auth_token=HF_AUTH
 			)
 		else:
-			self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
-			self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
+			self._load_model()
 	
-	def generate_prompt_str(self, conversation :Conversation):
+	def generate_prompt_str(self, conversation :Conversation, start_str:str=""):
 		prompt = ""
 		for message in conversation.message_sequence.messages:
 			message_role, user_name = CommonRoles.from_source(message.source)
 			prompt += f"### {self.role_mapping[message_role]}:\n{message.content}\n\n"
 		prompt += f"### {self.role_mapping[CommonRoles.Assistant]}:"
-		return prompt
+		return prompt+start_str

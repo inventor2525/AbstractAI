@@ -12,6 +12,13 @@ class HuggingFaceLLM(LLM):
 		self.del_token_type_ids=True
 		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	
+	def _load_model(self):
+		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
+		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=True)
+
+	def start(self):
+		super().start()
+		
 	def _raw_to_text(self, response) -> str:
 		return self.tokenizer.decode(response, skip_special_tokens=True)
 	

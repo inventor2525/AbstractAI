@@ -11,5 +11,6 @@ class ModelSource(MessageSource):
 	model_parameters: dict = field(default_factory=dict)
 	message_sequence: MessageSequence = None
 	prompt: str = None
+	start_str: str = ""
 
 	models_serialized_raw_output: str = None

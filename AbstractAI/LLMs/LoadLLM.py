@@ -1,5 +1,6 @@
 from .OpenAssistant import *
 from .StableBeluga2 import *
+from .Mistral import *
 from typing import Tuple
 
 def LoadLLM(model_name: str) -> LLM:
@@ -9,5 +10,7 @@ def LoadLLM(model_name: str) -> LLM:
 		llm = OpenAssistantLLM(model_name)
 	if model_name.startswith("stabilityai/StableBeluga"):
 		llm = StableBeluga2(model_name)
+	if model_name.startswith("TheBloke/Mistral-7B"):
+		llm = Mistral(model_name)
 	print(llm)
 	return llm

@@ -3,7 +3,7 @@ from datetime import datetime
 from AbstractAI.ConversationModel import *
 from abc import ABC, abstractmethod, abstractproperty
 from .LLM_RawResponse import LLM_RawResponse
-from typing import Union, Dict
+from typing import Any, Union, Dict
 import json
 
 class LLM(ABC):
@@ -33,7 +33,7 @@ class LLM(ABC):
 		pass
 	
 	@abstractmethod
-	def generate_prompt_str(self, conversation: Conversation) -> str:
+	def generate_prompt_str(self, conversation: Conversation, start_str:str="") -> Any:
 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
 		pass
 	
@@ -52,7 +52,7 @@ class LLM(ABC):
 	def _serialize_raw_response(self, response:object) -> str:
 		return response
 		
-	def _create_response(self, prompt: str, raw_response:object, conversation:Conversation=None) -> LLM_RawResponse:
+	def _create_response(self, prompt: str, raw_response:object, conversation:Conversation=None, start_str:str="") -> LLM_RawResponse:
 		text_response = self._raw_to_text(raw_response)
 		token_count = self._raw_output_token_count(raw_response)
 		
@@ -64,23 +64,23 @@ class LLM(ABC):
 		source = ModelSource(
 			type(self).__name__, self.model_name, 
 			self.other_parameters, message_sequence=message_sequence,
-			prompt=prompt,
+			prompt=prompt, start_str=start_str,
 			models_serialized_raw_output=self._serialize_raw_response(raw_response)
 		)
 		
 		# Create the message object:
-		message = Message(text_response, source)
+		message = Message(start_str+text_response, source)
 		
 		return LLM_RawResponse(raw_response, message, token_count)
 		
-	def prompt(self, conversation: Conversation) -> LLM_RawResponse:
+	def prompt(self, conversation: Conversation, start_str:str="") -> LLM_RawResponse:
 		'''
 		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
 		'''
-		prompt_string = self.generate_prompt_str(conversation)
+		prompt_string = self.generate_prompt_str(conversation, start_str)
 		raw_response = self._prompt_str(prompt_string)
-		return self._create_response(prompt_string, raw_response, conversation)
+		return self._create_response(prompt_string, raw_response, conversation, start_str)
 		
 	def prompt_str(self, prompt_string:str) -> LLM_RawResponse:
 		'''
