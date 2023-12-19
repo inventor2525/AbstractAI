@@ -16,17 +16,38 @@ class Mistral(HuggingFaceLLM):
 		self._load_model()
 		
 		self.role_mapping = {
-			CommonRoles.System: "system",
+			CommonRoles.System: "user",
 			CommonRoles.User: "user",
 			CommonRoles.Assistant: "assistant"
 		}
 	
 	def generate_prompt_str(self, conversation: Conversation, start_str:str="") -> str:
 		chat = []
+		prev_role = None
 		for message in conversation.message_sequence.messages:
 			message_role, user_name = CommonRoles.from_source(message.source)
+			role = self.role_mapping[message_role]
+			# Make sure roles alternate
+			if prev_role is None and role == "assistant":
+				chat.append({
+					"role":"user",
+					"content":""
+				})
+			if role == prev_role:
+				if prev_role == "assistant":
+					chat.append({
+						"role":"user",
+						"content":""
+					})
+				else:
+					chat.append({
+						"role":"assistant",
+						"content":""
+					})
+					
+			prev_role = role
 			chat.append({
-				"role":self.role_mapping[message_role],
+				"role":role,
 				"content":message.content
 			})
 		
