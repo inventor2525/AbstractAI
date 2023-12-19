@@ -1,6 +1,6 @@
 from AbstractAI.ConversationModel.ModelBase import *
-from .MessageSources import MessageSource, UserSource, ModelSource, EditSource
 from .MessageSources.EditSource import EditSource
+from .MessageSources.HardCodedSource import HardCodedSource
 from datetime import datetime
 
 from typing import Iterable, List, Union
@@ -8,7 +8,7 @@ from typing import Iterable, List, Union
 @ConversationDATA
 class Message:
 	content: str
-	source: MessageSource = None
+	source: "MessageSource" = None
 	
 	creation_time: datetime = field(default_factory=get_local_time)
 	
@@ -44,7 +44,7 @@ class Message:
 				prev_message = prev_message.prev_message
 		return reversed(all_messages)
 	
-	def create_edited(self, new_content:str, source_of_edit:Union[UserSource, "ModelSource"]=None) -> "Message":
+	def create_edited(self, new_content:str, source_of_edit:Union["UserSource", "ModelSource", "HardCodedSource"]=None) -> "Message":
 		'''Create a new message that is an edited version of this message'''
 		
 		source = EditSource(original=self, source_of_edit=source_of_edit)
@@ -53,3 +53,10 @@ class Message:
 		new_message.conversation = self.conversation
 		source.new = new_message
 		return new_message
+	
+	@classmethod
+	def HardCoded(cls, content:str, system_message:bool=False) -> "Message":
+		'''Create a new message that is hard-coded.'''
+		message = cls(content)
+		message.source = HardCodedSource.create(message, system_message=system_message)
+		return message
