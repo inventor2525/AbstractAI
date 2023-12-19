@@ -34,23 +34,14 @@ class Mistral(HuggingFaceLLM):
 					"content":""
 				})
 			if role == prev_role:
-				if prev_role == "assistant":
-					chat.append({
-						"role":"user",
-						"content":""
-					})
-				else:
-					chat.append({
-						"role":"assistant",
-						"content":""
-					})
-					
+				chat[-1]["content"] += "\n\n" + message.content
+			else:
+				chat.append({
+					"role":role,
+					"content":message.content
+				})
 			prev_role = role
-			chat.append({
-				"role":role,
-				"content":message.content
-			})
-		
+			
 		chat_str = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
 		if start_str is not None and len(start_str) > 0:
 			chat_str = chat_str + start_str
