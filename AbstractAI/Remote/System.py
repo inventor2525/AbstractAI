@@ -23,7 +23,7 @@ class System():
 		System.whisper.load_model("large")
 
 		System.tts = MicrosoftSpeechT5_TTS()
-
+	
 	##################################################
 	## System
 	##################################################
@@ -68,6 +68,12 @@ class System():
 			llm.start()
 			System.LLMs[llm_name] = llm
 	
+	@staticmethod
+	def get_llm(llm_name:str) -> LLM:
+		if llm_name not in System.LLMs:
+			System.load_LLM(llm_name)
+		return System.LLMs[llm_name]
+	
 	@StaticRoute
 	def unload_LLM(llm_name:str) -> None:
 		if llm_name in System.LLMs:
@@ -80,7 +86,7 @@ class System():
 	@StaticRoute
 	def prompt_chat(llm_name:str, conversation:Conversation, start_str:str) -> Message:
 		print_conversation(conversation)
-		response = System.LLMs[llm_name].prompt(conversation, start_str)
+		response = System.get_llm(llm_name).prompt(conversation, start_str)
 		print(f"Tokens in response: {response.token_count}")
 		print(f"Response: {response.message.content}")
 		conversation.new_message_sequence()
