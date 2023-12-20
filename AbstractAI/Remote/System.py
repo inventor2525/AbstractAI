@@ -82,6 +82,7 @@ class System():
 		print_conversation(conversation)
 		response = System.LLMs[llm_name].prompt(conversation, start_str)
 		print(f"Tokens in response: {response.token_count}")
+		print(f"Response: {response.message.content}")
 		conversation.new_message_sequence()
 		conversation.add_message(response.message)
 		return response.message
