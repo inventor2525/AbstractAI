@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget, QLabel
 from AbstractAI.Helpers.AudioRecorder import *
 from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
+import json
 
 recorder = AudioRecorder()
 stt = WhisperSTT("small.en")
@@ -10,9 +11,11 @@ def on_button_press():
 
 def on_button_release():
 	audio_segment = recorder.stop_recording()
-	result = stt.transcribe_str(audio_segment)
-	
-	print(f"Transcribed audio at {recorder.last_record_time/stt.last_transcription_time} Seconds per second. Which returned: '{result}'.")
+	result = stt.transcribe(audio_segment)
+	print(f"Transcribed audio at {recorder.last_record_time/stt.last_transcription_time} Seconds per second. Which returned: '{result['text']}'.")
+	print("========")
+	print(json.dumps(result, indent=4))
+	print("========")
 
 # Create a PyQt application and button
 app = QApplication([])
