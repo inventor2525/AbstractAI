@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget, QLabel
-from AbstractAI.Helpers.AudioRecorder import *  # Assuming the class is in a file called 'audio_recorder.py'
-from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT  # Assuming the class is in a file called 'stt.py'
+from AbstractAI.Helpers.AudioRecorder import *
+from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
 
 recorder = AudioRecorder()
 stt = WhisperSTT("small.en")
