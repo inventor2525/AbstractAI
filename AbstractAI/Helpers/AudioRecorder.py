@@ -61,7 +61,7 @@ class AudioRecorder:
 			audio_segment = AudioSegment(
 				data=audio_data,
 				sample_width=2,
-				frame_rate=self.sample_rate,
+				frame_rate=int(self.sample_rate),
 				channels=1
 			)
 			Stopwatch.singleton.stop("Saving")
