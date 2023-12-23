@@ -4,6 +4,51 @@ from dataclasses import dataclass
 from pydub import AudioSegment
 import random
 
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Tuple
+
+class RangeHeatMap:
+    class PointType(Enum):
+        START = 1
+        END = -1
+
+    @dataclass
+    class Overlap:
+        start: float
+        end: float
+        count: int
+
+    def __init__(self, ranges: List[Tuple[float, float]] = []):
+        self.ranges = ranges
+
+    def append_segment(self, range: Tuple[float, float]):
+        self.ranges.append(range)
+
+    def get_overlap_count(self, time_point: float) -> int:
+        return sum(start <= time_point < end for start, end in self.ranges)
+
+    def get_overlapping_ranges(self) -> List[Overlap]:
+        points = [(start, self.PointType.START) for start, _ in self.ranges] + [(end, self.PointType.END) for _, end in self.ranges]
+        points.sort()
+
+        overlap_count = 0
+        overlaps = []
+        current_start = 0
+
+        for point, type in points:
+            if type == self.PointType.START:
+                overlaps.append(self.Overlap(start=current_start, end=point, count=0))
+                current_start = point
+                overlap_count += 1
+            else:  # PointType.END
+                overlaps.append(self.Overlap(start=current_start, end=point, count=overlap_count))
+                current_start = point
+                overlap_count -= 1
+
+        return overlaps
+
+
 @dataclass
 class TranscriptionState:
     fixed_transcription: str = ""
@@ -38,7 +83,13 @@ class ChunkedTranscription:
 
         # Transcribe using the tiny model
         result_tiny = self.tiny_model.transcribe(self.living_audio)
-
+        
+		# Initialize RangeHeatMap
+        heat_map = RangeHeatMap()
+        for segment in result_tiny['segments']:
+            heat_map.append_segment(self._get_segment_time(segment))
+        print(heat_map.get_overlapping_ranges())
+        
         if self._reached_consensus(result_tiny['segments']):
             consensus_time = self._get_consensus_time(result_tiny['segments'])
             self.previous_consensus_time = consensus_time
