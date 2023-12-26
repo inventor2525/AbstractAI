@@ -11,7 +11,7 @@ from threading import Lock
 import time
 
 class AudioTranscriptionApp(QWidget):
-    def __init__(self, recorder, transcriber):
+    def __init__(self, recorder: AudioRecorder, transcriber: ChunkedTranscription):
         super().__init__()
         self.recorder = recorder
         self.transcriber = transcriber
@@ -44,7 +44,7 @@ class AudioTranscriptionApp(QWidget):
             self.last_segment = last_segment
 
 class TranscriptionThread(QThread):
-    def __init__(self, app):
+    def __init__(self, app: AudioTranscriptionApp):
         super().__init__()
         self.app = app
 
@@ -52,6 +52,7 @@ class TranscriptionThread(QThread):
         last_peak_time = time.time()
         while True:
             time.sleep(max(1 - (time.time() - last_peak_time), 0))
+            done = False
             with self.app.lock:
                 if self.app.is_recording:
                     audio_segment = self.app.recorder.peak()
@@ -59,9 +60,14 @@ class TranscriptionThread(QThread):
                 else:
                     audio_segment = self.app.last_segment
                     self.app.last_segment = None
+                    done = True
 
             if audio_segment:
-                print(self.app.transcriber.add_audio_segment(audio_segment))
+                if done:
+                    print("Done recording")
+                    print(self.app.transcriber.finish_transcription(audio_segment))
+                else:
+                    print(self.app.transcriber.add_audio_segment(audio_segment))
 
 # Usage
 recorder = AudioRecorder()

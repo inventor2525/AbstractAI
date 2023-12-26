@@ -1,4 +1,6 @@
-from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
+import json
+from AbstractAI.SpeechToText.SpeechToText import SpeechToText
+from AbstractAI.Helpers.RangeHeatMap import RangeHeatMap
 
 from dataclasses import dataclass
 from pydub import AudioSegment
@@ -16,18 +18,16 @@ class TranscriptionState:
 		return self.fixed_transcription + self.living_transcription
 
 class ChunkedTranscription:
-	def __init__(self, tiny_model: WhisperSTT, large_model: WhisperSTT, consensus_threshold_seconds: int = 10):
+	def __init__(self, tiny_model: SpeechToText, large_model: SpeechToText, consensus_threshold_seconds: int = 2):
 		self.tiny_model = tiny_model
 		self.large_model = large_model
-		self.fixed_transcription = ""
-		self.living_audio = AudioSegment.empty()
-		self.previous_consensus_time = 0
-		self.start_time = 0
 		self.consensus_threshold = consensus_threshold_seconds * 1000  # Convert to milliseconds
+		self.new_transcription()
 
-	def start_transcription(self):
+	def new_transcription(self):
 		self.fixed_transcription = ""
 		self.living_audio = AudioSegment.empty()
+		self.heat_map = RangeHeatMap()
 		self.previous_consensus_time = 0
 		self.start_time = 0
 
@@ -46,7 +46,7 @@ class ChunkedTranscription:
 		for segment in result_tiny['segments']:
 			heat_map.append_segment(self._get_segment_time(segment))
 		
-		if self._reached_consensus(result_tiny['segments']):
+		if self._reached_consensus():
 			consensus_time = self._get_consensus_time(result_tiny['segments'])
 			self.previous_consensus_time = consensus_time
 
@@ -54,27 +54,45 @@ class ChunkedTranscription:
 			result_large = self.large_model.transcribe(self.living_audio)
 
 			# Update fixed transcription
-			prev_length = len(self.fixed_transcription)
 			self.fixed_transcription += result_large['text']
-			length_added = len(self.fixed_transcription) - prev_length
 
 			self.living_audio = self.living_audio[consensus_time:]
+			self.heat_map.ranges.clear()
 
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
 									  living_transcription="", 
-									  length_added=length_added)
+									  length_added=len(result_large['text']))
 		else:
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
 									  living_transcription=result_tiny['text'], 
 									  length_added=0)
+	
+	def finish_transcription(self, audio_segment: AudioSegment = None) -> TranscriptionState:
+		if audio_segment is not None:
+			self.living_audio += audio_segment
 
-	def _reached_consensus(self, segments) -> bool:
-		if len(segments) < 2:
-			return False
+		result_large = self.large_model.transcribe(self.living_audio)
+		self.fixed_transcription += result_large['text']
+		
+		state = TranscriptionState(fixed_transcription=self.fixed_transcription, 
+								  living_transcription="", 
+								  length_added=len(result_large['text']))
+		self.new_transcription()
+		return state
 
-		_, last_segment_end = self._get_segment_time(segments[-2])
-		next_segment_start, _ = self._get_segment_time(segments[-1])
-		return (next_segment_start - last_segment_end) >= self.consensus_threshold
+	def _reached_consensus(self, overlaping_transciptions_required=2) -> bool:
+		range_overlaps = self.heat_map.get_overlapping_ranges(self.living_audio.duration_seconds*1000)
+		print(range_overlaps)
+		if len(range_overlaps) > 1:
+			sufficent_overlap = False
+			for overlap in range_overlaps:
+				if overlap.count >= overlaping_transciptions_required:
+					sufficent_overlap = True
+			
+			if sufficent_overlap:
+				if range_overlaps[-1].length() > self.consensus_threshold:
+					return True
+		return False
 
 	def _get_consensus_time(self, segments) -> int:
 		_, last_segment_end = self._get_segment_time(segments[-2])
