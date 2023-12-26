@@ -7,6 +7,7 @@ import json
 
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal
+from threading import Lock
 import time
 
 class AudioTranscriptionApp(QWidget):
@@ -14,6 +15,11 @@ class AudioTranscriptionApp(QWidget):
         super().__init__()
         self.recorder = recorder
         self.transcriber = transcriber
+        self.lock = Lock()
+        self.is_recording = False
+        self.last_segment = None
+        self.transcription_thread = TranscriptionThread(self)
+        self.transcription_thread.start()
         self.initUI()
 
     def initUI(self):
@@ -27,34 +33,35 @@ class AudioTranscriptionApp(QWidget):
 
     def on_button_press(self):
         self.recorder.start_recording()
-        self.transcription_thread = TranscriptionThread(self.recorder, self.transcriber)
-        self.transcription_thread.start()
+        with self.lock:
+            self.is_recording = True
 
     def on_button_release(self):
-        self.transcription_thread.stop()
-        remaining_audio = self.recorder.peak()  # Get the remaining audio segment
+        last_segment = self.recorder.peak()
         self.recorder.stop_recording()  # Dummy stop recording
-        if remaining_audio:
-            print(self.transcriber.add_audio_segment(remaining_audio))
+        with self.lock:
+            self.is_recording = False
+            self.last_segment = last_segment
 
 class TranscriptionThread(QThread):
-    def __init__(self, recorder, transcriber):
+    def __init__(self, app):
         super().__init__()
-        self.recorder = recorder
-        self.transcriber = transcriber
-        self.running = False
+        self.app = app
 
     def run(self):
-        self.running = True
-        while self.running:
-            time.sleep(1)  # Peak every second
-            audio_segment = self.recorder.peak()
-            if audio_segment:
-                print(self.transcriber.add_audio_segment(audio_segment))
+        last_peak_time = time.time()
+        while True:
+            time.sleep(max(1 - (time.time() - last_peak_time), 0))
+            with self.app.lock:
+                if self.app.is_recording:
+                    audio_segment = self.app.recorder.peak()
+                    last_peak_time = time.time()
+                else:
+                    audio_segment = self.app.last_segment
+                    self.app.last_segment = None
 
-    def stop(self):
-        self.running = False
-        self.wait()  # Wait for the thread to finish
+            if audio_segment:
+                print(self.app.transcriber.add_audio_segment(audio_segment))
 
 # Usage
 recorder = AudioRecorder()

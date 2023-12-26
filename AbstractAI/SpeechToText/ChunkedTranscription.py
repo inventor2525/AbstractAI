@@ -1,3 +1,4 @@
+import json
 from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
 
 from dataclasses import dataclass
@@ -7,6 +8,7 @@ import random
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Tuple
+import time
 
 class RangeHeatMap:
     class PointType(Enum):
@@ -19,7 +21,9 @@ class RangeHeatMap:
         end: float
         count: int
 
-    def __init__(self, ranges: List[Tuple[float, float]] = []):
+    def __init__(self, ranges: List[Tuple[float, float]] = None):
+        if ranges is None:
+            ranges = []
         self.ranges = ranges
 
     def append_segment(self, range: Tuple[float, float]):
@@ -30,7 +34,9 @@ class RangeHeatMap:
 
     def get_overlapping_ranges(self) -> List[Overlap]:
         points = [(start, self.PointType.START) for start, _ in self.ranges] + [(end, self.PointType.END) for _, end in self.ranges]
-        points.sort()
+        
+        # Sort points based on the time point only
+        points.sort(key=lambda x: x[0])
 
         overlap_count = 0
         overlaps = []
@@ -76,7 +82,7 @@ class ChunkedTranscription:
 
     def add_audio_segment(self, audio_segment: AudioSegment) -> TranscriptionState:
         self.living_audio += audio_segment
-
+        self.living_audio.export(f"living_{time.time()}.wav", format="wav")
         if len(self.living_audio) > self.consensus_threshold:
             self.start_time = random.randint(0, self.previous_consensus_time // 2)
             self.living_audio = self.living_audio[self.start_time:]
@@ -85,9 +91,12 @@ class ChunkedTranscription:
         result_tiny = self.tiny_model.transcribe(self.living_audio)
         
 		# Initialize RangeHeatMap
+        print(json.dumps(result_tiny, indent=4))
         heat_map = RangeHeatMap()
+        print(heat_map.ranges)
         for segment in result_tiny['segments']:
             heat_map.append_segment(self._get_segment_time(segment))
+        print(heat_map.ranges)
         print(heat_map.get_overlapping_ranges())
         
         if self._reached_consensus(result_tiny['segments']):
@@ -131,11 +140,3 @@ class ChunkedTranscription:
         start = segment['start'] + self.start_time
         end = segment['end'] + self.start_time
         return start, end
-
-# Usage example
-tiny_model = WhisperSTT("tiny.en")
-large_model = WhisperSTT("small.en")
-
-transcriber = ChunkedTranscription(tiny_model, large_model)
-transcriber.start_transcription()
-state = transcriber.add_audio_segment(AudioSegment.empty())  # Replace with actual audio segments
