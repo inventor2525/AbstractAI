@@ -56,16 +56,18 @@ class AudioRecorder:
 		with self.lock:
 			self.last_record_time = Stopwatch.singleton.stop("Recording")["last"]
 			
-			self.recording_thread.record = False
-			final_buffer = np.concatenate(self.buffers)
-			self.buffers = []
-			audio_data = np.int16(final_buffer * 32767).tobytes()
-			return AudioSegment(
-				data=audio_data,
-				sample_width=2,
-				frame_rate=int(self.sample_rate),
-				channels=1
-			)
+			if self.buffers:
+				self.recording_thread.record = False
+				final_buffer = np.concatenate(self.buffers)
+				self.buffers = []
+				audio_data = np.int16(final_buffer * 32767).tobytes()
+				return AudioSegment(
+					data=audio_data,
+					sample_width=2,
+					frame_rate=int(self.sample_rate),
+					channels=1
+				)
+			return AudioSegment.empty()
 
 	def peak(self):
 		peak_buffer = None
@@ -83,4 +85,4 @@ class AudioRecorder:
 				channels=1
 			)
 		else:
-			return None
+			return AudioSegment.empty()
