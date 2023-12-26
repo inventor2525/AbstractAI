@@ -259,6 +259,105 @@ class TestRangeHeatMap(unittest.TestCase):
 		self.assertEqual(range_overlaps[8].end, 4)
 		self.assertEqual(range_overlaps[9].end, 4.5)
 		self.assertEqual(range_overlaps[10].end, 5)		
+	
+	def test_get_overlapping_ranges_8(self):
+		heat_map = RangeHeatMap()
+		heat_map.append_segment((0, 1))
+		heat_map.append_segment((0, 2))
+		heat_map.append_segment((0, 3))
+		
+		range_overlaps = heat_map.get_overlapping_ranges(5)
+		# start:0, end:0, count:0
+		# start:0, end:1, count:3
+		# start:1, end:2, count:2
+		# start:2, end:3, count:1
+		# start:3, end:5, count:0
+		
+		self.assertEqual(len(range_overlaps), 5)
+		self.assertEqual(range_overlaps[0].count, 0)
+		self.assertEqual(range_overlaps[1].count, 3)
+		self.assertEqual(range_overlaps[2].count, 2)
+		self.assertEqual(range_overlaps[3].count, 1)
+		self.assertEqual(range_overlaps[4].count, 0)
+		
+		self.assertEqual(range_overlaps[0].start, 0)
+		self.assertEqual(range_overlaps[1].start, 0)
+		self.assertEqual(range_overlaps[2].start, 1)
+		self.assertEqual(range_overlaps[3].start, 2)
+		self.assertEqual(range_overlaps[4].start, 3)
+		
+		self.assertEqual(range_overlaps[0].end, 0)
+		self.assertEqual(range_overlaps[1].end, 1)
+		self.assertEqual(range_overlaps[2].end, 2)
+		self.assertEqual(range_overlaps[3].end, 3)
+		self.assertEqual(range_overlaps[4].end, 5)
+	
+	
+	def test_get_overlapping_ranges_8(self):
+		heat_map = RangeHeatMap()
+		heat_map.append_segment((0, 1))
+		heat_map.append_segment((2, 3))
+		heat_map.append_segment((2, 4))
+		heat_map.append_segment((2, 4))
+		heat_map.append_segment((3, 5))
+		heat_map.append_segment((6, 7))
+		heat_map.append_segment((6.2, 7))
+		heat_map.append_segment((5.8, 9))
+		heat_map.append_segment((5.8, 8))
+		
+		range_overlaps = heat_map.get_overlapping_ranges(10)
+		# start:0, end:0, count:0
+		# start:0, end:1, count:1
+		# start:1, end:2, count:0
+		# start:2, end:3, count:3
+		# start:4, end:5, count:1
+		# start:5, end:5.8, count:0
+		# start:5.8, end:6, count:2
+		# start:6, end:6.2, count:3
+		# start:6.2, end:7, count:4
+		# start:7, end:8, count:2
+		# start:8, end:9, count:1
+		# start:9, end:10, count:0
+		
+		self.assertEqual(len(range_overlaps), 12)
+		self.assertEqual(range_overlaps[0].count, 0)
+		self.assertEqual(range_overlaps[1].count, 1)
+		self.assertEqual(range_overlaps[2].count, 0)
+		self.assertEqual(range_overlaps[3].count, 3)
+		self.assertEqual(range_overlaps[4].count, 1)
+		self.assertEqual(range_overlaps[5].count, 0)
+		self.assertEqual(range_overlaps[6].count, 2)
+		self.assertEqual(range_overlaps[7].count, 3)
+		self.assertEqual(range_overlaps[8].count, 4)
+		self.assertEqual(range_overlaps[9].count, 2)
+		self.assertEqual(range_overlaps[10].count, 1)
+		self.assertEqual(range_overlaps[11].count, 0)
+		
+		self.assertEqual(range_overlaps[0].start, 0)
+		self.assertEqual(range_overlaps[1].start, 0)
+		self.assertEqual(range_overlaps[2].start, 1)
+		self.assertEqual(range_overlaps[3].start, 2)
+		self.assertEqual(range_overlaps[4].start, 4)
+		self.assertEqual(range_overlaps[5].start, 5)
+		self.assertEqual(range_overlaps[6].start, 5.8)
+		self.assertEqual(range_overlaps[7].start, 6)
+		self.assertEqual(range_overlaps[8].start, 6.2)
+		self.assertEqual(range_overlaps[9].start, 7)
+		self.assertEqual(range_overlaps[10].start, 8)
+		self.assertEqual(range_overlaps[11].start, 9)
+		
+		self.assertEqual(range_overlaps[0].end, 0)
+		self.assertEqual(range_overlaps[1].end, 1)
+		self.assertEqual(range_overlaps[2].end, 2)
+		self.assertEqual(range_overlaps[3].end, 4)
+		self.assertEqual(range_overlaps[4].end, 5)
+		self.assertEqual(range_overlaps[5].end, 5.8)
+		self.assertEqual(range_overlaps[6].end, 6)
+		self.assertEqual(range_overlaps[7].end, 6.2)
+		self.assertEqual(range_overlaps[8].end, 7)
+		self.assertEqual(range_overlaps[9].end, 8)
+		self.assertEqual(range_overlaps[10].end, 9)
+		self.assertEqual(range_overlaps[11].end, 10)
 		
 if __name__ == '__main__':
 	unittest.main()

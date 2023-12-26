@@ -76,7 +76,18 @@ class RangeHeatMap:
 				overlap_count -= 1
 			ran_once = True
 			last_end = max(last_end, point)
-
+		
+		# Remove overlaps that start at the same time as the previous overlap, keeping the one with the highest count:
+		new_overlaps = []
+		start = -1
+		
+		for overlap in overlaps.__reversed__():
+			if not is_near(start, overlap.start):
+				new_overlaps.append(overlap)
+				start = overlap.start
+		overlaps = list(new_overlaps.__reversed__())
+		
+		# Merge adjacent overlaps with the same count, and add new overlaps for the start and end of the range:
 		new_overlaps = [self.Overlap(start=0, end=points[0][0], count=0)]
 		for i, current_overlap in enumerate(overlaps):
 			if i > 0 and overlaps[i - 1].count == current_overlap.count and \
