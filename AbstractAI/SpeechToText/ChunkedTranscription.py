@@ -34,10 +34,10 @@ class ChunkedTranscription:
 		self.start_time = 0
 	
 	def _clip(self, consensus_time: float, other:str):
-		trans_name = self.fixed_transcription.replace(" ", "_").replace(".", "").replace(",", "")
-		self.living_audio.export(f"living_audio_{trans_name}_{other}_pre_cut.wav", format="wav")
+		# trans_name = self.fixed_transcription.replace(" ", "_").replace(".", "").replace(",", "")
+		# self.living_audio.export(f"living_audio_{trans_name}_{other}_pre_cut.wav", format="wav")
 		self.living_audio = self.living_audio[(self.living_audio.duration_seconds-consensus_time)*1000:]
-		self.living_audio.export(f"living_audio_{trans_name}_{other}_post_cut.wav", format="wav")
+		# self.living_audio.export(f"living_audio_{trans_name}_{other}_post_cut.wav", format="wav")
 		self._run_count_since_clipped = 0
 		
 	def add_audio_segment(self, audio_segment: AudioSegment) -> TranscriptionState:
@@ -52,16 +52,16 @@ class ChunkedTranscription:
 		self._run_count_since_clipped += 1
 		
 		# Initialize RangeHeatMap
-		print(json.dumps(result_tiny, indent=4))
-		print(self.heat_map.ranges)
+		# print(json.dumps(result_tiny, indent=4))
+		# print(self.heat_map.ranges)
 		for segment in result_tiny['segments']:
 			self.heat_map.append_segment(self._get_segment_time(segment))
-		print(self.heat_map.ranges)
+		# print(self.heat_map.ranges)
 		
 		consensus_time = 0
 		reached_consensus = False
 		range_overlaps = self.heat_map.get_overlapping_ranges(self.living_audio.duration_seconds)
-		print(range_overlaps)
+		# print(range_overlaps)
 		
 		if len(range_overlaps) > 1:
 			sufficent_overlap = False
