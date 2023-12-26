@@ -57,8 +57,11 @@ class ChunkedTranscription:
 
 			# Update fixed transcription
 			self.fixed_transcription += result_large['text']
-
-			self.living_audio = self.living_audio[consensus_time*1000:]
+			
+			trans_name = self.fixed_transcription.replace(" ", "_").replace(".", "").replace(",", "")
+			self.living_audio.export(f"living_audio_{trans_name}_pre_cut.wav", format="wav")
+			self.living_audio = self.living_audio[(self.living_audio.duration_seconds-consensus_time)*1000:]
+			self.living_audio.export(f"living_audio_{trans_name}_post_cut.wav", format="wav")
 			self.heat_map.ranges.clear()
 
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
