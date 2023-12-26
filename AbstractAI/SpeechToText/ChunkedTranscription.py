@@ -18,10 +18,11 @@ class TranscriptionState:
 		return self.fixed_transcription + self.living_transcription
 
 class ChunkedTranscription:
-	def __init__(self, tiny_model: SpeechToText, large_model: SpeechToText, consensus_threshold_seconds: float = 2):
+	def __init__(self, tiny_model: SpeechToText, large_model: SpeechToText, consensus_threshold_seconds: float = 2, concensus_transcription_threshold: int = 3):
 		self.tiny_model = tiny_model
 		self.large_model = large_model
 		self.consensus_threshold = consensus_threshold_seconds
+		self.concensus_transcription_threshold = concensus_transcription_threshold
 		self.new_transcription()
 
 	def new_transcription(self):
@@ -29,17 +30,26 @@ class ChunkedTranscription:
 		self.living_audio = AudioSegment.empty()
 		self.heat_map = RangeHeatMap()
 		self.previous_consensus_time = 0
+		self._run_count_since_clipped = 0
 		self.start_time = 0
-
+	
+	def _clip(self, consensus_time: float, other:str):
+		trans_name = self.fixed_transcription.replace(" ", "_").replace(".", "").replace(",", "")
+		self.living_audio.export(f"living_audio_{trans_name}_{other}_pre_cut.wav", format="wav")
+		self.living_audio = self.living_audio[(self.living_audio.duration_seconds-consensus_time)*1000:]
+		self.living_audio.export(f"living_audio_{trans_name}_{other}_post_cut.wav", format="wav")
+		self._run_count_since_clipped = 0
+		
 	def add_audio_segment(self, audio_segment: AudioSegment) -> TranscriptionState:
 		self.living_audio += audio_segment
 		
 		if len(self.living_audio) > self.consensus_threshold:
 			self.start_time = random.random() * self.previous_consensus_time / 2
 			self.living_audio = self.living_audio[self.start_time:]
-
+		
 		# Transcribe using the tiny model
 		result_tiny = self.tiny_model.transcribe(self.living_audio)
+		self._run_count_since_clipped += 1
 		
 		# Initialize RangeHeatMap
 		print(json.dumps(result_tiny, indent=4))
@@ -48,8 +58,24 @@ class ChunkedTranscription:
 			self.heat_map.append_segment(self._get_segment_time(segment))
 		print(self.heat_map.ranges)
 		
-		consensus_time = self._reached_consensus()
-		if consensus_time > 0:
+		consensus_time = 0
+		reached_consensus = False
+		range_overlaps = self.heat_map.get_overlapping_ranges(self.living_audio.duration_seconds)
+		print(range_overlaps)
+		
+		if len(range_overlaps) > 1:
+			sufficent_overlap = False
+			for overlap in range_overlaps:
+				if overlap.count >= self.concensus_transcription_threshold:
+					sufficent_overlap = True
+			
+			if sufficent_overlap:
+				l = range_overlaps[-1].length()
+				if l > self.consensus_threshold:
+					consensus_time = min(l, self.consensus_threshold) / 2
+					reached_consensus = True
+					
+		if reached_consensus:
 			self.previous_consensus_time = consensus_time
 
 			# Transcribe the accumulated living audio using the large model
@@ -58,16 +84,25 @@ class ChunkedTranscription:
 			# Update fixed transcription
 			self.fixed_transcription += result_large['text']
 			
-			trans_name = self.fixed_transcription.replace(" ", "_").replace(".", "").replace(",", "")
-			self.living_audio.export(f"living_audio_{trans_name}_pre_cut.wav", format="wav")
-			self.living_audio = self.living_audio[(self.living_audio.duration_seconds-consensus_time)*1000:]
-			self.living_audio.export(f"living_audio_{trans_name}_post_cut.wav", format="wav")
+			self._clip(consensus_time, "consensus")
 			self.heat_map.ranges.clear()
 
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
 									  living_transcription="", 
 									  length_added=len(result_large['text']))
 		else:
+			if self._run_count_since_clipped > self.concensus_transcription_threshold:
+				transcriptions_detected = False
+				for overlap in range_overlaps:
+					if overlap.count > 0:
+						transcriptions_detected = True
+						break
+				
+				if not transcriptions_detected and self.living_audio.duration_seconds > self.consensus_threshold:
+					self._run_count_since_clipped = 0
+					self._clip(self.consensus_threshold/2, "no_transcriptions")
+					self.heat_map.ranges.clear()
+				
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
 									  living_transcription=result_tiny['text'], 
 									  length_added=0)
@@ -84,21 +119,6 @@ class ChunkedTranscription:
 								  length_added=len(result_large['text']))
 		self.new_transcription()
 		return state
-
-	def _reached_consensus(self, overlaping_transciptions_required=2) -> bool:
-		range_overlaps = self.heat_map.get_overlapping_ranges(self.living_audio.duration_seconds)
-		print(range_overlaps)
-		if len(range_overlaps) > 1:
-			sufficent_overlap = False
-			for overlap in range_overlaps:
-				if overlap.count >= overlaping_transciptions_required:
-					sufficent_overlap = True
-			
-			if sufficent_overlap:
-				l = range_overlaps[-1].length()
-				if l > self.consensus_threshold:
-					return min(l, self.consensus_threshold) / 2
-		return 0
 
 	def _get_consensus_time(self, segments) -> float:
 		_, last_segment_end = self._get_segment_time(segments[-2])
