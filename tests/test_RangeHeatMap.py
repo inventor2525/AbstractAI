@@ -1,5 +1,5 @@
 import unittest
-from AbstractAI.SpeechToText.ChunkedTranscription import RangeHeatMap
+from AbstractAI.Helpers.RangeHeatMap import RangeHeatMap
 
 class TestRangeHeatMap(unittest.TestCase):
 	def test_get_overlapping_ranges_1(self):
