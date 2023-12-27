@@ -43,7 +43,11 @@ class System():
 		return System.whisper.list_models()
 	
 	@StaticRoute
-	def transcribe(audio:AudioSegment) -> str:
+	def transcribe(audio:AudioSegment) -> dict:
+		return System.whisper.transcribe(audio)
+	
+	@StaticRoute
+	def transcribe_str(audio:AudioSegment) -> str:
 		return System.whisper.transcribe_str(audio)
 	
 	##################################################

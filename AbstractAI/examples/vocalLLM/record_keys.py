@@ -127,7 +127,7 @@ class Application(QMainWindow):
     def process_audio(self, audio_segment: AudioSegment):
         # Your code here
         self.is_processing = True
-        result = self.System.transcribe(audio_segment)
+        result = self.System.transcribe_str(audio_segment)
         
         # remove spaces and new lines at the beginning and end of the string:
         result = result.strip()

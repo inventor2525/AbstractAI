@@ -10,6 +10,7 @@ from AbstractAI.SpeechToText.LiveSpeechToText import LiveSpeechToText
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.SpeechToText.ChunkedTranscription import ChunkedTranscription, TranscriptionState
 from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
+from AbstractAI.SpeechToText.RemoteSTT import RemoteSTT
 
 class Application():
 	def __init__(self, app: QApplication):
@@ -21,7 +22,7 @@ class Application():
 		self.textTyper = TextTyper(app)
 		
 		self.audioRecorder = AudioRecorder()
-		self.transcriber = ChunkedTranscription(WhisperSTT("tiny.en"), WhisperSTT("small.en"))
+		self.transcriber = ChunkedTranscription(WhisperSTT("tiny.en"), RemoteSTT())
 		self.liveSTT = LiveSpeechToText(self.transcriber, self.audioRecorder, self.on_transcription_occurred)
 		
 		self.key_handler = KeyComboHandler(key_actions=[
