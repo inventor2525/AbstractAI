@@ -50,7 +50,6 @@ class KeyComboHandler:
 				for event in dev.read():
 					if event.type == ecodes.EV_KEY:
 						key_event:EvdevKeyEvent = categorize(event)
-						print(key_event.keystate)
 						for key_action in self.key_actions_map.get(dev.name, []):
 							if key_event.keycode == key_action.keycode:
 								if key_action.key_event_type == KeyEvent.KEY_DOWN:

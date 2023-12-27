@@ -3,7 +3,7 @@ from PyQt5.QtCore import QTimer
 from threading import Lock
 
 class QtTaskQueue:
-	def __init__(self, min_run_interval=100):
+	def __init__(self, min_run_interval=5):
 		self.task_queue: List[Tuple[float, Callable[[], None]]] = []
 		self.lock = Lock()
 		

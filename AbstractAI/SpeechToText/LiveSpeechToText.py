@@ -20,7 +20,7 @@ class LiveSpeechToText:
 				audio_segment = None
 				transcription = None
 				with self.app.lock:
-					if self.app.is_recording:
+					if self.app._is_recording:
 						was_recording = True
 						audio_segment = self.app.recorder.peak()
 						last_peak_time = time.time()
@@ -41,7 +41,7 @@ class LiveSpeechToText:
 		self.recorder = recorder
 		self.transcription_callback = transcription_callback
 		
-		self.is_recording = False
+		self._is_recording = False
 		self.last_segment : AudioSegment = None
 		self.transcription_thread = LiveSpeechToText.TranscriptionThread(self)
 		self.transcription_thread.start()
@@ -50,13 +50,16 @@ class LiveSpeechToText:
 	def start(self):
 		self.recorder.start_recording()
 		with self.lock:
-			self.is_recording = True
+			self._is_recording = True
 	
 	def stop(self):
 		with self.lock:
 			last_segment = self.recorder.peak()
 			self.recorder.stop_recording()
-			self.is_recording = False
+			self._is_recording = False
 			self.last_segment = last_segment
-    
 	
+	@property
+	def is_recording(self):
+		with self.lock:
+			return self._is_recording

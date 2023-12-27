@@ -30,7 +30,7 @@ class TimerStats:
 
 class Stopwatch:
 	singleton = None
-	def __init__(self, debug=True):
+	def __init__(self, debug=False):
 		self.timers = {}
 		self.debug = debug
 		if Stopwatch.singleton is None:

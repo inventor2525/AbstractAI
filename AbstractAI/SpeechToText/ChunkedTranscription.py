@@ -16,6 +16,9 @@ class TranscriptionState:
 
 	def get_total_transcription(self):
 		return self.fixed_transcription + self.living_transcription
+	
+	def peal(self) -> str:
+		return self.fixed_transcription[-self.length_added:]
 
 class ChunkedTranscription:
 	def __init__(self, tiny_model: SpeechToText, large_model: SpeechToText, consensus_threshold_seconds: float = 2, concensus_transcription_threshold: int = 3):
