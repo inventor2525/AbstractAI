@@ -1,28 +1,21 @@
 import sys
 import time
+from typing import Callable, List, Tuple
 import pyautogui
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QClipboard
-
+from threading import Lock
 pyautogui.FAILSAFE = False
 
+from AbstractAI.UI.Support.QtTaskQueue import QtTaskQueue
+
 class TextTyper:
-	def __init__(self, app: QApplication):
+	def __init__(self, app):
 		self.app = app
-		self.task_queue = []
-		self.timer = QTimer()
-		self.timer.timeout.connect(self.process_tasks)
-		self.timer.start(100)  # Adjust the interval as needed
-
-	def add_task(self, task):
-		self.task_queue.append(task)
-
-	def process_tasks(self):
-		while self.task_queue:
-			task = self.task_queue.pop(0)
-			task()
-
+		self._queue = QtTaskQueue()
+		self.current_clipboard_content = ""
+		
 	def type_str(self, text: str):
 		def task():
 			########################################
@@ -50,7 +43,7 @@ class TextTyper:
 			########################################
 			# Get the current clipboard content
 			clipboard = self.app.clipboard()
-			current_clipboard_content = clipboard.text()
+			self.current_clipboard_content = clipboard.text()
 
 			# Set the text to be typed to the clipboard
 			clipboard.setText(text)
@@ -58,20 +51,20 @@ class TextTyper:
 			# Trigger the paste operation
 			pyautogui.hotkey('ctrl', 'v')
 			
-			# Set a timer to restore the original clipboard content
-			def _restore_clipboard(self, content):
-				clipboard = self.app.clipboard()
-				clipboard.setText(content)
-			QTimer.singleShot(1000, lambda: _restore_clipboard(self, current_clipboard_content))
-		self.add_task(task)
-
+		self._queue.add_task(task)
+		self._queue.add_task(lambda: self._restore_clipboard(), 1.0)
+	
+	def _restore_clipboard(self):
+		clipboard = self.app.clipboard()
+		clipboard.setText(self.current_clipboard_content)
+		
 	def un_type(self):
 		"""
 		Undoes the last typing action.
 		"""
 		def task():
 			pyautogui.hotkey('ctrl', 'z')
-		self.add_task(task)
+		self._queue.add_task(task)
 		
 # Example usage
 if __name__ == "__main__":
@@ -79,9 +72,8 @@ if __name__ == "__main__":
 	text_typer = TextTyper(app)
 	text_to_type = "Sample transcribed text."
 	
-	
-	# time.sleep(2)  # Wait before starting typing
-	# text_typer.type_str(text_to_type)
+	time.sleep(2)  # Wait before starting typing
+	text_typer.type_str(text_to_type)
 	
 	def run_typing_example():
 		try:
@@ -89,17 +81,11 @@ if __name__ == "__main__":
 			text_typer.type_str(text_to_type)
 			time.sleep(1)
 			text_typer.un_type()
+			text_typer.un_type()
 		except Exception as e:
 			print(e)
 	
-	#QThread
-	from PyQt5.QtCore import QThread
-	class TypingThread(QThread):
-		def run(self):
-			run_typing_example()
-	
-	#start:
-	typing_thread = TypingThread()
-	typing_thread.start()
+	from threading import Thread
+	Thread(target=run_typing_example).start()
 	
 	sys.exit(app.exec_())
