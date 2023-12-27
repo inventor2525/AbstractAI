@@ -17,8 +17,8 @@ class KeyEvent(Enum):
 class KeyAction:
 	device_name: str
 	keycode: str
-	action: Callable
 	key_event_type: KeyEvent
+	action: Callable
 
 class KeyComboHandler:
 	def __init__(self, key_actions: List[KeyAction]):
@@ -83,15 +83,15 @@ if __name__ == "__main__":
 		print("Key hold!")
 	
 	key_actions = [
-		KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', action=on_key_down, key_event_type=KeyEvent.KEY_DOWN),
-		KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', action=on_key_up, key_event_type=KeyEvent.KEY_UP),
-		KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', action=on_key_hold, key_event_type=KeyEvent.KEY_HOLD),
-		KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', action=on_key_down, key_event_type=KeyEvent.KEY_DOWN),
-		KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', action=on_key_up, key_event_type=KeyEvent.KEY_UP),
-		KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', action=on_key_hold, key_event_type=KeyEvent.KEY_HOLD),
-		KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', action=on_key_down, key_event_type=KeyEvent.KEY_DOWN),
-		KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', action=on_key_up, key_event_type=KeyEvent.KEY_UP),
-		KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', action=on_key_hold, key_event_type=KeyEvent.KEY_HOLD),
+		KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_DOWN, action=on_key_down),
+		KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_UP, action=on_key_up),
+		KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_HOLD, action=on_key_hold),
+		KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', key_event_type=KeyEvent.KEY_DOWN, action=on_key_down),
+		KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', key_event_type=KeyEvent.KEY_UP, action=on_key_up),
+		KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', key_event_type=KeyEvent.KEY_HOLD, action=on_key_hold),
+		KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_DOWN, action=on_key_down),
+		KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_UP, action=on_key_up),
+		KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_HOLD, action=on_key_hold)
 	]
 	
 	key_handler = KeyComboHandler(key_actions=key_actions)
