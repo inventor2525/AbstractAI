@@ -22,7 +22,7 @@ class HardCodedSource(MessageSource):
 		that it is a hard-coded message by hashing its content and system message
 		flag as a primary key.
 		"""
-		CallerInfo.catch_now()
+		CallerInfo.catch_now(refer_to_next=False)
 		
 		to_hash = [False, message.content]
 		if "system_message" in kwargs:

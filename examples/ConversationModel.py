@@ -24,18 +24,24 @@ class Chatbot:
 		return m
 	
 	def generate(self):
-		CallerInfo.catch_now()
+		CallerInfo.catch_here_and_caller()
 		model_source = ModelSource("Example Model", "An example model.")
 		m = Message("A Response", source=model_source)
 		self.conversation.add_message(m)
-		
-bot = Chatbot()
-bot.talk("Hello, World!")
-bot.add_hardcoded()
-bot.generate()
 
-for message in bot.conversation.message_sequence.messages:
-	print(message.source.caller_source)
+class TryErOut:
+	def __init__(self) -> None:
+		self.bot = Chatbot()
+		self.bot.talk("Hello, World!")
+		self.bot.add_hardcoded()
+		self.bot.generate()
 	
-print_DATA_json(bot.conversation.to_json())
-engine.merge(bot.conversation)
+	def print(self):
+		for message in self.bot.conversation.message_sequence.messages:
+			print(message.source.caller_source)
+			
+		print_DATA_json(self.bot.conversation.to_json())
+		engine.merge(self.bot.conversation)
+
+if __name__ == "__main__":
+	TryErOut().print()

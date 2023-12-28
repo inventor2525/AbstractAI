@@ -47,7 +47,7 @@ class Message:
 	
 	def create_edited(self, new_content:str, source_of_edit:Union["UserSource", "ModelSource", "HardCodedSource"]=None) -> "Message":
 		'''Create a new message that is an edited version of this message'''
-		CallerInfo.catch_now()
+		CallerInfo.catch_now(refer_to_next=False)
 		source = EditSource(original=self, source_of_edit=source_of_edit)
 		new_message = Message(new_content, source)
 		new_message.prev_message = self.prev_message
@@ -58,7 +58,7 @@ class Message:
 	@classmethod
 	def HardCoded(cls, content:str, system_message:bool=False) -> "Message":
 		'''Create a new message that is hard-coded.'''
-		CallerInfo.catch_now()
+		CallerInfo.catch_now(refer_to_next=False)
 		message = cls(content)
 		message.source = HardCodedSource.create(message, system_message=system_message)
 		return message
