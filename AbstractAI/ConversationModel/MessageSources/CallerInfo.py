@@ -12,5 +12,5 @@ class CallerInfo:
 	
 	@staticmethod
 	def get_caller_info():
-		caller_info = log_caller_info()
+		caller_info = log_caller_info(5)
 		return CallerInfo(**caller_info)
