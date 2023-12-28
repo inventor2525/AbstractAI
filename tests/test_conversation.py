@@ -1,6 +1,6 @@
 import unittest
 from AbstractAI.ConversationModel import *
-from ClassyFlaskDB.DATA import DATAEngine
+from ClassyFlaskDB.DATA import DATAEngine, print_DATA_json
 
 class TestConversation(unittest.TestCase):
 	def setUp(self) -> None:
@@ -105,5 +105,91 @@ class TestConversation(unittest.TestCase):
 		self.assertNotEqual(conv.message_sequence.get_primary_key(), initial_message_sequence_id)
 		self.assertEqual(conv.get_primary_key(), conv_id)
 	
+	def test_edit_message(self):
+		conv = Conversation()
+		user_source = UserSource("Test User")
+		terminal_source = TerminalSource("test_command")
+		
+		msg1 = Message.HardCoded("Hello, World!", system_message=True)
+		msg2 = Message("How are you?", user_source)
+		msg3 = Message("Command not found", terminal_source)
+		
+		conv.add_message(msg1)
+		conv.add_message(msg2)
+		conv.add_message(msg3)
+		
+		self.assertEqual(msg1.prev_message, None)
+		self.assertEqual(msg2.prev_message, msg1)
+		self.assertEqual(msg3.prev_message, msg2)
+		
+		initial_message_sequence_id = conv.message_sequence.get_primary_key()
+		conv_id = conv.get_primary_key()
+		
+		edited_msg3 = Message.create_edited(msg1, "Hello world...", source_of_edit=user_source)
+		conv.message_sequence.replace_message(msg1, edited_msg3, True)
+		
+		self.assertEqual(len(conv.message_sequence.messages), 3)
+		self.assertEqual(conv.message_sequence.messages[0], edited_msg3)
+		self.assertEqual(conv.message_sequence.messages[1], msg2)
+		self.assertEqual(conv.message_sequence.messages[2], msg3)
+		
+		self.assertNotEqual(conv.message_sequence.get_primary_key(), initial_message_sequence_id)
+		self.assertEqual(conv.get_primary_key(), conv_id)
+		
+		self.assertEqual(edited_msg3.prev_message, None)
+		self.assertEqual(edited_msg3.source.original, msg1)
+		self.assertEqual(edited_msg3.source.new, edited_msg3)
+		
+		self.assertEqual(msg1.prev_message, None)
+		self.assertEqual(msg2.prev_message, msg1)
+	
+	def test_to_json(self):
+		conv = Conversation()
+		user_source = UserSource()
+		terminal_source = TerminalSource("test_command")
+
+		msg1 = Message.HardCoded("Hello", system_message=True)
+		msg2 = Message("How are you?", user_source)
+		msg3 = Message("Command not found", terminal_source)
+		
+		conv.add_message(msg1)
+		conv.add_message(msg2)
+		conv.add_message(msg3)
+		
+		self.assertEqual(msg1.prev_message, None)
+		self.assertEqual(msg2.prev_message, msg1)
+		self.assertEqual(msg3.prev_message, msg2)
+		
+		conv_json = conv.to_json()
+		self.assertIsInstance(conv_json, dict)
+		self.assertEqual(len(conv_json), 3)
+		
+		self.assertEqual(conv_json["primary_key"], conv.get_primary_key())
+		self.assertEqual(conv_json["type"], "Conversation")
+		self.assertIsInstance(conv_json["obj"], dict)
+		
+		print_DATA_json(conv_json)
+		
+		self.assertEqual(len(conv_json["obj"]["CallerInfo_Table"]), 1)
+		self.assertEqual(len(conv_json["obj"]["Conversation_Table"]), 1)
+		self.assertEqual(len(conv_json["obj"]["EditSource_Table"]), 0)
+		self.assertEqual(len(conv_json["obj"]["HardCodedSource_Table"]), 1)
+		self.assertEqual(len(conv_json["obj"]["MessageSequence_Table"]), 1)
+		self.assertEqual(len(conv_json["obj"]["MessageSequence_messages_mapping"]), 3)
+		self.assertEqual(len(conv_json["obj"]["MessageSource_Table"]), 3)
+		self.assertEqual(len(conv_json["obj"]["ModelSource_Table"]), 0)
+		self.assertEqual(len(conv_json["obj"]["Message_Table"]), 3)
+		self.assertEqual(len(conv_json["obj"]["TerminalSource_Table"]), 1)
+		self.assertEqual(len(conv_json["obj"]["UserSource_Table"]), 1)
+		
+		json_messages = {msg_json["content"]:msg_json for msg_json in conv_json["obj"]["Message_Table"]}
+		json_messages_by_key = {msg_json["auto_id"]:msg_json for msg_json in conv_json["obj"]["Message_Table"]}
+		
+		self.assertEqual(json_messages["Hello"]["prev_message_fk"], None)
+		self.assertEqual(json_messages_by_key.get(json_messages["Hello"]["prev_message_fk"], None), None)
+		self.assertEqual(json_messages_by_key.get(json_messages["How are you?"]["prev_message_fk"], None), json_messages["Hello"])
+		self.assertEqual(json_messages_by_key.get(json_messages["Command not found"]["prev_message_fk"], None), json_messages["How are you?"])
+		
+		
 if __name__ == '__main__':
 	unittest.main()
