@@ -12,7 +12,7 @@ def on_button_press():
 
 def on_button_release():
 	audio_segment = recorder.stop_recording()
-	result = System.transcribe(audio_segment)
+	result = System.transcribe_str(audio_segment)
 	print("========")
 	print(result)
 	print("========")
