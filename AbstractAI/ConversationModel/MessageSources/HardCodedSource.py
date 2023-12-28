@@ -5,7 +5,10 @@ import hashlib
 
 @ConversationDATA
 class HardCodedSource(MessageSource):
-	"""A message source representing an edited message."""
+	"""
+	A hard-coded message source with a primary key that is the
+	hash of the message's content and if it is a system message.
+	"""
 	auto_id: str
 	create_time: datetime = field(default_factory=get_local_time)
 	
@@ -14,8 +17,9 @@ class HardCodedSource(MessageSource):
 	@classmethod
 	def create(cls, message:"Message", *args, **kwargs) -> "HardCodedSource":
 		"""
-		Creates a message source from the pass message that is to indicate 
-		that it is a hard-coded message by hashing its content as a primary key.
+		Creates a message source from the passed message that is to indicate 
+		that it is a hard-coded message by hashing its content and system message
+		flag as a primary key.
 		"""
 		to_hash = [False, message.content]
 		if "system_message" in kwargs:
