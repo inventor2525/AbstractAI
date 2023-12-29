@@ -189,7 +189,46 @@ class TestConversation(unittest.TestCase):
 		self.assertEqual(json_messages_by_key.get(json_messages["Hello"]["prev_message_fk"], None), None)
 		self.assertEqual(json_messages_by_key.get(json_messages["How are you?"]["prev_message_fk"], None), json_messages["Hello"])
 		self.assertEqual(json_messages_by_key.get(json_messages["Command not found"]["prev_message_fk"], None), json_messages["How are you?"])
+	
+	def test_to_from_json(self):
+		conv = Conversation()
+		user_source = UserSource()
+		terminal_source = TerminalSource("test_command")
+
+		msg1 = Message.HardCoded("Hello", system_message=True)
+		msg2 = Message("How are you?", user_source)
+		msg3 = Message("Command not found", terminal_source)
 		
+		conv.add_message(msg1)
+		conv.add_message(msg2)
+		conv.add_message(msg3)
 		
+		self.assertEqual(msg1.prev_message, None)
+		self.assertEqual(msg2.prev_message, msg1)
+		self.assertEqual(msg3.prev_message, msg2)
+		
+		conv_json = conv.to_json()
+		
+		conv2 = Conversation.from_json(conv_json)
+		self.assertEqual(conv2.get_primary_key(), conv.get_primary_key())
+		self.assertEqual(len(conv2.message_sequence.messages), len(conv.message_sequence.messages))
+		for message1, message2 in zip(conv.message_sequence.messages, conv2.message_sequence.messages):
+			self.assertEqual(message1.prev_message, message2.prev_message)
+			self.assertEqual(message1.source, message2.source)
+			self.assertEqual(message1.conversation, message2.conversation)
+			
+			self.assertEqual(message1.get_primary_key(), message2.get_primary_key())
+			
+			self.assertEqual(message1.content, message2.content)
+			
+			if message1.source is not None:
+				self.assertEqual(message1.source.get_primary_key(), message2.source.get_primary_key())
+			
+			if message1.prev_message is not None:
+				self.assertEqual(message1.prev_message.get_primary_key(), message2.prev_message.get_primary_key())
+				
+			if message1.conversation is not None:
+				self.assertEqual(message1.conversation.get_primary_key(), message2.conversation.get_primary_key())
+
 if __name__ == '__main__':
 	unittest.main()
