@@ -13,4 +13,4 @@ class ModelSource(MessageSource):
 	prompt: str = None
 	start_str: str = ""
 
-	models_serialized_raw_output: str = None
+	models_serialized_raw_output: str = field(default=None, compare=False)

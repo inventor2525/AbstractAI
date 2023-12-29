@@ -5,7 +5,7 @@ from typing import List
 @ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
 class MessageSequence:
 	messages: List[Message] = field(default_factory=list)
-	conversation: "Conversation" = None
+	conversation: "Conversation" = field(default=None, compare=False)
 	
 	def add_message(self, message: Message):
 		message.conversation = self.conversation

@@ -13,10 +13,10 @@ class Message:
 	
 	creation_time: datetime = field(default_factory=get_local_time)
 	
-	prev_message: "Message" = None
-	conversation: "Conversation" = None
+	prev_message: "Message" = field(default=None, compare=False)
+	conversation: "Conversation" = field(default=None, compare=False)
 	
-	_children: List["Message"] = field(default_factory=list)
+	_children: List["Message"] = field(default_factory=list, compare=False)
 
 	@staticmethod	
 	def expand_previous_messages(messages:Iterable["Message"]) -> Iterable["Message"]:
