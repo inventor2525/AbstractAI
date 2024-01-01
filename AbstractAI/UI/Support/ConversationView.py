@@ -8,6 +8,7 @@ class ConversationView(QListWidget):
 		super().__init__(*args, **kwargs)
 		
 		self.conversation = conversation
+		self.conversation.message_added.connect(self.render_message)
 		
 		for message in conversation.message_sequence.messages:
 			self.render_message(message)

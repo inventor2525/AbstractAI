@@ -30,10 +30,18 @@ window.setLayout(layout)
 #add the message view to the layout:
 layout.addWidget(conversation_view)
 
+horizontal_layout = QHBoxLayout()
 #button to display the messages in the conversation:
 button = QPushButton("Print Conversation")
 button.clicked.connect(lambda: print_conversation(conv))
-layout.addWidget(button)
+horizontal_layout.addWidget(button)
+
+#button to add a message to the conversation:
+button = QPushButton("Add Message")
+button.clicked.connect(lambda: conv.add_message(Message("Hello WORLD!!", UserSource())))
+horizontal_layout.addWidget(button)
+
+layout.addLayout(horizontal_layout)
 
 #show the window:
 window.show()

@@ -208,6 +208,7 @@ class TestConversation(unittest.TestCase):
 		self.assertEqual(msg3.prev_message, msg2)
 		
 		conv_json = conv.to_json()
+		print_DATA_json(conv_json)
 		
 		conv2 = Conversation.from_json(conv_json)
 		self.assertEqual(conv2.get_primary_key(), conv.get_primary_key())

@@ -1,9 +1,10 @@
 from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Helpers.Signal import Signal
 from .MessageSequence import MessageSequence
 from .Message import Message
 
 from datetime import datetime
-from typing import List
+from typing import Callable, List
 
 @ConversationDATA
 class Conversation:
@@ -13,6 +14,8 @@ class Conversation:
 	creation_time: datetime = field(default_factory=get_local_time)
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)
+	
+	message_added:Signal[[Message],None] = field(default_factory=Signal, compare=False, repr=False, hash=False, init=False, kw_only=True)
 	
 	#_all_messages: List[Message] = field(default_factory=list)
 	#_root_messages: List[Message] = field(default_factory=list)
@@ -26,6 +29,7 @@ class Conversation:
 	def add_message(self, message:Message):
 		self.message_sequence.add_message(message)
 		#self._all_messages.append(message)
+		self.message_added(message)
 	
 	def remove_message(self, message:Message):
 		self.message_sequence.remove_message(message)
