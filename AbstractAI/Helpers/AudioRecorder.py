@@ -47,10 +47,14 @@ class AudioRecorder:
 				self.recorder.stream.stop()
 				return
 
-	def start_recording(self):
+	def start_recording(self) -> bool:
 		with self.lock:
 			Stopwatch.singleton.start("Recording")
+			if self.recording_thread.record:
+				return False
+			
 			self.recording_thread.record = True
+			return True
 
 	def stop_recording(self):
 		with self.lock:

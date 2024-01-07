@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+from AbstractAI.SpeechToText.Logging.Model import ModelInfo
 
 class SpeechToText(ABC):
 	def __init__(self):
-		pass
+		self.info = ModelInfo()
 
 	@abstractmethod
 	def transcribe(self, file_name: str) -> dict:

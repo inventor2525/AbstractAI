@@ -5,6 +5,8 @@ from pydub import AudioSegment
 
 class RemoteSTT(SpeechToText):
 	def __init__(self, model_name: str=None):
+		super().__init__()
+		self.remote = True
 		self.model_name = model_name
 		if self.model_name is not None:
 			self.load_model(self.model_name)

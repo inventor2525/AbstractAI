@@ -7,6 +7,9 @@ from pydub import AudioSegment
 import random
 
 from dataclasses import dataclass
+from datetime import datetime
+
+from AbstractAI.SpeechToText.Logging.Logger import stt_logger, stt_logger_engine, Recording, Transcription, Clip
 
 @dataclass
 class TranscriptionState:
@@ -42,7 +45,17 @@ class ChunkedTranscription:
 		self.living_audio = self.living_audio[(self.living_audio.duration_seconds-consensus_time)*1000:]
 		# self.living_audio.export(f"living_audio_{trans_name}_{other}_post_cut.wav", format="wav")
 		self._run_count_since_clipped = 0
-		
+	
+	def _transcribe(self, audio_segment: AudioSegment, model:SpeechToText) -> Transcription:
+		clip = stt_logger.log_clip(audio_segment, "transcription", "full")
+		transcription = Transcription(clip, self.tiny_model.info)
+		result = model.transcribe(audio_segment)
+		transcription.end = datetime.now()
+		transcription.text = result['text']
+		transcription.raw = result
+		stt_logger_engine.merge(transcription)
+		return transcription
+	
 	def add_audio_segment(self, audio_segment: AudioSegment) -> TranscriptionState:
 		self.living_audio += audio_segment
 		
@@ -50,8 +63,8 @@ class ChunkedTranscription:
 			self.start_time = random.random() * self.previous_consensus_time / 2
 			self.living_audio = self.living_audio[self.start_time:]
 		
-		# Transcribe using the tiny model
-		result_tiny = self.tiny_model.transcribe(self.living_audio)
+		# Transcribe using the tiny model:
+		result_tiny = self._transcribe(audio_segment, self.tiny_model).raw
 		self._run_count_since_clipped += 1
 		
 		# Initialize RangeHeatMap
@@ -82,17 +95,17 @@ class ChunkedTranscription:
 			self.previous_consensus_time = consensus_time
 
 			# Transcribe the accumulated living audio using the large model
-			result_large = self.large_model.transcribe(self.living_audio)
-
+			result_large = self._transcribe(self.living_audio, self.large_model).text
+			
 			# Update fixed transcription
-			self.fixed_transcription += result_large['text']
+			self.fixed_transcription += result_large
 			
 			self._clip(consensus_time, "consensus")
 			self.heat_map.ranges.clear()
 
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
 									  living_transcription="", 
-									  length_added=len(result_large['text']))
+									  length_added=len(result_large))
 		else:
 			if self._run_count_since_clipped > self.concensus_transcription_threshold:
 				transcriptions_detected = False
@@ -114,12 +127,12 @@ class ChunkedTranscription:
 		if audio_segment is not None:
 			self.living_audio += audio_segment
 
-		result_large = self.large_model.transcribe(self.living_audio)
-		self.fixed_transcription += result_large['text']
+		result_large = self._transcribe(self.living_audio, self.large_model).text
+		self.fixed_transcription += result_large
 		
 		state = TranscriptionState(fixed_transcription=self.fixed_transcription, 
 								  living_transcription="", 
-								  length_added=len(result_large['text']))
+								  length_added=len(result_large))
 		self.new_transcription()
 		return state
 
