@@ -48,7 +48,7 @@ class ChunkedTranscription:
 	
 	def _transcribe(self, audio_segment: AudioSegment, model:SpeechToText) -> Transcription:
 		clip = stt_logger.log_clip(audio_segment, "transcription", "full")
-		transcription = Transcription(clip, self.tiny_model.info)
+		transcription = Transcription(clip, model.info)
 		result = model.transcribe(audio_segment)
 		transcription.end = datetime.now()
 		transcription.text = result['text']
