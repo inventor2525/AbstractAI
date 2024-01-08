@@ -14,13 +14,6 @@ class WhisperSTT(SpeechToText):
 		if self.model_name is not None:
 			self.load_model(self.model_name)
 	
-	@property
-	def model_name(self) -> str:
-		return self.info.name
-	@model_name.setter
-	def model_name(self, value: str):
-		self.info.name = value
-	
 	def load_model(self, model_name: str):
 		self.model_name = model_name
 		self.model = None

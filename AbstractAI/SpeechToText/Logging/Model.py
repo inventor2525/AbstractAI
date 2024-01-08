@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Dict
 
 from pydub import AudioSegment
-
+import math
 STTLog = DATADecorator()
 
 @STTLog
@@ -40,5 +40,6 @@ class Transcription:
 	
 	text : str = None
 	raw : Dict[str, str] = None
+	max_no_speech_prob : float = -math.inf
 
 stt_logger_engine = DATAEngine(STTLog, engine_str='sqlite:///stt_log.db')

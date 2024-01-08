@@ -29,6 +29,7 @@ class ChunkedTranscription:
 		self.large_model = large_model
 		self.consensus_threshold = consensus_threshold_seconds
 		self.concensus_transcription_threshold = concensus_transcription_threshold
+		self.no_speech_prob_threshold = 0.5
 		self.new_transcription()
 
 	def new_transcription(self):
@@ -49,10 +50,17 @@ class ChunkedTranscription:
 	def _transcribe(self, audio_segment: AudioSegment, model:SpeechToText) -> Transcription:
 		clip = stt_logger.log_clip(audio_segment, "transcription", "full")
 		transcription = Transcription(clip, model.info)
+		print(f"\n\n\nTranscribing with model {model.info.name}  {model.info.auto_id}...")
 		result = model.transcribe(audio_segment)
 		transcription.end = datetime.now()
-		transcription.text = result['text']
+		text = ""
+		for segment in result['segments']:
+			transcription.max_no_speech_prob = max(segment['no_speech_prob'], transcription.max_no_speech_prob)
+			if segment['no_speech_prob'] < self.no_speech_prob_threshold:
+				text += segment['text']
+		transcription.text = text
 		transcription.raw = result
+		
 		stt_logger_engine.merge(transcription)
 		return transcription
 	
@@ -64,14 +72,15 @@ class ChunkedTranscription:
 			self.living_audio = self.living_audio[self.start_time:]
 		
 		# Transcribe using the tiny model:
-		result_tiny = self._transcribe(audio_segment, self.tiny_model).raw
+		result_tiny = self._transcribe(audio_segment, self.tiny_model)
 		self._run_count_since_clipped += 1
 		
 		# Initialize RangeHeatMap
 		# print(json.dumps(result_tiny, indent=4))
 		# print(self.heat_map.ranges)
-		for segment in result_tiny['segments']:
-			self.heat_map.append_segment(self._get_segment_time(segment))
+		for segment in result_tiny.raw['segments']:
+			if segment['no_speech_prob'] < self.no_speech_prob_threshold:
+				self.heat_map.append_segment(self._get_segment_time(segment))
 		# print(self.heat_map.ranges)
 		
 		consensus_time = 0
@@ -120,7 +129,7 @@ class ChunkedTranscription:
 					self.heat_map.ranges.clear()
 				
 			return TranscriptionState(fixed_transcription=self.fixed_transcription, 
-									  living_transcription=result_tiny['text'], 
+									  living_transcription=result_tiny.text, 
 									  length_added=0)
 	
 	def finish_transcription(self, audio_segment: AudioSegment = None) -> TranscriptionState:
