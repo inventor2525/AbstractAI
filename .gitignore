@@ -5,3 +5,7 @@
 *.egg-info/*
 *.sql
 *.db
+*mlruns/*
+*model_output/*
+*my_*/*
+*server*log*/*
