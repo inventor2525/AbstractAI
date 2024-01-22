@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import pyqtSignal, QObject
 
 from AbstractAI.UI.Support.RecordingIndicator import RecordingIndicator
 from AbstractAI.UI.Support.TextTyper import TextTyper
@@ -13,7 +13,9 @@ from AbstractAI.SpeechToText.ChunkedTranscription import ChunkedTranscription, T
 from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
 from AbstractAI.SpeechToText.RemoteSTT import RemoteSTT
 
-class Application():
+class Application(QObject):
+	update_transcription_signal = pyqtSignal(str, str)
+	
 	def __init__(self, app: QApplication):
 		super().__init__()
 
@@ -38,20 +40,17 @@ class Application():
 		
 		self.prev_transcription = None
 		self.should_remove_prev = False
-	
-	def on_transcription_occurred(self, transcription:TranscriptionState):
-		print(transcription)
 		
-		# self.transcription_window.update_transcription(transcription.fixed_transcription, transcription.living_transcription)
-		if self.should_remove_prev:
-			self.textTyper.un_type()
-			self.should_remove_prev = False
-			
-		if transcription.length_added > 0:
-			self.textTyper.type_str(transcription.peal())
-		elif len(transcription.living_transcription) > 0:
-			self.textTyper.type_str(transcription.living_transcription)
-			self.should_remove_prev = True
+		self.update_transcription_signal.connect(self.transcription_window.update_transcription)
+	
+	def on_transcription_occurred(self, transcription: TranscriptionState):
+		# Emit the signal with the transcription data
+		self.update_transcription_signal.emit(transcription.fixed_transcription, transcription.living_transcription)
+
+		# If the transcription has been stopped by the user
+		if not self.liveSTT.is_recording:
+			# Type the final transcription text
+			self.textTyper.type_str(transcription.get_total_transcription())
 	
 	def toggle_recording(self):
 		if self.liveSTT.is_recording:
