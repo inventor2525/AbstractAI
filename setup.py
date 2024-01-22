@@ -33,7 +33,8 @@ setup(
 		'evdev',
 		'pyperclip',
 		'pyautogui',
-        'pexpect'
+        'pexpect',
+		'tzlocal'
 	],
 	python_requires='~=3.10'
 )
