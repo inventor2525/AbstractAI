@@ -6,10 +6,19 @@ class Mistral(HuggingFaceLLM):
 		super().__init__()
 		self.model_name = model_name
 		self.revision = revision
-
-	def _load_model(self):
-		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=False, trust_remote_code=True)
-		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, torch_dtype=torch.float16, low_cpu_mem_usage=True, device_map="auto", trust_remote_code=False, revision=self.revision) 
+		self.other_parameters = {
+			"tokenizer": {
+				"use_fast": False,
+				"trust_remote_code": True
+			},
+			"model": {
+				"torch_dtype": torch.float16,
+				"low_cpu_mem_usage": True,
+				"device_map": "auto",
+				"trust_remote_code": False,
+				"revision": self.revision
+			}
+		}
 		
 	def start(self):
 		super().start()
