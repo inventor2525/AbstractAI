@@ -3,23 +3,20 @@ from .RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.ConversationModel import *
 
+#TODO: this needs to be more compatible with tool use, break it up to include or not include a send button, vs cancel accept buttons, etc.
 class ChatUI(QWidget):
-	#qt signal for sending messages
-	message_added = pyqtSignal(Conversation, Message, bool)
-	message_changed = pyqtSignal(Message, str) # Message, old hash
 	confirm_command = pyqtSignal()
 	
 	def __init__(self, conversation: Conversation, roles:List[str]=["Human", "Terminal", "Assistant"], max_new_message_lines=5):
 		super().__init__()
 		
 		self.conversation = conversation
-		self.roles = roles
+		self.roles = roles #TODO: Change role strings for chat
 		
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
 		
 		self.init_ui()
-		self.has_unrun_command = False
 		
 		self.read_settings()
 		
@@ -27,12 +24,11 @@ class ChatUI(QWidget):
 		self.setWindowTitle('Chat')
 
 		self.layout = QVBoxLayout()
-		self.setLayout(self.layout)		
+		self.setLayout(self.layout)
 		
 		# Create a list view to display the conversation:
-		self.list_view = ConversationView(self.conversation)
-		self.list_view.message_changed.connect(self.message_changed.emit)
-		self.layout.addWidget(self.list_view)
+		self.conversation_view = ConversationView(self.conversation)
+		self.layout.addWidget(self.conversation_view)
 		
 		# Create a text field to enter new messages:
 		self.input_layout = QHBoxLayout()
@@ -72,20 +68,15 @@ class ChatUI(QWidget):
 		self.restoreGeometry(settings.value("geometry", QByteArray()))
 
 	def write_settings(self):
-		settings = QSettings("MyCompany", "MyApp")
+		settings = QSettings("MyCompany", "MyApp") #TODO: Move settings to the main window to be and add which conv was open as well as what more (columns, tabs, or windows) the ui is in
 		settings.setValue("geometry", self.saveGeometry())
 		
 	def send_message(self):
 		message = None
 		
 		message_text = self.input_field.toPlainText()
-		message = Message.from_role_content(self.role_combobox.currentText(), message_text)
-			
-		self.message_added.emit(
-			self.conversation, 
-			message,
-			self.send_add_toggle.isChecked()
-		)
+		#TODL: Change this from role to source:
+		#message = Message.from_role_content(self.role_combobox.currentText(), message_text)
 		
 		self.input_field.clear()
 		
@@ -116,48 +107,3 @@ class ChatUI(QWidget):
 		if self.num_lines < n_lines:
 			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
 		self.num_lines = n_lines
-	
-	def render_message(self, message:Message):
-		self.list_view.render_message(message)
-	
-	def update_send_button_text(self):
-		#"Run" if has unrun command, change to run, and the input field is empty:
-		if self.has_unrun_command and self.input_field.toPlainText() == "":
-			if self.send_button.text() != "Run":
-				self.send_button.setText("Run")
-				try:
-					self.send_button.clicked.disconnect(self.send_message)
-				except TypeError:
-					pass
-				self.send_button.clicked.connect(self.confirm_command.emit)
-		else:
-			if self.send_button.text() == "Run":
-				try:
-					self.send_button.clicked.disconnect(self.confirm_command.emit)
-				except TypeError:
-					pass
-				self.send_button.clicked.connect(self.send_message)
-			self.send_button.setText("Send" if self.send_add_toggle.isChecked() else "Add")
-	
-	@property
-	def has_unrun_command(self):
-		return self._has_unrun_command
-	
-	@has_unrun_command.setter
-	def has_unrun_command(self, value:bool):
-		self._has_unrun_command = value
-		self.update_send_button_text()
-	
-	def clear_all(self):		
-		message_box = QMessageBox()
-		message_box.setIcon(QMessageBox.Question)
-		message_box.setText("Are you sure you wish to clear the conversation? All conversations are in the db but theres currently no way to load them in the UI.")
-		message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-
-		result = message_box.exec_()
-
-		if result == QMessageBox.Yes:
-			self.conversation.clear()
-			self.list_view.clear()
-		else:
-			pass
