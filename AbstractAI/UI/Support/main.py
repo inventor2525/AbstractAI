@@ -105,7 +105,7 @@ class Application(QMainWindow):
 			self.current_conversation.name = self.name_field.text()
 			self.current_conversation.description = self.description_field.text()
 			self.current_conversation.last_modified = get_local_time()
-			#TODO: update the list view item
+			self.conversation_list_view.update_conversation(self.current_conversation)
 			self.engine.merge(self.current_conversation)
 
 if __name__ == "__main__":

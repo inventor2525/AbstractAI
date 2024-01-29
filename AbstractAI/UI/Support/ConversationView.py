@@ -7,11 +7,12 @@ class ConversationView(QListWidget):
 	def __init__(self, conversation: Conversation = None):
 		super().__init__()
 		
-		self.set_conversation(conversation)
 		self.setAutoScroll(False)
 		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
 		self.itemSelectionChanged.connect(self.update_selection)
+		
+		self.set_conversation(conversation)
 	
 	def update_selection(self):
 		for index in range(self.count()):
@@ -80,7 +81,7 @@ class ConversationView(QListWidget):
 		self.clear()
 		
 		self.conversation = conversation
-		if conversation is None:
+		if conversation is not None:
 			self.conversation.message_added.connect(self.render_message)
 			
 			for message in conversation.message_sequence.messages:

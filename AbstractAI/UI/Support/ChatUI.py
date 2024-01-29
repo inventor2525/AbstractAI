@@ -78,7 +78,7 @@ class ChatUI(QWidget):
 		elif selected_role == "Terminal":
 			new_message.source = TerminalSource()
 		elif selected_role == "Assistant":
-			new_message.source = ModelSource()
+			new_message.source = ModelSource("ChatUI", "User Entry")
 		self.conversation_view.add_message(new_message)
 		self.input_field.clear()
 		
