@@ -46,3 +46,17 @@ class MessageSequence:
 		new_sequence.conversation = self.conversation
 		new_sequence.new_id()
 		return new_sequence
+	
+	def __iter__(self):
+		return iter(self.messages)
+	
+	def __getitem__(self, index):
+		return self.messages[index]
+	
+	def __len__(self):
+		return len(self.messages)
+	
+	def __contains__(self, message):
+		return message in self.messages
+	
+	#TODO better follow collection pattern for other methods above

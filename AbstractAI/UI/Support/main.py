@@ -11,6 +11,7 @@ from datetime import datetime
 from copy import deepcopy
 
 from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 
 class Application(QMainWindow):
 	@property
@@ -29,6 +30,16 @@ class Application(QMainWindow):
 		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
 		
+		self.should_filter = False
+		self.filter_timmer = QTimer()
+		self.filter_timmer.setInterval(500)
+		def filter_timmer_timeout():
+			if self.should_filter:
+				self.search_name_description()
+				self.should_filter = False
+		self.filter_timmer.timeout.connect(filter_timmer_timeout)
+		self.filter_timmer.start()
+		
 		self.init_ui()
 		self.conversation = self.new_conversation()
 	
@@ -46,10 +57,12 @@ class Application(QMainWindow):
 		self.search_area = QHBoxLayout()
 		self.search_field = QLineEdit()
 		self.search_field.setPlaceholderText("Search...")
+		self.search_field.textChanged.connect(lambda: setattr(self, "should_filter", True))
 		self.search_area.addWidget(self.search_field)
 		#search button with magnifying glass icon:
 		self.search_button = QPushButton()
 		self.search_button.setIcon(QIcon.fromTheme("edit-find"))
+		self.search_button.clicked.connect(self.search_contents)
 		self.search_area.addWidget(self.search_button)
 		self.left_panel.addLayout(self.search_area)
 		
@@ -119,7 +132,31 @@ class Application(QMainWindow):
 			self.conversation.last_modified = get_local_time()
 			self.conversation_list_view.update_conversation(self.conversation)
 			self.engine.merge(self.conversation)
-
+	
+	def search_name_description(self):
+		search = self.search_field.text()
+		if search == "":
+			self.conversation_list_view.conversations = self.conversations
+		else:
+			self.conversation_list_view.conversations = ConversationCollection([conv for conv in self.conversations if search.lower() in conv.name.lower() or search.lower() in conv.description.lower()])
+	
+	def search_contents(self):
+		'''
+		Searches the contents of all messages in all conversations and
+		filters the conversation list to only show conversations that
+		contain the search text.
+		'''
+		search = self.search_field.text()
+		if search == "":
+			self.conversation_list_view.conversations = self.conversations
+		else:
+			filtered_conversations = []
+			for conversation in self.conversations:
+				for message in conversation.message_sequence:
+					if search.lower() in message.content.lower():
+						filtered_conversations.append(conversation)
+			self.conversation_list_view.conversations = ConversationCollection(filtered_conversations)
+			
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	window = Application(app)

@@ -11,11 +11,6 @@ class ConversationCollection():
 	engine : DATAEngine = None
 	
 	conversation_added: Signal[[Conversation], None] = Signal.field()
-	
-	def __post_init__(self):
-		if self.engine is None:
-			for conversation in self.conversations:
-				self.engine.merge(conversation)
 				
 	def append(self, conversation:Conversation, should_notify=True) -> None:
 		self.conversations.append(conversation)

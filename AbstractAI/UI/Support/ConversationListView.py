@@ -10,15 +10,25 @@ class ConversationListView(QListWidget):
 	'''
 	conversation_selected = pyqtSignal(Conversation)
 	
+	@property
+	def conversations(self) -> ConversationCollection:
+		return self._conversations
+	@conversations.setter
+	def conversations(self, value:ConversationCollection):
+		if getattr(self, "_conversations", None) is not None:
+			self._conversations.conversation_added.disconnect(self.update_conversation)
+			
+		self._conversations = value
+		self.items_map = {}
+		self.clear()
+		
+		for conversation in self._conversations:
+			self.update_conversation(conversation)
+		self._conversations.conversation_added.connect(self.update_conversation)
+			
 	def __init__(self, conversations: ConversationCollection):
 		super().__init__()
 		self.conversations = conversations
-		self.items_map = {}
-		
-		for conversation in conversations:
-			self.update_conversation(conversation)
-		self.conversations.conversation_added.connect(self.update_conversation)
-
 		self.itemSelectionChanged.connect(self.update_selection)
 	
 	def update_conversation(self, conversation: Conversation):
