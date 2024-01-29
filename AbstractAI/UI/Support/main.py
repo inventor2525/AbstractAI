@@ -2,6 +2,7 @@ from AbstractAI.UI.Support.MessageView import *
 from AbstractAI.UI.Support.ConversationView import *
 from AbstractAI.UI.Support.ChatUI import *
 from AbstractAI.UI.Support.ConversationListView import *
+from AbstractAI.LLMs.TemporaryModel import *
 
 import json
 from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
@@ -106,6 +107,7 @@ class Application(QMainWindow):
 		
 		self.chatUI = ChatUI()
 		self.right_panel.addWidget(self.chatUI)
+		self.chatUI.message_sent.connect(self.user_sent_message)
 		
 		w = QWidget()
 		w.setLayout(self.right_panel)
@@ -171,6 +173,20 @@ class Application(QMainWindow):
 	def closeEvent(self, event):
 		self.write_settings()
 		super().closeEvent(event)
+	
+	def user_sent_message(self, message:Message):
+		output = prompt(message.content)
+		response = Message(output)
+		response.source = ModelSource("Temporary model for ui testing", model_path)
+		response.source.message_sequence = message.conversation.message_sequence
+		response.source.model_parameters = {
+			"model_path":model_path,
+			"n_ctx":2048,
+			"n_threads":7,
+			"n_gpu_layers":0
+		}
+		self.conversation.add_message(response)
+		
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	window = Application(app)
