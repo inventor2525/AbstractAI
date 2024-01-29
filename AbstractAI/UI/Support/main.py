@@ -17,13 +17,11 @@ class Application(QMainWindow):
 		super().__init__()
 		self.app = app
 		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
+		self.conversations = ConversationCollection.all_from_engine(self.engine)
+		self.current_conversation = self.new_conversation()
 		
 		#split view:
 		self.splitter = QSplitter(Qt.Horizontal)
-		with self.engine.session() as session:
-			#select all Conversation's from the database:
-			self.conversations = deepcopy(session.query(Conversation).order_by(Conversation.creation_time__DateTimeObj).all())
-		
 		self.left_panel = QVBoxLayout()
 		self.sort_controls = QHBoxLayout()
 		self.sort_controls.addWidget(QLabel("Sort By:"))
@@ -55,8 +53,6 @@ class Application(QMainWindow):
 		self.new_conversation_button.clicked.connect(self.new_conversation)
 		self.new_conversation_layout.addWidget(self.new_conversation_button)
 		self.left_panel.addLayout(self.new_conversation_layout)
-		
-		self.current_conversation = self.new_conversation()
 		
 		w = QWidget()
 		w.setLayout(self.left_panel)
@@ -93,8 +89,6 @@ class Application(QMainWindow):
 	def new_conversation(self):
 		conv = Conversation("New Conversation", f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 		self.conversations.append(conv)
-		self.conversation_list_view.add_conversation(conv)
-		self.engine.merge(conv)
 		return conv
 	
 	def set_conversation(self, conversation: Conversation):

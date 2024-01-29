@@ -28,6 +28,8 @@ class Conversation:
 		self.message_sequence = self.message_sequence.copy()
 		
 	def add_message(self, message:Message):
+		self.new_message_sequence()
+		message.conversation = self
 		self.message_sequence.add_message(message)
 		#self._all_messages.append(message)
 		self.message_added(message)

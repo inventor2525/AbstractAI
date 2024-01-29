@@ -7,12 +7,13 @@ from AbstractAI.ConversationModel import *
 
 #TODO: this should hold the info to create a model source but should pass things up out of it and should itself be a chat view not directly tied to a model
 class ChatUI(QWidget):
-	confirm_command = pyqtSignal()
+	message_sent = pyqtSignal(Message)
 	
-	def __init__(self, conversation: Conversation, roles:List[str]=["Human", "Terminal", "Assistant"], max_new_message_lines=5):
+	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Terminal", "Assistant"], max_new_message_lines=5):
 		super().__init__()
 		
-		self.conversation = conversation
+		self.conversation_view = ConversationView(conversation)
+		
 		self.roles = roles #TODO: Change role strings for chat
 		
 		self.max_new_message_lines = max_new_message_lines
@@ -27,7 +28,6 @@ class ChatUI(QWidget):
 		self.setLayout(self.layout)
 		
 		# Create a list view to display the conversation:
-		self.conversation_view = ConversationView(self.conversation)
 		self.layout.addWidget(self.conversation_view)
 		
 		# Create a text field to enter new messages:
@@ -79,8 +79,10 @@ class ChatUI(QWidget):
 			new_message.source = TerminalSource()
 		elif selected_role == "Assistant":
 			new_message.source = ModelSource()
-		self.conversation.add_message(new_message)
+		self.conversation_view.add_message(new_message)
 		self.input_field.clear()
+		
+		self.message_sent.emit(new_message)
 		
 	def closeEvent(self, event):
 		self.write_settings()
@@ -111,5 +113,7 @@ class ChatUI(QWidget):
 		self.num_lines = n_lines
 	
 	def set_conversation(self, conversation: Conversation):
-		self.conversation = conversation
 		self.conversation_view.set_conversation(conversation)
+	
+	def respond_on_send(self) -> bool:
+		return self.send_add_toggle.isChecked()

@@ -79,8 +79,8 @@ class ConversationView(QListWidget):
 			self.conversation.message_added.disconnect(self.render_message)
 		self.clear()
 		
+		self.conversation = conversation
 		if conversation is None:
-			self.conversation = conversation
 			self.conversation.message_added.connect(self.render_message)
 			
 			for message in conversation.message_sequence.messages:
