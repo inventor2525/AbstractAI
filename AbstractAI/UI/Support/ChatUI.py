@@ -9,6 +9,13 @@ from AbstractAI.ConversationModel import *
 class ChatUI(QWidget):
 	message_sent = pyqtSignal(Message)
 	
+	@property
+	def conversation(self) -> Conversation:
+		return self.conversation_view.conversation
+	@conversation.setter
+	def conversation(self, value:Conversation):
+		self.conversation_view.conversation = value
+	
 	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Terminal", "Assistant"], max_new_message_lines=5):
 		super().__init__()
 		
@@ -79,7 +86,7 @@ class ChatUI(QWidget):
 			new_message.source = TerminalSource()
 		elif selected_role == "Assistant":
 			new_message.source = ModelSource("ChatUI", "User Entry")
-		self.conversation_view.add_message(new_message)
+		self.conversation.add_message(new_message)
 		self.input_field.clear()
 		
 		self.message_sent.emit(new_message)
@@ -111,9 +118,6 @@ class ChatUI(QWidget):
 		if self.num_lines < n_lines:
 			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
 		self.num_lines = n_lines
-	
-	def set_conversation(self, conversation: Conversation):
-		self.conversation_view.set_conversation(conversation)
 	
 	def respond_on_send(self) -> bool:
 		return self.send_add_toggle.isChecked()

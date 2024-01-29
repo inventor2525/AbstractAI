@@ -13,13 +13,26 @@ from copy import deepcopy
 from PyQt5.QtWidgets import *
 
 class Application(QMainWindow):
+	@property
+	def conversation(self) -> Conversation:
+		return self.chatUI.conversation
+	@conversation.setter
+	def conversation(self, value:Conversation):
+		self.name_field.setText(value.name)
+		self.description_field.setText(value.description)
+		self.chatUI.conversation = value
+		self.conversation_list_view.set_selected(value)
+		
 	def __init__(self, app: QApplication):
 		super().__init__()
 		self.app = app
 		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
-		self.current_conversation = self.new_conversation()
 		
+		self.init_ui()
+		self.conversation = self.new_conversation()
+	
+	def init_ui(self):
 		#split view:
 		self.splitter = QSplitter(Qt.Horizontal)
 		self.left_panel = QVBoxLayout()
@@ -41,7 +54,9 @@ class Application(QMainWindow):
 		self.left_panel.addLayout(self.search_area)
 		
 		self.conversation_list_view = ConversationListView(self.conversations)
-		self.conversation_list_view.conversation_selected.connect(self.set_conversation)
+		def set_conv(conv):
+			self.conversation = conv
+		self.conversation_list_view.conversation_selected.connect(set_conv)
 		self.left_panel.addWidget(self.conversation_list_view)
 		
 		self.new_conversation_layout = QHBoxLayout()
@@ -74,7 +89,7 @@ class Application(QMainWindow):
 		self.name_description_layout.addWidget(self.name_description_confirm_button)
 		self.right_panel.addLayout(self.name_description_layout)
 		
-		self.chatUI = ChatUI(self.current_conversation)
+		self.chatUI = ChatUI()
 		self.right_panel.addWidget(self.chatUI)
 		
 		w = QWidget()
@@ -87,26 +102,23 @@ class Application(QMainWindow):
 		self.setCentralWidget(self.splitter)
 	
 	def new_conversation(self):
-		conv = Conversation("New Conversation", f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+		name = self.new_conversation_name.text()
+		if name == "":
+			name = "New Conversation"
+		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 		self.conversations.append(conv)
 		return conv
 	
-	def set_conversation(self, conversation: Conversation):
-		self.current_conversation = conversation
-		self.name_field.setText(conversation.name)
-		self.description_field.setText(conversation.description)
-		self.chatUI.set_conversation(conversation)
-	
 	def _name_description_confirm(self):
-		if self.current_conversation is None:
+		if self.conversation is None:
 			return
 		
-		if self.current_conversation.name != self.name_field.text() or self.current_conversation.description != self.description_field.text():
-			self.current_conversation.name = self.name_field.text()
-			self.current_conversation.description = self.description_field.text()
-			self.current_conversation.last_modified = get_local_time()
-			self.conversation_list_view.update_conversation(self.current_conversation)
-			self.engine.merge(self.current_conversation)
+		if self.conversation.name != self.name_field.text() or self.conversation.description != self.description_field.text():
+			self.conversation.name = self.name_field.text()
+			self.conversation.description = self.description_field.text()
+			self.conversation.last_modified = get_local_time()
+			self.conversation_list_view.update_conversation(self.conversation)
+			self.engine.merge(self.conversation)
 
 if __name__ == "__main__":
 	app = QApplication(sys.argv)

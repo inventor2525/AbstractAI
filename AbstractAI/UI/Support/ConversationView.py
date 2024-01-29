@@ -4,6 +4,22 @@ from .MessageView import *
 class ConversationView(QListWidget):
 	message_changed = pyqtSignal(Message) # Message
 	
+	@property
+	def conversation(self) -> Conversation:
+		return self._conversation
+	@conversation.setter
+	def conversation(self, value:Conversation):
+		if getattr(self, "_conversation", None) is not None:
+			self._conversation.message_added.disconnect(self.render_message)
+		self.clear()
+		
+		self._conversation = value
+		if self._conversation is not None:
+			self._conversation.message_added.connect(self.render_message)
+			
+			for message in self._conversation.message_sequence.messages:
+				self.render_message(message)
+	
 	def __init__(self, conversation: Conversation = None):
 		super().__init__()
 		
@@ -12,7 +28,7 @@ class ConversationView(QListWidget):
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
 		self.itemSelectionChanged.connect(self.update_selection)
 		
-		self.set_conversation(conversation)
+		self.conversation = conversation
 	
 	def update_selection(self):
 		for index in range(self.count()):
@@ -66,23 +82,8 @@ class ConversationView(QListWidget):
 		self.setItemWidget(item, item_widget)
 		item_widget.message_deleted_clicked.connect(self.delete_message)
 		self.scrollToBottom()
-				
-	def add_message(self, message: Message):
-		self.conversation.add_message(message)
-		self.render_message(message)
 		
 	def update_row_height(self, item: QListWidgetItem):
 		item_widget = self.itemWidget(item)
 		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
-		
-	def set_conversation(self, conversation: Conversation):
-		if getattr(self, "conversation", None) is not None:
-			self.conversation.message_added.disconnect(self.render_message)
-		self.clear()
-		
-		self.conversation = conversation
-		if conversation is not None:
-			self.conversation.message_added.connect(self.render_message)
-			
-			for message in conversation.message_sequence.messages:
-				self.render_message(message)
+	

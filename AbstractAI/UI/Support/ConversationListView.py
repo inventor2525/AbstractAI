@@ -38,3 +38,9 @@ class ConversationListView(QListWidget):
 			if item.isSelected():
 				self.conversation_selected.emit(self.conversations[index])
 				break
+	
+	def set_selected(self, conversation:Conversation):
+		if conversation.auto_id in self.items_map:
+			self.setCurrentItem(self.items_map[conversation.auto_id])
+		else:
+			self.setCurrentItem(None)
