@@ -28,8 +28,6 @@ class ChatUI(QWidget):
 		
 		self.init_ui()
 		
-		self.read_settings()
-		
 	def init_ui(self):
 		self.layout = QVBoxLayout()
 		self.setLayout(self.layout)
@@ -69,14 +67,6 @@ class ChatUI(QWidget):
 		# Set the chat text box as selected:
 		self.input_field.setFocus()
 		
-	def read_settings(self):
-		settings = QSettings("MyCompany", "MyApp")
-		self.restoreGeometry(settings.value("geometry", QByteArray()))
-
-	def write_settings(self):
-		settings = QSettings("MyCompany", "MyApp") #TODO: Move settings to the main window to be and add which conv was open as well as what more (columns, tabs, or windows) the ui is in
-		settings.setValue("geometry", self.saveGeometry())
-		
 	def send_message(self):
 		new_message = Message(self.input_field.toPlainText())
 		selected_role = self.role_combobox.currentText()
@@ -90,10 +80,6 @@ class ChatUI(QWidget):
 		self.input_field.clear()
 		
 		self.message_sent.emit(new_message)
-		
-	def closeEvent(self, event):
-		self.write_settings()
-		super().closeEvent(event)
 		
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:

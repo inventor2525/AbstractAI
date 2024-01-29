@@ -42,6 +42,8 @@ class Application(QMainWindow):
 		
 		self.init_ui()
 		self.conversation = self.new_conversation()
+		
+		self.read_settings()
 	
 	def init_ui(self):
 		#split view:
@@ -156,7 +158,19 @@ class Application(QMainWindow):
 					if search.lower() in message.content.lower():
 						filtered_conversations.append(conversation)
 			self.conversation_list_view.conversations = ConversationCollection(filtered_conversations)
-			
+	
+	
+	def read_settings(self):
+		settings = QSettings("MyCompany", "MyApp")
+		self.restoreGeometry(settings.value("geometry", QByteArray()))
+
+	def write_settings(self):
+		settings = QSettings("MyCompany", "MyApp") #TODO: Move settings to the main window to be and add which conv was open as well as what more (columns, tabs, or windows) the ui is in
+		settings.setValue("geometry", self.saveGeometry())
+	
+	def closeEvent(self, event):
+		self.write_settings()
+		super().closeEvent(event)
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	window = Application(app)
