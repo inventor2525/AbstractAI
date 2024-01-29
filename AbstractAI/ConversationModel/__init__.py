@@ -2,7 +2,7 @@ from .MessageSources import MessageSource, UserSource, ModelSource, EditSource, 
 from .Message import Message
 from .Conversation import Conversation, MessageSequence
 from .ConversationCollection import ConversationCollection
-from .ModelBase import ConversationDATA
+from .ModelBase import ConversationDATA, get_local_time
 
 def print_conversation(conversation:Conversation):
 	import json

@@ -4,15 +4,10 @@ from .MessageView import *
 class ConversationView(QListWidget):
 	message_changed = pyqtSignal(Message) # Message
 	
-	def __init__(self, conversation: Conversation, *args, **kwargs):
-		super().__init__(*args, **kwargs)
+	def __init__(self, conversation: Conversation = None):
+		super().__init__()
 		
-		self.conversation = conversation
-		self.conversation.message_added.connect(self.render_message)
-		
-		for message in conversation.message_sequence.messages:
-			self.render_message(message)
-			
+		self.set_conversation(conversation)
 		self.setAutoScroll(False)
 		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -78,3 +73,15 @@ class ConversationView(QListWidget):
 	def update_row_height(self, item: QListWidgetItem):
 		item_widget = self.itemWidget(item)
 		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
+		
+	def set_conversation(self, conversation: Conversation):
+		if getattr(self, "conversation", None) is not None:
+			self.conversation.message_added.disconnect(self.render_message)
+		self.clear()
+		
+		if conversation is None:
+			self.conversation = conversation
+			self.conversation.message_added.connect(self.render_message)
+			
+			for message in conversation.message_sequence.messages:
+				self.render_message(message)

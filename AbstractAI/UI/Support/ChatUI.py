@@ -4,6 +4,8 @@ from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.ConversationModel import *
 
 #TODO: this needs to be more compatible with tool use, break it up to include or not include a send button, vs cancel accept buttons, etc.
+
+#TODO: this should hold the info to create a model source but should pass things up out of it and should itself be a chat view not directly tied to a model
 class ChatUI(QWidget):
 	confirm_command = pyqtSignal()
 	
@@ -21,8 +23,6 @@ class ChatUI(QWidget):
 		self.read_settings()
 		
 	def init_ui(self):
-		self.setWindowTitle('Chat')
-
 		self.layout = QVBoxLayout()
 		self.setLayout(self.layout)
 		
@@ -42,7 +42,6 @@ class ChatUI(QWidget):
 		self.input_field.setMaximumHeight(self.input_field.fontMetrics().lineSpacing())
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
-		self.input_field.textChanged.connect(self.update_send_button_text)
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 		
@@ -72,12 +71,15 @@ class ChatUI(QWidget):
 		settings.setValue("geometry", self.saveGeometry())
 		
 	def send_message(self):
-		message = None
-		
-		message_text = self.input_field.toPlainText()
-		#TODL: Change this from role to source:
-		#message = Message.from_role_content(self.role_combobox.currentText(), message_text)
-		
+		new_message = Message(self.input_field.toPlainText())
+		selected_role = self.role_combobox.currentText()
+		if selected_role == "Human":
+			new_message.source = UserSource()
+		elif selected_role == "Terminal":
+			new_message.source = TerminalSource()
+		elif selected_role == "Assistant":
+			new_message.source = ModelSource()
+		self.conversation.add_message(new_message)
 		self.input_field.clear()
 		
 	def closeEvent(self, event):
@@ -107,3 +109,7 @@ class ChatUI(QWidget):
 		if self.num_lines < n_lines:
 			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
 		self.num_lines = n_lines
+	
+	def set_conversation(self, conversation: Conversation):
+		self.conversation = conversation
+		self.conversation_view.set_conversation(conversation)

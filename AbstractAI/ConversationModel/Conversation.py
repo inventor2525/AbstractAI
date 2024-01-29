@@ -12,6 +12,7 @@ class Conversation:
 	description: str = ""
 	
 	creation_time: datetime = field(default_factory=get_local_time)
+	last_modified: datetime = field(default_factory=get_local_time)
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)
 	
@@ -30,13 +31,16 @@ class Conversation:
 		self.message_sequence.add_message(message)
 		#self._all_messages.append(message)
 		self.message_added(message)
+		self.last_modified = get_local_time()
 	
 	def remove_message(self, message:Message):
 		self.message_sequence.remove_message(message)
+		self.last_modified = get_local_time()
 		
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
 		self.message_sequence.replace_message(old_message, new_message, keeping_latter)
 		#self._all_messages.append(new_message)
+		self.last_modified = get_local_time()
 		
 	def update_message_graph(self):
 		self._root_messages = []
