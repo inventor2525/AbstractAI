@@ -1,6 +1,7 @@
 from typing import Callable, TypeVar, Generic, List, Set, Optional, Dict
 from typing_extensions import ParamSpec
 
+from dataclasses import field
 # Define a ParamSpec for the arguments and a TypeVar for the return type
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -28,7 +29,11 @@ class Signal(Generic[P, R]):
 				results[key] = r
 				
 		return results
-
+	
+	@staticmethod
+	def field(compare=False, repr=False, hash=False, init=False, kw_only=True) -> field:
+		return field(default_factory=Signal, compare=compare, repr=repr, hash=hash, init=init, kw_only=kw_only)
+	
 if __name__ == "__main__":
 	# Example usage with different listener signatures
 	def listener1(x: int, y: str) -> float:

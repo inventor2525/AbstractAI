@@ -16,7 +16,7 @@ class Conversation:
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)
 	
-	message_added:Signal[[Message],None] = field(default_factory=Signal, compare=False, repr=False, hash=False, init=False, kw_only=True)
+	message_added:Signal[[Message],None] = Signal.field()
 	
 	#_all_messages: List[Message] = field(default_factory=list)
 	#_root_messages: List[Message] = field(default_factory=list)
