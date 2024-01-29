@@ -1,27 +1,57 @@
 from AbstractAI.ConversationModel import *
-from abc import ABC, abstractmethod
+from ClassyFlaskDB.DATA import DATAEngine
+from AbstractAI.Helpers.Signal import Signal
+from dataclasses import dataclass, field
+from typing import List
 
+from copy import deepcopy
+@dataclass
 class ConversationCollection():
-	@abstractmethod
-	def add_conversation(self, conversation:Conversation) -> None:
-		pass
+	conversations: List[Conversation] = field(default_factory=list)
+	engine : DATAEngine = None
 	
-	@abstractmethod
-	def add_message(self, message:Message) -> None:
-		pass
+	conversation_added: Signal[[Conversation], None] = Signal.field()
 	
-	@abstractmethod
-	def add_message_sequence(self, message_sequence:MessageSequence) -> None:
-		pass
+	def __post_init__(self):
+		if self.engine is None:
+			for conversation in self.conversations:
+				self.engine.merge(conversation)
+				
+	def append(self, conversation:Conversation, should_notify=True) -> None:
+		conversation.message_added.connect(lambda message: self.engine.merge(message.conversation))
+		self.conversations.append(conversation)
+		if should_notify:
+			self.conversation_added(conversation)
 	
-	@abstractmethod
-	def get_conversation(self, hash:str) -> Conversation:
-		pass
+	@classmethod
+	def all_from_engine(cls, engine:DATAEngine) -> None:
+		collection = cls()
+		
+		with engine.session() as session:
+			all_conversations = deepcopy(session.query(Conversation).order_by(Conversation.creation_time__DateTimeObj).all())
+			
+			for conversation in all_conversations:
+				collection.append(conversation, should_notify=False)
+		
+		collection.engine = engine
+		return collection
 	
-	@abstractmethod
-	def get_message(self, hash:str) -> Message:
-		pass
+	def __iter__(self):
+		return iter(self.conversations)
 	
-	@abstractmethod
-	def get_message_sequence(self, hash:str) -> MessageSequence:
-		pass
+	def __getitem__(self, index):
+		return self.conversations[index]
+	
+	def __len__(self):
+		return len(self.conversations)
+	
+	def __contains__(self, conversation):
+		return conversation in self.conversations
+	
+	def __delitem__(self, index):
+		del self.conversations[index]
+		#TODO: notify
+	
+	def __setitem__(self, index, conversation):
+		self.conversations[index] = conversation
+		#TODO: notify
