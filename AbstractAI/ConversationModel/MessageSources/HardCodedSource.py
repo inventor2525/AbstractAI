@@ -12,6 +12,7 @@ class HardCodedSource(MessageSource):
 	"""
 	auto_id: str
 	create_time: datetime = field(default_factory=get_local_time)
+	# TODO: fake_source:MessageSource = None  to indicate what 'role' this message is faking.
 	
 	__primary_key_name__ = "auto_id" # Set the id as the same name as MessageSource's auto generated id so that the polymorphic relationship can be created correctly. TODO: make this unnecessary.
 	

@@ -27,10 +27,10 @@ class OpenAI_LLM(LLM):
 		response_tokens = self.encoding.encode(response_text)
 		return len(response_tokens)
 	
-	def _prompt_str(self, prompt):
+	def _complete_str(self, prompt):
 		raise Exception("This doesn't support string prompts")
 	
-	def prompt(self, conversation: Conversation) -> LLM_RawResponse:
+	def chat(self, conversation: Conversation) -> LLM_RawResponse:
 		'''
 		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
@@ -60,7 +60,7 @@ class OpenAI_LLM(LLM):
 		}
 		return self._create_response(json.dumps(message_list), dict(raw_response), conversation)
 	
-	def generate_prompt_str(self, conversation: Conversation, start_str:str="") -> str:
+	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
 		return None
 	
 	def _serialize_raw_response(self, response:object) -> str:

@@ -161,7 +161,6 @@ class Application(QMainWindow):
 						filtered_conversations.append(conversation)
 			self.conversation_list_view.conversations = ConversationCollection(filtered_conversations)
 	
-	
 	def read_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
 		self.restoreGeometry(settings.value("geometry", QByteArray()))

@@ -28,11 +28,11 @@ class ChatBot:
 		self.last_response = LLM_RawResponse("Output Error", None, 0)
 		
 		try:
-			self.last_response = self.model.prompt(self.conversation)
+			self.last_response = self.model.chat(self.conversation)
 		except:
 			if self.fallback_model is not None:
 				try:
-					self.last_response = self.fallback_model.prompt(self.conversation)
+					self.last_response = self.fallback_model.chat(self.conversation)
 				except:
 					pass
 			else:
