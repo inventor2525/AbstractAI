@@ -3,6 +3,7 @@ from AbstractAI.UI.Support.ConversationView import *
 from AbstractAI.UI.Support.ChatUI import *
 from AbstractAI.UI.Support.ConversationListView import *
 from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
+from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
 
 import json
 from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
@@ -188,15 +189,49 @@ class Application(QMainWindow):
 			QMessageBox.critical(self, "No LLM Loaded", "Please load an LLM before sending messages.")
 			return
 		
-		response = self.llm.chat(conversation)
-		conversation.add_message(response.message)
+		def chat():
+			return self.llm.chat(conversation)
+		self.task = BackgroundTask(chat)
+		
+		def finished():
+			response = self.task.return_val
+			conversation.add_message(response.message)
+			
+		self.task.finished.connect(finished)
+		self.task.start()
 	
 	def select_model(self, model_name:str):
+		self.models_combobox.currentTextChanged.disconnect(self.select_model)
 		if self.models_combobox.itemText(0) == "Select A Model...":
 			self.models_combobox.removeItem(0)
+			self.models_combobox.setEnabled(False)
+		
+		self.models_combobox.insertItem(0, ".  ")
+		self.models_combobox.setCurrentIndex(0)
+		
+		def load_model():
+			self.llm = self.model_loader[model_name]
+			self.llm.start()
+		
+		def animate():
+			t = self.models_combobox.itemText(0)
+			t = {
+				".  " : " . ",
+				" . " : "  .",
+				"  ." : ".  "
+			}[t]
+			self.models_combobox.setItemText(0, t)
 			
-		self.llm = self.model_loader[model_name]
-		self.llm.start()
+		def model_loaded():
+			self.models_combobox.removeItem(0)
+			self.models_combobox.setCurrentText(model_name)
+			self.models_combobox.currentTextChanged.connect(self.select_model)
+			self.models_combobox.setEnabled(True)
+		
+		self.task = BackgroundTask(load_model, 200)
+		self.task.finished.connect(model_loaded)
+		self.task.busy_indication.connect(animate)
+		self.task.start()
 		
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
