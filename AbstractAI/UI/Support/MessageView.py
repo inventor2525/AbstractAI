@@ -20,7 +20,7 @@ class MessageView(BaseMessageView):
 	message_deleted_clicked = pyqtSignal(BaseMessageView)
 	
 	def __init__(self, message: Message, parent=None):
-		background_color = message_color_pallet.get_color(message.source)
+		background_color = message_color_pallet.get_color(self._origional_source(message.source))
 		super().__init__(background_color, parent, message)
 		
 		self.parent = parent
@@ -189,13 +189,19 @@ class MessageView(BaseMessageView):
 		self.message = self.message.create_edited(self.text_edit.toPlainText())
 		
 		self.message_changed.emit(self.message)
-
+	
+	def _origional_source(self, source:MessageSource):
+		if isinstance(source, EditSource):
+			source = EditSource.most_original(source).source
+		return source
+	
 	@property
 	def message(self):
 		return self._message
 	@message.setter
 	def message(self, value:Message):
 		self._message = value
+		
 		self.message_source_view.set_message_source(value.source)
 		self.confirm_btn.setVisible(False)
 		
@@ -210,5 +216,5 @@ class MessageView(BaseMessageView):
 		
 		# self.should_send_checkbox.setChecked(value.should_send)
 		
-		self.background_color = message_color_pallet.get_color(value.source)
+		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		self.update()
