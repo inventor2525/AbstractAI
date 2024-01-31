@@ -21,8 +21,7 @@ class CommonRoles(Enum):
 		
 		if source:
 			if isinstance(source, EditSource):
-				source = EditSource.most_original(source)
-				
+				source = EditSource.most_original(source).source
 			if source.system_message:
 				role = CommonRoles.System
 			elif isinstance(source, UserSource):
