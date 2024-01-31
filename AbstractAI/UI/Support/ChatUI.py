@@ -7,7 +7,7 @@ from AbstractAI.ConversationModel import *
 
 #TODO: this should hold the info to create a model source but should pass things up out of it and should itself be a chat view not directly tied to a model
 class ChatUI(QWidget):
-	message_sent = pyqtSignal(Message)
+	message_sent = pyqtSignal(Conversation, Message)
 	
 	@property
 	def conversation(self) -> Conversation:
@@ -79,7 +79,7 @@ class ChatUI(QWidget):
 		self.conversation.add_message(new_message)
 		self.input_field.clear()
 		
-		self.message_sent.emit(new_message)
+		self.message_sent.emit(self.conversation, new_message)
 		
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:

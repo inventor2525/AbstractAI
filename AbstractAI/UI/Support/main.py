@@ -2,7 +2,7 @@ from AbstractAI.UI.Support.MessageView import *
 from AbstractAI.UI.Support.ConversationView import *
 from AbstractAI.UI.Support.ChatUI import *
 from AbstractAI.UI.Support.ConversationListView import *
-from AbstractAI.LLMs.TemporaryModel import *
+from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
 
 import json
 from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
@@ -25,9 +25,11 @@ class Application(QMainWindow):
 		self.chatUI.conversation = value
 		self.conversation_list_view.set_selected(value)
 		
-	def __init__(self, app: QApplication):
+	def __init__(self, model_loader:ModelLoader):
 		super().__init__()
-		self.app = app
+		self.model_loader = model_loader
+		
+		self.app = QApplication.instance()
 		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
 		
@@ -45,6 +47,8 @@ class Application(QMainWindow):
 		self.conversation = self.new_conversation()
 		
 		self.read_settings()
+		
+		self.llm : LLM = None
 	
 	def init_ui(self):
 		#split view:
@@ -91,6 +95,11 @@ class Application(QMainWindow):
 		
 		self.right_panel = QVBoxLayout()
 		self.name_description_layout = QHBoxLayout()
+		self.models_combobox = QComboBox()
+		self.models_combobox.addItem("Select A Model...")
+		self.models_combobox.addItems(self.model_loader.model_names)
+		self.models_combobox.currentTextChanged.connect(self.select_model)
+		self.name_description_layout.addWidget(self.models_combobox)
 		self.name_field = QLineEdit()
 		self.name_field.setPlaceholderText("Conversation Name...")
 		self.name_field.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -173,21 +182,33 @@ class Application(QMainWindow):
 		self.write_settings()
 		super().closeEvent(event)
 	
-	def user_sent_message(self, message:Message):
-		output = prompt(message.content)
-		response = Message(output)
-		response.source = ModelSource("Temporary model for ui testing", model_path)
-		response.source.message_sequence = message.conversation.message_sequence
-		response.source.model_parameters = {
-			"model_path":model_path,
-			"n_ctx":2048,
-			"n_threads":7,
-			"n_gpu_layers":0
-		}
-		self.conversation.add_message(response)
+	def user_sent_message(self, conversation:Conversation, new_message:Message):
+		if self.llm is None:
+			#Show error an message using a QMessageBox
+			QMessageBox.critical(self, "No LLM Loaded", "Please load an LLM before sending messages.")
+			return
+		
+		response = self.llm.chat(conversation)
+		conversation.add_message(response.message)
+	
+	def select_model(self, model_name:str):
+		if self.models_combobox.itemText(0) == "Select A Model...":
+			self.models_combobox.removeItem(0)
+			
+		self.llm = self.model_loader[model_name]
+		self.llm.start()
 		
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
-	window = Application(app)
+	models = {
+		"Mixtral": {
+			"LoaderType": "LLamaCPP",
+			"ModelName": "Mixtral",
+			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf",
+			"Parameters": {}
+		}
+	}
+	model_loader = ModelLoader(models)
+	window = Application(model_loader)
 	window.show()
 	sys.exit(app.exec_())
