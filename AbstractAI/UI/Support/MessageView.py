@@ -151,15 +151,18 @@ class MessageView(BaseMessageView):
 	
 	def update_text_edit_height(self):
 		margins = self.text_edit.contentsMargins()
-		new_height = int(self.delete_btn.sizeHint().height() * 3) + int(self.panel_layout.spacing() * 2)
 		
+		new_height = max(
+			int(self.panel_layout.sizeHint().height()),
+			int(self.left_layout.sizeHint().height())
+		)
 		def set_height(new_height):
-			self.text_edit.setFixedHeight(new_height + margins.top() + margins.bottom())
+			self.text_edit.setFixedHeight(new_height)
 			
 		if self.expand_btn.arrowType() == Qt.DownArrow:
 			set_height(max(int(self.text_edit.document().size().height()), new_height) )
 		else:
-			set_height(new_height+4)
+			set_height(new_height)
 		self.rowHeightChanged.emit()
 		
 	def toggle_expand(self, checked):
