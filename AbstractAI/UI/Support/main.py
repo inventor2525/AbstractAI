@@ -236,9 +236,13 @@ class Application(QMainWindow):
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	models = {
+		"Mistral": {
+			"LoaderType": "LLamaCPP",
+			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
+			"Parameters": {}
+		},
 		"Mixtral": {
 			"LoaderType": "LLamaCPP",
-			"ModelName": "Mixtral",
 			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf",
 			"Parameters": {}
 		}
