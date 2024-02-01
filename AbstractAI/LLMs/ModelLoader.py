@@ -1,6 +1,4 @@
-from AbstractAI.LLMs.HuggingFaceLLM import *
-from AbstractAI.LLMs.LLamaCPP_LLM import *
-# from AbstractAI.LLMs.OpenAI_LLM import *
+from AbstractAI.LLMs.LLM import LLM
 
 import json
 from typing import Dict, Any
@@ -29,6 +27,7 @@ class ModelLoader():
 			raise KeyError(f"Model '{model_name}' does not have a LoaderType.")
 		
 		if loader_type == ModelType.HuggingFace.value:
+			from AbstractAI.LLMs.HuggingFaceLLM import HuggingFaceLLM
 			return HuggingFaceLLM(model_name, config.get("Parameters", {}))
 		
 		if loader_type == ModelType.LLamaCPP.value:
@@ -36,9 +35,11 @@ class ModelLoader():
 			if model_path is None:
 				raise KeyError(f"Model '{model_name}' does not have a ModelPath.")
 			
+			from AbstractAI.LLMs.LLamaCPP_LLM import LLamaCPP_LLM
 			return LLamaCPP_LLM(model_name, model_path, config.get("Parameters", {}))
 		
 		# if loader_type == ModelType.OpenAI.value:
+		#	from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
 		# 	return OpenAI_LLM(model_name, config.get("Parameters", {}))
 		
 	def add_config(self, model_name:str, loader_type:ModelType, model_path:str=None, parameters:Dict[str, Any]={}):
