@@ -1,4 +1,5 @@
 from AbstractAI.ConversationModel import *
+from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView import *
 
 class ConversationView(QListWidget):
@@ -18,7 +19,7 @@ class ConversationView(QListWidget):
 			self._conversation.message_added.connect(self.render_message)
 			
 			for message in self._conversation.message_sequence.messages:
-				self.render_message(message)
+				self._render_message(message)
 	
 	def __init__(self, conversation: Conversation = None):
 		super().__init__()
@@ -68,7 +69,7 @@ class ConversationView(QListWidget):
 				
 				self.clearSelection()
 	
-	def render_message(self, message: Message):
+	def _render_message(self, message: Message):
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
 		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
@@ -82,6 +83,10 @@ class ConversationView(QListWidget):
 		self.setItemWidget(item, item_widget)
 		item_widget.message_deleted_clicked.connect(self.delete_message)
 		self.scrollToBottom()
+	
+	@run_in_main_thread
+	def render_message(self, message: Message):
+		self._render_message(message)
 		
 	def update_row_height(self, item: QListWidgetItem):
 		item_widget = self.itemWidget(item)

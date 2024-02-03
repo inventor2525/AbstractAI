@@ -28,20 +28,25 @@ class LLamaCPP_LLM(LLM):
 		
 	def _load_model(self):
 		self.model = Llama(**self.model_info.parameters["model"])
-		
-	def _raw_to_text(self, response) -> str:
-		return response['choices'][0]['text']
 	
-	def _raw_output_token_count(self, response) -> Dict[str, int]:
-		#"usage": {
-		# 		"prompt_tokens": 164,
-		# 		"completion_tokens": 121,
-		# 		"total_tokens": 285
-		# 	}
-		return response['usage']
-	
-	def _complete_str(self, prompt: str):
-		return self.model.create_completion(prompt, **self.model_info.parameters["generate"])
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+		prompt_tokens = self.model.tokenize(prompt.encode("utf-8"), special=True) if prompt != "" else [self.model.token_bos()]
+		completion = self.model.create_completion(prompt, **self.model_info.parameters["generate"], stream=stream)
+		response = LLM_RawResponse(wip_message, len(prompt_tokens), stream)
+		if not stream:
+			response.set_response(completion['choices'][0]['text'], completion["usage"]["completion_tokens"], completion)
+		else:
+			def genenerate_more_func():
+				try:
+					next_response = next(completion)
+					print(json.dumps(next_response, indent=4))
+					response.add_response_chunk(next_response['choices'][0]['text'], 1, next_response)
+					print(f"thing added'{response.message.content}'")
+					return True
+				except StopIteration:
+					return False
+			response.genenerate_more_func = genenerate_more_func
+		return response
 	
 	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
 		chat = self.conversation_to_list(conversation)

@@ -48,23 +48,23 @@ class LLM(ABC):
 		self._load_model()
 		print(f"LLM \"{self.model_info.model_name}\" loaded!")
 		
-	def chat(self, conversation: Conversation, start_str:str="") -> LLM_RawResponse:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_RawResponse:
 		'''
 		Prompts the model with a Conversation and starts it's answer with
 		start_str using a blocking method and creates a LLM_RawResponse
 		from what it returns.
 		'''
 		conversation_str = self._apply_chat_template(conversation, start_str)
-		raw_response = self._complete_str(conversation_str)
-		return self._create_response(conversation_str, raw_response, conversation, start_str)
+		wip_message = self._new_message(conversation_str, conversation, start_str)
+		return self._complete_str_into(conversation_str, wip_message, stream)
 		
-	def complete_str(self, text:str) -> LLM_RawResponse:
+	def complete_str(self, text:str, stream=False) -> LLM_RawResponse:
 		'''
 		Similar to prompt, but allows passing raw strings to the model
 		without any additional formatting being added.
 		'''
-		raw_response = self._complete_str(text)
-		return self._create_response(text, raw_response)
+		wip_message = self._new_message(text)
+		return self._complete_str_into(text, wip_message, stream)
 	
 	@abstractmethod
 	def _load_model(self):
@@ -72,29 +72,14 @@ class LLM(ABC):
 		pass
 	
 	@abstractmethod
-	def _raw_to_text(self, response) -> str:
-		'''Pass the raw output from the model, get the text output from it.'''
-		pass
-	
-	@abstractmethod
-	def _raw_output_token_count(self, response) -> Dict[str, int]:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
 		'''
-		Pass a raw response from the model, get the token counts.
+		Pass a string prompt to the model, and it will fill in wip_message.
 		
-		Eg:
-		{
-		# 		"prompt_tokens": 164,
-		# 		"completion_tokens": 121,
-		# 		"total_tokens": 285
-		# 	}
-		'''
-		pass
-	
-	@abstractmethod
-	def _complete_str(self, prompt: str) -> object:
-		'''
-		Facilitates blocking prompts to the model,
-		returning whatever the model does.
+		If stream is true, the message in LLM_RawResponse will start with a
+		content = start_str, and the rest of the content will be streamed into
+		it as you call next on the LLM_RawResponse. Changed notifications will
+		come from the wip_message, so you can use it to update the UI or others.
 		'''
 		pass
 	
@@ -136,10 +121,8 @@ class LLM(ABC):
 	def _serialize_raw_response(self, response:object) -> Dict[str,Any]:
 		return response
 		
-	def _create_response(self, prompt: str, raw_response:object, conversation:Conversation=None, start_str:str="") -> LLM_RawResponse:
-		text_response = self._raw_to_text(raw_response)
-		token_count = self._raw_output_token_count(raw_response)
-		
+	def _new_message(self, prompt: str, conversation:Conversation=None, start_str:str="") -> Message:
+		'''Creates a new message that the model will fill in.'''
 		message_sequence = None
 		if conversation is not None:
 			message_sequence = conversation.message_sequence
@@ -147,15 +130,12 @@ class LLM(ABC):
 		# Store info about where the message came from:
 		source = ModelSource(
 			self.model_info, message_sequence=message_sequence,
-			prompt=prompt, start_str=start_str,
-			serialized_raw_output=self._serialize_raw_response(raw_response)
+			prompt=prompt, start_str=start_str
 		)
 		
 		# Create the message object:
-		message = Message(start_str+text_response, source)
-		
-		return LLM_RawResponse(raw_response, message, token_count)
-		
+		return Message(start_str, source)
+	
 	def timed_prompt(self, model_input: Union[str, Conversation]) -> LLM_RawResponse:
 		'''
 		Prompt the model with timing, can be either a string

@@ -1,5 +1,6 @@
 from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
 from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Helpers.Signal import Signal
 from .MessageSources.EditSource import EditSource
 from .MessageSources.HardCodedSource import HardCodedSource
 from datetime import datetime
@@ -17,7 +18,9 @@ class Message:
 	conversation: "Conversation" = field(default=None, compare=False)
 	
 	_children: List["Message"] = field(default_factory=list, compare=False)
-
+	
+	changed:Signal[["Message"],None] = Signal.field()
+	
 	@staticmethod	
 	def expand_previous_messages(messages:Iterable["Message"]) -> Iterable["Message"]:
 		'''

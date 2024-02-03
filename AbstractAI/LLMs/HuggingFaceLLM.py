@@ -46,38 +46,29 @@ class HuggingFaceLLM(LLM):
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, **self.model_info.parameters["tokenizer"])
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, quantization_config=bnb_config, **self.model_info.parameters["model"])
 
-	def _raw_to_text(self, response) -> str:
-		return self.tokenizer.decode(response, skip_special_tokens=True)
-	
-	def _raw_output_token_count(self, response) -> Dict[str, int]:
-		#"usage": {
-		# 		"prompt_tokens": 164,
-		# 		"completion_tokens": 121,
-		# 		"total_tokens": 285
-		# 	}
-		#TODO: add prompt_tokens and total_tokens:
-		return {
-			"completion_tokens": len(response)
-		}
-		
-	def _serialize_raw_response(self, response:torch.Tensor) -> str:
-		return json.dumps(response.tolist(), indent=4)
-	
-	def _complete_str(self, prompt_string: str):
-		inputs = self.tokenizer(prompt_string, return_tensors="pt")
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+		inputs = self.tokenizer(prompt, return_tensors="pt")
 		inputs_len = len(inputs['input_ids'][0])
 		inputs = inputs.to(self.device)
 		
+		response = LLM_RawResponse(wip_message, inputs_len, stream)
+		
 		try:
-			if self.del_token_type_ids:
+			if self.model_info.parameters["del_token_type_ids"]:
 				del inputs["token_type_ids"]
 		except Exception as e:
 			pass
 		
-		output_tokens = self.model.generate(**inputs, **self.model_info.parameters["generate"])
-		response_tokens = output_tokens[0][inputs_len:]
+		if stream:
+			raise NotImplementedError("Stream not yet implemented for HuggingFaceLLM")
+		else:
+			output_tokens = self.model.generate(**inputs, **self.model_info.parameters["generate"])
+			response_tokens = output_tokens[0][inputs_len:]
+			
+			response_str = self.tokenizer.decode(response_tokens, skip_special_tokens=True)
+			response.set_response(response_str, len(response_tokens), response_tokens.tolist())
 		
-		return response_tokens
+		return response
 	
 	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
 		chat = self.conversation_to_list(conversation)

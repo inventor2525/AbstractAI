@@ -1,6 +1,7 @@
 from .ColoredFrame import *
 from AbstractAI.ConversationModel.Message import Message
 from AbstractAI.ConversationModel.MessageSources import *
+from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageSourceView import MessageSourceView
 from .RoleColorPallet import RoleColorPallet
 
@@ -205,7 +206,12 @@ class MessageView(BaseMessageView):
 		return self._message
 	@message.setter
 	def message(self, value:Message):
+		if self._message is not None:
+			self._message.changed.disconnect(self.on_message_changed)
 		self._message = value
+		
+		if self._message is not None:
+			self._message.changed.connect(self.on_message_changed)
 		
 		self.message_source_view.set_message_source(value.source)
 		self.confirm_btn.setVisible(False)
@@ -223,3 +229,10 @@ class MessageView(BaseMessageView):
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		self.update()
+		
+	@run_in_main_thread
+	def on_message_changed(self):
+		print("thing running")
+		self.text_edit.setPlainText(self.message.content)
+		self.text_edit.setStyleSheet("")
+		self.update_text_edit_height()

@@ -190,12 +190,16 @@ class Application(QMainWindow):
 			return
 		
 		def chat():
-			return self.llm.chat(conversation)
+			response = self.llm.chat(conversation, stream=True)
+			conversation.add_message(response.message)
+			while response.generate_more():
+				pass
+			return response.message
+			
 		self.task = BackgroundTask(chat)
 		
 		def finished():
 			response = self.task.return_val
-			conversation.add_message(response.message)
 			
 		self.task.finished.connect(finished)
 		self.task.start()
