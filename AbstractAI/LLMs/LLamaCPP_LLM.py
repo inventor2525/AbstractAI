@@ -39,9 +39,7 @@ class LLamaCPP_LLM(LLM):
 			def genenerate_more_func():
 				try:
 					next_response = next(completion)
-					print(json.dumps(next_response, indent=4))
 					response.add_response_chunk(next_response['choices'][0]['text'], 1, next_response)
-					print(f"thing added'{response.message.content}'")
 					return True
 				except StopIteration:
 					return False

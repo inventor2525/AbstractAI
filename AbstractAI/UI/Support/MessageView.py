@@ -7,8 +7,8 @@ from .RoleColorPallet import RoleColorPallet
 
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
-	def __init__(self, background_color, parent, message: Message):
-		super().__init__(background_color, parent)
+	def __init__(self, parent, message: Message):
+		super().__init__(parent)
 		self._message = message
 		
 class MessageView(BaseMessageView):
@@ -21,8 +21,7 @@ class MessageView(BaseMessageView):
 	message_deleted_clicked = pyqtSignal(BaseMessageView)
 	
 	def __init__(self, message: Message, parent=None):
-		background_color = message_color_pallet.get_color(self._origional_source(message.source))
-		super().__init__(background_color, parent, message)
+		super().__init__(parent, message)
 		
 		self.parent = parent
 		
@@ -46,7 +45,6 @@ class MessageView(BaseMessageView):
 		
 		# Date label
 		self.date_label = QLabel()
-		self.date_label.setText(message.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
 		self.date_label.setFixedWidth(100)
 		self.date_label.setWordWrap(True)
 		self.left_layout.addWidget(self.date_label)
@@ -111,7 +109,6 @@ class MessageView(BaseMessageView):
 		
 		# Editable text box
 		self.text_edit = QTextEdit()
-		self.text_edit.setPlainText(message.content)
 		self.text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
 		self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -134,7 +131,6 @@ class MessageView(BaseMessageView):
 		# Confirm button (checkmark)
 		self.confirm_btn = QPushButton("✓")
 		self.confirm_btn.clicked.connect(self.confirm_changes)
-		self.confirm_btn.setVisible(False)
 		self.confirm_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.confirm_btn, alignment=Qt.AlignTop)
 
@@ -144,8 +140,8 @@ class MessageView(BaseMessageView):
 		self.expand_btn.setArrowType(Qt.RightArrow)
 		self.expand_btn.toggled.connect(self.toggle_expand)
 		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignTop)
-
-		self.update_text_edit_height()
+		
+		self.message = message
 	
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked
@@ -221,18 +217,17 @@ class MessageView(BaseMessageView):
 		
 		self.text_edit.setPlainText(value.content)
 		self.text_edit.setStyleSheet("")
-		self.update_text_edit_height()
 		
 		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
 		
 		# self.should_send_checkbox.setChecked(value.should_send)
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
+		self.update_text_edit_height()
 		self.update()
 		
 	@run_in_main_thread
-	def on_message_changed(self):
-		print("thing running")
-		self.text_edit.setPlainText(self.message.content)
+	def on_message_changed(self, message: Message):
+		self.text_edit.setPlainText(message.content)
 		self.text_edit.setStyleSheet("")
 		self.update_text_edit_height()

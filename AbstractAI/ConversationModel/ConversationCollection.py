@@ -14,7 +14,10 @@ class ConversationCollection():
 				
 	def append(self, conversation:Conversation, should_notify=True) -> None:
 		self.conversations.append(conversation)
-		conversation.message_added.connect(lambda message: self.engine.merge(message.conversation))
+		def message_added(message):
+			self.engine.merge(message.conversation)
+			message.changed.connect(lambda message: self.engine.merge(message))
+		conversation.message_added.connect(message_added)
 		if should_notify:
 			self.conversation_added(conversation)
 	

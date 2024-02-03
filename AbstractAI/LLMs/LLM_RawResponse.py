@@ -32,7 +32,6 @@ class LLM_RawResponse:
 		
 		self.message.content += text
 		self.message.changed(self.message)
-		print("added stuff... wtf")
 	
 	def generate_more(self) -> bool:
 		'''
