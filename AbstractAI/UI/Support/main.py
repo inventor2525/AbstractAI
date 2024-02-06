@@ -189,18 +189,24 @@ class Application(QMainWindow):
 			QMessageBox.critical(self, "No LLM Loaded", "Please load an LLM before sending messages.")
 			return
 		
+		self._should_generate = True
+		def stop_generating():
+			self._should_generate = False
+			
 		def chat():
 			response = self.llm.chat(conversation, stream=True)
 			conversation.add_message(response.message)
-			while response.generate_more():
+			while self._should_generate and response.generate_more():
 				pass
 			return response.message
 			
 		self.task = BackgroundTask(chat)
 		
 		def finished():
-			response = self.task.return_val
+			self.chatUI.change_to_send()
+			self.chatUI.stop_generating.disconnect(stop_generating)
 			
+		self.task.started.connect(lambda:self.chatUI.stop_generating.connect(stop_generating))
 		self.task.finished.connect(finished)
 		self.task.start()
 	
