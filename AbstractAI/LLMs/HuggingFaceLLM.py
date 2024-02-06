@@ -70,9 +70,7 @@ class HuggingFaceLLM(LLM):
 		
 		return response
 	
-	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
-		chat = self.conversation_to_list(conversation)
-				
+	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		chat_str = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
 		if start_str is not None and len(start_str) > 0:
 			chat_str = chat_str + start_str

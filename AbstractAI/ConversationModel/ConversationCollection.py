@@ -16,7 +16,10 @@ class ConversationCollection():
 		self.conversations.append(conversation)
 		def message_added(message):
 			self.engine.merge(message.conversation)
-			message.changed.connect(lambda message: self.engine.merge(message))
+			def message_changed(message):
+				self.engine.merge(message)
+				self.engine.merge(message.source)
+			message.changed.connect(message_changed)
 		conversation.message_added.connect(message_added)
 		if should_notify:
 			self.conversation_added(conversation)
@@ -28,8 +31,8 @@ class ConversationCollection():
 		with engine.session() as session:
 			all_conversations = deepcopy(session.query(Conversation).order_by(Conversation.creation_time__DateTimeObj).all())
 			
-			for conversation in all_conversations:
-				collection.append(conversation, should_notify=False)
+		for conversation in all_conversations:
+			collection.append(conversation, should_notify=False)
 		
 		collection.engine = engine
 		return collection

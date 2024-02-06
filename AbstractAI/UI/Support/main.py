@@ -4,6 +4,7 @@ from AbstractAI.UI.Support.ChatUI import *
 from AbstractAI.UI.Support.ConversationListView import *
 from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
+from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 
 import json
 from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
@@ -26,9 +27,10 @@ class Application(QMainWindow):
 		self.chatUI.conversation = value
 		self.conversation_list_view.set_selected(value)
 		
-	def __init__(self, model_loader:ModelLoader):
+	def __init__(self, model_loader:ModelLoader, settings:QSettings):
 		super().__init__()
 		self.model_loader = model_loader
+		self.settings = settings
 		
 		self.app = QApplication.instance()
 		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
@@ -172,12 +174,10 @@ class Application(QMainWindow):
 			self.conversation_list_view.conversations = ConversationCollection(filtered_conversations)
 	
 	def read_settings(self):
-		settings = QSettings("MyCompany", "MyApp")
-		self.restoreGeometry(settings.value("geometry", QByteArray()))
+		self.restoreGeometry(self.settings.value("geometry", QByteArray()))
 
 	def write_settings(self):
-		settings = QSettings("MyCompany", "MyApp") #TODO: Move settings to the main window to be and add which conv was open as well as what more (columns, tabs, or windows) the ui is in
-		settings.setValue("geometry", self.saveGeometry())
+		self.settings.setValue("geometry", self.saveGeometry())
 	
 	def closeEvent(self, event):
 		self.write_settings()
@@ -239,6 +239,8 @@ class Application(QMainWindow):
 		
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
+	settings = QSettings("MyCompany", "MyApp")
+	
 	models = {
 		"Mistral": {
 			"LoaderType": "LLamaCPP",
@@ -249,9 +251,21 @@ if __name__ == "__main__":
 			"LoaderType": "LLamaCPP",
 			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf",
 			"Parameters": {}
+		},
+		"GPT-3.5 Turbo": {
+			"ModelName": "gpt-3.5-turbo",
+			"LoaderType": "OpenAI",
+			"Parameters": {},
+			"APIKey": APIKeyGetter("OpenAI", settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
+		},
+		"GPT-4": {
+			"ModelName": "gpt-4",
+			"LoaderType": "OpenAI",
+			"Parameters": {},
+			"APIKey": APIKeyGetter("OpenAI", settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
 		}
 	}
 	model_loader = ModelLoader(models)
-	window = Application(model_loader)
+	window = Application(model_loader, settings)
 	window.show()
 	sys.exit(app.exec_())

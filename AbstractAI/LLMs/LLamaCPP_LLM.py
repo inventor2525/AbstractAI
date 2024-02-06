@@ -46,8 +46,7 @@ class LLamaCPP_LLM(LLM):
 			response.genenerate_more_func = genenerate_more_func
 		return response
 	
-	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
-		chat = self.conversation_to_list(conversation)
+	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		# The formatter functions in LlamaCPP are wrapped by the register_chat_format
 		# decorator, which stores them in a registry of chat completion handlers with
 		# no way to access them directly by name. So we have to do this to extract the

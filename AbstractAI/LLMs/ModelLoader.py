@@ -22,6 +22,8 @@ class ModelLoader():
 		if config is None:
 			raise KeyError(f"Model '{model_name}' not found in model configs.")
 		
+		model_name = config.get("ModelName", model_name)
+		
 		loader_type = config.get("LoaderType", None)
 		if loader_type is None:
 			raise KeyError(f"Model '{model_name}' does not have a LoaderType.")
@@ -38,9 +40,12 @@ class ModelLoader():
 			from AbstractAI.LLMs.LLamaCPP_LLM import LLamaCPP_LLM
 			return LLamaCPP_LLM(model_name, model_path, config.get("Parameters", {}))
 		
-		# if loader_type == ModelType.OpenAI.value:
-		#	from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
-		# 	return OpenAI_LLM(model_name, config.get("Parameters", {}))
+		if loader_type == ModelType.OpenAI.value:
+			assert "APIKey" in config, f"Model '{model_name}' does not have an APIKey."
+			api_key = config["APIKey"]
+			
+			from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
+			return OpenAI_LLM(api_key, model_name, config.get("Parameters", {}))
 		
 	def add_config(self, model_name:str, loader_type:ModelType, model_path:str=None, parameters:Dict[str, Any]={}):
 		if loader_type == ModelType.LLamaCPP:

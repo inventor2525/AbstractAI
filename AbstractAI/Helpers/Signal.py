@@ -1,5 +1,6 @@
 from typing import Callable, TypeVar, Generic, List, Set, Optional, Dict
 from typing_extensions import ParamSpec
+from threading import Lock
 
 from dataclasses import field
 # Define a ParamSpec for the arguments and a TypeVar for the return type
@@ -9,26 +10,34 @@ R = TypeVar('R')
 class Signal(Generic[P, R]):
 	def __init__(self):
 		self._listeners: Dict[Optional[str], Callable[P, R]] = {}
+		self.lock = Lock()
 
 	def connect(self, listener: Callable[P, R], key: Optional[str] = None) -> None:
-		if key is None:
-			key = listener
-		self._listeners[key] = listener
+		with self.lock:
+			if key is None:
+				key = listener
+			self._listeners[key] = listener
 
 	def disconnect(self, listener: Callable[P, R], key: Optional[str] = None) -> None:
-		if key is None:
-			key = listener
-		if key in self._listeners:
-			del self._listeners[key]
+		with self.lock:
+			if key is None:
+				key = listener
+			if key in self._listeners:
+				del self._listeners[key]
 
 	def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Dict[str, R]:
 		results: Dict[str, R] = {}
-		for key, listener in self._listeners.items():
+		with self.lock:
+			listeners = self._listeners.copy()
+		for key, listener in listeners.items():
 			r = listener(*args, **kwargs)
 			if isinstance(key, str):
 				results[key] = r
 				
 		return results
+	
+	def __deepcopy__(self, memo):
+		return self
 	
 	@staticmethod
 	def field(compare=False, repr=False, hash=False, init=False, kw_only=True) -> field:

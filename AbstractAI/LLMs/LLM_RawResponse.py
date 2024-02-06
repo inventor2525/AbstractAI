@@ -30,7 +30,8 @@ class LLM_RawResponse:
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count += out_token_count
 		
-		self.message.content += text
+		if text is not None:
+			self.message.content += text
 		self.message.changed(self.message)
 	
 	def generate_more(self) -> bool:

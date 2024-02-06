@@ -54,7 +54,8 @@ class LLM(ABC):
 		start_str using a blocking method and creates a LLM_RawResponse
 		from what it returns.
 		'''
-		conversation_str = self._apply_chat_template(conversation, start_str)
+		chat = self.conversation_to_list(conversation)
+		conversation_str = self._apply_chat_template(chat, start_str)
 		wip_message = self._new_message(conversation_str, conversation, start_str)
 		return self._complete_str_into(conversation_str, wip_message, stream)
 		
@@ -84,7 +85,7 @@ class LLM(ABC):
 		pass
 	
 	@abstractmethod
-	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> Any:
+	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
 		pass
 	
@@ -93,29 +94,34 @@ class LLM(ABC):
 		prev_role = None
 		role_mapping = self.model_info.parameters["roles"]["mapping"]
 		must_alternate = self.model_info.parameters["roles"]["must_alternate"]
+		
+		def append(msg:Dict[str,str], name:str):
+			if name is not None:
+				msg["name"] = name
+			chat.append(msg)
 		for message in conversation.message_sequence.messages:
 			message_role, user_name = CommonRoles.from_source(message.source)
 			role = role_mapping[message_role.value]
 			if must_alternate:
 				# Make sure roles alternate
 				if prev_role is None and role == "assistant":
-					chat.append({
-						"role":"user",
+					append({
+						"role":role_mapping[CommonRoles.User.value],
 						"content":""
-					})
+					}, user_name)
 				if role == prev_role:
 					chat[-1]["content"] += "\n\n" + message.content
 				else:
-					chat.append({
+					append({
 						"role":role,
 						"content":message.content
-					})
+					}, user_name)
 				prev_role = role
 			else:
-				chat.append({
+				append({
 					"role":role,
 					"content":message.content
-				})
+				}, user_name)
 		return chat
 	
 	def _serialize_raw_response(self, response:object) -> Dict[str,Any]:

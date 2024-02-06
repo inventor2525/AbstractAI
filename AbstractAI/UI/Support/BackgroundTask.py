@@ -11,6 +11,7 @@ class BackgroundTask(QThread):
 		self.timmer = QTimer()
 		self.timmer.setInterval(background_interval)
 		self.timmer.timeout.connect(self.busy_indication.emit)
+		self.return_val = None
 
 	def run(self):
 		self.return_val = self.task()
