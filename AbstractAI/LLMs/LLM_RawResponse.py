@@ -17,6 +17,7 @@ class LLM_RawResponse:
 		'''Used by the model to set the response of a blocking response.'''
 		assert not self.is_streamed, "Set response is only for blocking responses. Use add_response_chunk for streamed responses."
 		self.raw_response = raw_response
+		self.message.source.serialized_raw_output = raw_response
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count = out_token_count
 		
@@ -27,6 +28,11 @@ class LLM_RawResponse:
 		'''Used by the model to add a response chunk to a streamed response.'''
 		assert self.is_streamed, "Add response chunk is only for streamed responses. Use set_response for blocking responses."
 		self.raw_response.append(response_chunk)
+		
+		if "Chunks" not in self.message.source.serialized_raw_output:
+			self.message.source.serialized_raw_output["Chunks"] = []
+		self.message.source.serialized_raw_output["Chunks"].append(response_chunk)
+		
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count += out_token_count
 		

@@ -18,7 +18,6 @@ class ConversationCollection():
 			self.engine.merge(message.conversation)
 			def message_changed(message):
 				self.engine.merge(message)
-				self.engine.merge(message.source)
 			message.changed.connect(message_changed)
 		conversation.message_added.connect(message_added)
 		if should_notify:
