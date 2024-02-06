@@ -43,15 +43,14 @@ class OpenAI_LLM(LLM):
 		wip_message = self._new_message(json.dumps(message_list, indent=4), conversation, "")
 		response = LLM_RawResponse(wip_message, 0, stream)
 		
-		print(self.model_info.parameters["generate"])
-		completion:ChatCompletion = self.client.chat.completions.create(
+		completion = self.client.chat.completions.create(
 			model=self.model_info.model_name,
 			messages=message_list,
 			**self.model_info.parameters["generate"],
 			stream=stream
 		)
-		
 		if stream:
+			response.stop_streaming_func = completion.close
 			def genenerate_more_func():
 				try:
 					next_response:ChatCompletionChunk = next(completion)

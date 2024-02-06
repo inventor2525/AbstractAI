@@ -12,6 +12,7 @@ class LLM_RawResponse:
 	raw_response:Union[Dict[str, Any], List[Dict[str, Any]]] = field(default_factory=list)
 	
 	genenerate_more_func:Callable[[],bool] = None
+	stop_streaming_func:Callable[[],None] = None
 	
 	def set_response(self, text:str, out_token_count:int, raw_response:Dict[str, Any]):
 		'''Used by the model to set the response of a blocking response.'''
@@ -50,3 +51,9 @@ class LLM_RawResponse:
 		assert self.is_streamed, "Next is only for streamed responses."
 		assert self.genenerate_more_func is not None, "genenerate_more_func not set. This should have been done by the model."
 		return self.genenerate_more_func()
+	
+	def stop_streaming(self):
+		'''Call this to stop streaming and close the connection.'''
+		assert self.is_streamed, "Stop streaming is only for streamed responses."
+		if self.stop_streaming_func is not None:
+			self.stop_streaming_func()

@@ -196,8 +196,10 @@ class Application(QMainWindow):
 		def chat():
 			response = self.llm.chat(conversation, stream=True)
 			conversation.add_message(response.message)
-			while self._should_generate and response.generate_more():
-				pass
+			while response.generate_more():
+				if not self._should_generate:
+					response.stop_streaming()
+					break
 			return response.message
 			
 		self.task = BackgroundTask(chat)
