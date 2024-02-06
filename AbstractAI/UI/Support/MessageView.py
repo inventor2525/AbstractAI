@@ -4,6 +4,7 @@ from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageSourceView import MessageSourceView
 from .RoleColorPallet import RoleColorPallet
+from PyQt5.QtCore import QTimer
 
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
@@ -142,6 +143,7 @@ class MessageView(BaseMessageView):
 		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignTop)
 		
 		self.message = message
+		QTimer.singleShot(0, self.update_text_edit_height)
 	
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked

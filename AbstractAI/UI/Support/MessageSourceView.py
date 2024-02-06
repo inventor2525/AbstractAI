@@ -11,9 +11,9 @@ class MessageSourceView(QWidget):
 		self.layout = QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
 		
-		self.setLayout(self.layout)
 		self.label = QLabel()
 		self.layout.addWidget(self.label)
+		self.setLayout(self.layout)
 		
 		self.set_message_source(message_source)
 	
