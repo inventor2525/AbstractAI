@@ -1,8 +1,11 @@
 from AbstractAI.LLMs.LLM import LLM
+from AbstractAI.Helpers.merge_dictionaries import merge_dictionaries
 
 import json
 from typing import Dict, Any
 from enum import Enum
+import pkgutil
+import os
 
 class ModelType(Enum):
 	HuggingFace = "HuggingFace"
@@ -11,6 +14,21 @@ class ModelType(Enum):
 
 class ModelLoader():
 	def __init__(self, model_configs:Dict[str, Any]={}):
+		# Load package model configs
+		package_directory = os.path.dirname(os.path.abspath(pkgutil.get_loader('AbstractAI').path))
+		model_configs_path = os.path.join(package_directory, 'models.json')
+		if os.path.exists(model_configs_path):
+			with open(model_configs_path, 'r') as f:
+				package_model_configs = json.load(f)
+				model_configs = merge_dictionaries(model_configs, package_model_configs)
+		
+		# Load user model configs (~/.config/AbstractAI/models.json)
+		user_model_configs_path = os.path.join(os.path.expanduser("~"), '.config', 'AbstractAI', 'models.json')
+		if os.path.exists(user_model_configs_path):
+			with open(user_model_configs_path, 'r') as f:
+				user_model_configs = json.load(f)
+				model_configs = merge_dictionaries(model_configs, user_model_configs)
+		
 		self.model_configs = model_configs
 	
 	@property

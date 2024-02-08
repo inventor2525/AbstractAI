@@ -1,11 +1,11 @@
 from AbstractAI.Helpers.Stopwatch import Stopwatch
 from abc import ABC, abstractmethod
 from pydub import AudioSegment
-import torch
 import re
 
 class TextToSpeech(ABC):
 	def __init__(self):
+		import torch
 		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 		self.sw = Stopwatch()
 

@@ -1,10 +1,15 @@
 from typing import List
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from ClassyFlaskDB.DATA import DATAEngine
-from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
-from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import MicrosoftSpeechT5_TTS, TextToSpeech
+
+from AbstractAI.ConversationModel import *
+from AbstractAI.SpeechToText.SpeechToText import SpeechToText
+from AbstractAI.TextToSpeech.TextToSpeech import TextToSpeech
+from AbstractAI.LLMs.ModelLoader import ModelLoader
+from AbstractAI.LLMs.LLM import LLM
+
+from typing import Dict
 from AbstractAI.Helpers.nvidia_smi import nvidia_smi
-from AbstractAI.LLMs.LoadLLM import *
 from pydub import AudioSegment
 import re
 
@@ -13,16 +18,22 @@ data_engine = DATAEngine(ConversationDATA)
 
 @Flaskify
 class System():
-	whisper : WhisperSTT
-	tts : MicrosoftSpeechT5_TTS
+	whisper : SpeechToText
+	tts : TextToSpeech
 	LLMs : Dict[str,LLM] = {}
-
-	@staticmethod
+	model_loader : ModelLoader
+	
+	@Flaskify.ServerInit
 	def start_server():
+		from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
+		from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import MicrosoftSpeechT5_TTS
+		
 		System.whisper = WhisperSTT()
 		System.whisper.load_model("large")
 
 		System.tts = MicrosoftSpeechT5_TTS()
+		
+		System.model_loader = ModelLoader()
 	
 	##################################################
 	## System
@@ -68,7 +79,7 @@ class System():
 	@StaticRoute
 	def load_LLM(llm_name:str) -> None:
 		if llm_name not in System.LLMs:
-			llm = LoadLLM(llm_name)
+			llm = System.model_loader[llm_name]
 			llm.start()
 			System.LLMs[llm_name] = llm
 	
