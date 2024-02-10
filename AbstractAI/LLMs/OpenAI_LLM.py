@@ -76,7 +76,9 @@ class OpenAI_LLM(LLM):
 		
 		return response
 	
-	def _apply_chat_template(self, chat: List[Dict[str,str]]) -> str:
+	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
+		if start_str is not None and len(start_str) > 0:
+			raise Exception("Start string not supported by OpenAI")
 		prompt_peices = []
 		for message in chat:
 			prompt_peices.append( f"#{message['role']}:\n{message['content']}" )

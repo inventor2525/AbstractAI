@@ -271,6 +271,12 @@ if __name__ == "__main__":
 			"LoaderType": "OpenAI",
 			"Parameters": {},
 			"APIKey": APIKeyGetter("OpenAI", settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
+		},
+		"GPT-4 (OLD)" : {
+			"ModelName": "gpt-4-0613",
+			"LoaderType": "OpenAI",
+			"Parameters": {},
+			"APIKey": APIKeyGetter("OpenAI", settings)
 		}
 	}
 	model_loader = ModelLoader(models)

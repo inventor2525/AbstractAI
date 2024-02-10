@@ -24,11 +24,15 @@ class LLM(ABC):
 		}
 		self.stats = LLMStats()
 		self.model_info = ModelInfo(type(self).__name__, model_name, merge_dictionaries(default, parameters))
+		self.started = False
 
 	def start(self):
+		if self.started:
+			return
 		print(f"Loading LLM \"{self.model_info.model_name}\" using \"{self.model_info.class_name}\" with parameters: {json.dumps(self.model_info.parameters,indent=4, cls=JSONEncoder)}")
 		self._load_model()
 		print(f"LLM \"{self.model_info.model_name}\" loaded!")
+		self.started = True
 		
 	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_RawResponse:
 		'''
@@ -67,7 +71,7 @@ class LLM(ABC):
 		pass
 	
 	@abstractmethod
-	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
+	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
 		pass
 	

@@ -1,46 +1,83 @@
-from AbstractAI.LLMs.LLM import LLM, LLMStats
+from AbstractAI.ConversationModel import Conversation
+from AbstractAI.LLMs.LLM import LLM, LLMStats, LLM_RawResponse
 from AbstractAI.LLMs.ModelLoader import ModelLoader
 from AbstractAI.ConversationModel import *
 
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
-from typing import Dict, Any
+from typing import Dict, Any, List
+import json
 
 @Flaskify
 class RemoteLLM_Backend:
+	model_loader : ModelLoader
+	models : Dict[str,LLM]
+	
+	@Flaskify.ServerInit
+	def server_init():
+		RemoteLLM_Backend.model_loader = ModelLoader()
+		RemoteLLM_Backend.models_by_name = {}
+		RemoteLLM_Backend.models_by_id = {}
+		
 	@StaticRoute
 	def init_model(model_name:str, loader_params:Dict[str, Any]) -> ModelInfo:
-		#when less tiered, this method, and make sure it loads the conversation model in an engine before starting
-		
-		#this is whats called by init, it should return a model info and not start the model
-		
-		#it should check if the model is already loaded "somehow" (possibly inside ModelLoader? [rather that delete things from mempory]) and return it by model_info.auto_id
-		raise NotImplementedError("This method should be implemented by the backend.")
+		if loader_params is not None:
+			raise NotImplementedError("add model with dict not implemented yet")
+			# RemoteLLM_Backend.model_loader.add_model(model_name, loader_params)
+		if model_name not in RemoteLLM_Backend.models_by_name:
+			RemoteLLM_Backend.models_by_name[model_name] = RemoteLLM_Backend.model_loader[model_name]
+			RemoteLLM_Backend.models_by_id[RemoteLLM_Backend.models_by_name[model_name].model_info.auto_id] = RemoteLLM_Backend.models_by_name[model_name]
+		return RemoteLLM_Backend.models_by_name[model_name].model_info
 	
 	@StaticRoute
-	def load_model(self, model_info:ModelInfo):
-		#this should be called by the frontend to load the model by model_info.auto_id, if it is not already loaded
-		raise NotImplementedError("This method should be implemented by the backend.")
+	def load_model(model_info:ModelInfo):
+		RemoteLLM_Backend.models_by_id[model_info.auto_id].start()
+		
+	@StaticRoute
+	def apply_chat_template(model_info:ModelInfo, chat: List[Dict[str,str]], start_str:str="") -> str:
+		return RemoteLLM_Backend.models_by_id[model_info.auto_id]._apply_chat_template(chat, start_str)
 	
+	@StaticRoute
+	def chat(model_info:ModelInfo, conversation: Conversation, start_str: str = "", stream=False) -> Message:
+		response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream)
+		if stream:
+			#TODO: spawn a new thread to call response.genenerate_more until it returns False
+			#and keep the response object in a dictionary by it's message auto_id so that
+			#it can be accessed by the client to get the new response chunks
+			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+		return response.message
+	
+	@StaticRoute
+	def complete_str(model_info:ModelInfo, text:str, stream=False) -> Message:
+		response = RemoteLLM_Backend.models_by_id[model_info.auto_id].complete_str(text, stream)
+		if stream:
+			#same as above
+			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+		return response.message
+		
 class RemoteLLM(LLM):
-	def __init__(self, model_name:str, loader_params:Dict[str, Any]):
+	def __init__(self, model_name:str, loader_params:Dict[str, Any]=None):
 		self.stats = LLMStats()
 		self.model_info = RemoteLLM_Backend.init_model(model_name, loader_params)
 	
 	def _load_model(self):
 		RemoteLLM_Backend.load_model(self.model_info)
-		
-		
-		
-		
-		
-		
-		
-	#TODO: implement the rest of these methods:
-	@abstractmethod
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
-		#This is the meat.... how the fuck to do this?
-		pass
 	
-	def _apply_chat_template(self, conversation: Conversation, start_str:str="") -> str:
-		#TODO: Call the class's version of this method. We already have the implementation on the client, just call it based on the class name
-		raise NotImplementedError("This method should be implemented by the backend.")
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_RawResponse:
+		if stream:
+			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+		else:
+			message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream)
+			return LLM_RawResponse(message, message.source.in_token_count, stream)
+	
+	def complete_str(self, text:str, stream=False) -> LLM_RawResponse:
+		if stream:
+			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+		else:
+			message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
+			return LLM_RawResponse(message, message.source.in_token_count, stream)
+	
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+		raise NotImplementedError()
+	
+	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
+		RemoteLLM_Backend.apply_chat_template(self.model_info, chat, start_str)

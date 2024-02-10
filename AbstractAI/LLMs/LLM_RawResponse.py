@@ -23,7 +23,6 @@ class LLM_RawResponse:
 		self.message.source.out_token_count = out_token_count
 		
 		self.message.content = text
-		self.message.changed(self.message)
 		
 	def add_response_chunk(self, text:str, out_token_count:int, response_chunk:Dict[str, Any]):
 		'''Used by the model to add a response chunk to a streamed response.'''
