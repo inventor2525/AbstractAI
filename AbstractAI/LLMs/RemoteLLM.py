@@ -50,7 +50,7 @@ class RemoteLLM_Backend:
 		
 	@StaticRoute
 	def init_model(model_name:str, loader_params:Dict[str, Any]) -> ModelInfo:
-		if loader_params is not None:
+		if loader_params is not None and len(loader_params) > 0:
 			raise NotImplementedError("add model with dict not implemented yet")
 			# RemoteLLM_Backend.model_loader.add_model(model_name, loader_params)
 		if model_name not in RemoteLLM_Backend.models_by_name:

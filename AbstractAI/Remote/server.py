@@ -5,6 +5,7 @@ if __name__ == '__main__':
 	app = Flask(__name__)
 	Flaskify.make_server(app)
 	from AbstractAI.Remote.System import System
+	from AbstractAI.LLMs.RemoteLLM import RemoteLLM_Backend
 	
 	# Debug what routes are available:
 	Flaskify.debug_routes()

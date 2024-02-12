@@ -11,6 +11,7 @@ class ModelType(Enum):
 	HuggingFace = "HuggingFace"
 	LLamaCPP = "LLamaCPP"
 	OpenAI = "OpenAI"
+	RemoteLLM = "RemoteLLM"
 
 class ModelLoader():
 	def __init__(self, model_configs:Dict[str, Any]={}):
@@ -64,6 +65,10 @@ class ModelLoader():
 			
 			from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
 			return OpenAI_LLM(api_key, model_name, config.get("Parameters", {}))
+		
+		if loader_type == ModelType.RemoteLLM.value:
+			from AbstractAI.LLMs.RemoteLLM import RemoteLLM
+			return RemoteLLM(model_name, config.get("Parameters", {}))
 		
 	def add_config(self, model_name:str, loader_type:ModelType, model_path:str=None, parameters:Dict[str, Any]={}):
 		if loader_type == ModelType.LLamaCPP:
