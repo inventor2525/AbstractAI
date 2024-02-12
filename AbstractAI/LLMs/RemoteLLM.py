@@ -1,6 +1,6 @@
 from threading import Thread, Lock
 from AbstractAI.ConversationModel import Conversation
-from AbstractAI.LLMs.LLM import LLM, LLMStats, LLM_RawResponse
+from AbstractAI.LLMs.LLM import LLM, LLMStats, LLM_Response
 from AbstractAI.LLMs.ModelLoader import ModelLoader
 from AbstractAI.ConversationModel import *
 
@@ -10,7 +10,7 @@ import json
 
 class StreamResponse:
 	'''A class to continuously generate more of a response from a stream until it's done.'''
-	def __init__(self, response:LLM_RawResponse):
+	def __init__(self, response:LLM_Response):
 		self.response = response
 		self.done = False
 		self.thread = Thread(target=self._generate_more)
@@ -100,22 +100,22 @@ class RemoteLLM(LLM):
 	def _load_model(self):
 		RemoteLLM_Backend.load_model(self.model_info)
 	
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_RawResponse:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_Response:
 		if stream:
 			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
 		else:
 			message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream)
-			return LLM_RawResponse(message, message.source.in_token_count, stream)
+			return LLM_Response(message, message.source.in_token_count, stream)
 	
-	def complete_str(self, text:str, stream=False) -> LLM_RawResponse:
+	def complete_str(self, text:str, stream=False) -> LLM_Response:
 		message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
 		if stream:
-			response = LLM_RawResponse(message, message.source.in_token_count, stream)
+			response = LLM_Response(message, message.source.in_token_count, stream)
 			response.stop_streaming_func
 		else:
-			return LLM_RawResponse(message, message.source.in_token_count, stream)
+			return LLM_Response(message, message.source.in_token_count, stream)
 	
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
 		raise NotImplementedError()
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:

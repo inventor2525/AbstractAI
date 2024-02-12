@@ -46,12 +46,12 @@ class HuggingFaceLLM(LLM):
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, **self.model_info.parameters["tokenizer"])
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, quantization_config=bnb_config, **self.model_info.parameters["model"])
 
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
 		inputs = self.tokenizer(prompt, return_tensors="pt")
 		inputs_len = len(inputs['input_ids'][0])
 		inputs = inputs.to(self.device)
 		
-		response = LLM_RawResponse(wip_message, inputs_len, stream)
+		response = LLM_Response(wip_message, inputs_len, stream)
 		
 		try:
 			if self.model_info.parameters["del_token_type_ids"]:

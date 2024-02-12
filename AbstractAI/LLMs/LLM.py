@@ -3,7 +3,7 @@ from AbstractAI.Helpers.LLMStats import LLMStats
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 from AbstractAI.Helpers.merge_dictionaries import merge_dictionaries
-from .LLM_RawResponse import LLM_RawResponse
+from .LLM_RawResponse import LLM_Response
 
 from datetime import datetime
 from abc import ABC, abstractmethod, abstractproperty
@@ -34,7 +34,7 @@ class LLM(ABC):
 		print(f"LLM \"{self.model_info.model_name}\" loaded!")
 		self.started = True
 		
-	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_RawResponse:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_Response:
 		'''
 		Prompts the model with a Conversation and starts it's answer with
 		start_str using a blocking method and creates a LLM_RawResponse
@@ -45,7 +45,7 @@ class LLM(ABC):
 		wip_message = self._new_message(conversation_str, conversation, start_str)
 		return self._complete_str_into(conversation_str, wip_message, stream)
 		
-	def complete_str(self, text:str, stream=False) -> LLM_RawResponse:
+	def complete_str(self, text:str, stream=False) -> LLM_Response:
 		'''
 		Similar to prompt, but allows passing raw strings to the model
 		without any additional formatting being added.
@@ -59,7 +59,7 @@ class LLM(ABC):
 		pass
 	
 	@abstractmethod
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
 		'''
 		Pass a string prompt to the model, and it will fill in wip_message.
 		
@@ -128,13 +128,13 @@ class LLM(ABC):
 		# Create the message object:
 		return Message(start_str, source)
 	
-	def timed_prompt(self, model_input: Union[str, Conversation]) -> LLM_RawResponse:
+	def timed_prompt(self, model_input: Union[str, Conversation]) -> LLM_Response:
 		'''
 		Prompt the model with timing, can be either a string
 		or a conversation. This is a blocking function.
 		'''
 		start_time = datetime.now()
-		response:LLM_RawResponse = None
+		response:LLM_Response = None
 		if isinstance(input, Conversation):
 			response = self.chat(model_input)
 		else:

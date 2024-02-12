@@ -19,10 +19,10 @@ class OpenAI_LLM(LLM):
 		}
 		super().__init__(model_name, merge_dictionaries(default, parameters))
 	
-	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False) -> LLM_RawResponse:
+	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False) -> LLM_Response:
 		raise Exception("This doesn't support string prompts")
 	
-	def chat(self, conversation: Conversation, stream:bool=False) -> LLM_RawResponse:
+	def chat(self, conversation: Conversation, stream:bool=False) -> LLM_Response:
 		'''
 		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
@@ -41,7 +41,7 @@ class OpenAI_LLM(LLM):
 				return obj
 		message_list = self.conversation_to_list(conversation)
 		wip_message = self._new_message(json.dumps(message_list, indent=4), conversation, "")
-		response = LLM_RawResponse(wip_message, 0, stream)
+		response = LLM_Response(wip_message, 0, stream)
 		
 		completion = self.client.chat.completions.create(
 			model=self.model_info.model_name,

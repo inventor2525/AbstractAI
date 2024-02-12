@@ -1,5 +1,5 @@
 from AbstractAI.ConversationModel import *
-from AbstractAI.LLMs.LLM import LLM, LLM_RawResponse
+from AbstractAI.LLMs.LLM import LLM, LLM_Response
 from AbstractAI.ConversationModel.ConversationCollection import ConversationCollection
 
 class ChatBot:
@@ -25,7 +25,7 @@ class ChatBot:
 		self.conversation.add_message(msg)
 		self.conversations.add_conversation(self.conversation)
 		
-		self.last_response = LLM_RawResponse("Output Error", None, 0)
+		self.last_response = LLM_Response("Output Error", None, 0)
 		
 		try:
 			self.last_response = self.model.chat(self.conversation)

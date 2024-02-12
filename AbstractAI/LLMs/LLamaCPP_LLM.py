@@ -29,10 +29,10 @@ class LLamaCPP_LLM(LLM):
 	def _load_model(self):
 		self.model = Llama(**self.model_info.parameters["model"])
 	
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
 		prompt_tokens = self.model.tokenize(prompt.encode("utf-8"), special=True) if prompt != "" else [self.model.token_bos()]
 		completion = self.model.create_completion(prompt, **self.model_info.parameters["generate"], stream=stream)
-		response = LLM_RawResponse(wip_message, len(prompt_tokens), stream)
+		response = LLM_Response(wip_message, len(prompt_tokens), stream)
 		if not stream:
 			response.set_response(completion['choices'][0]['text'], completion["usage"]["completion_tokens"], completion)
 		else:

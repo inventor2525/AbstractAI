@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Union, Callable
 from dataclasses import dataclass, field
 
 @dataclass
-class LLM_RawResponse:
+class LLM_Response:
 	message:Message
 	input_token_count:int
 	is_streamed:bool
