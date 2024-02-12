@@ -121,6 +121,13 @@ class Application(QMainWindow):
 		self.right_panel.addWidget(self.chatUI)
 		self.chatUI.message_sent.connect(self.user_sent_message)
 		
+		self.input_field = QTextEdit()
+		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+		self.input_field.setSizePolicy(size_policy)
+		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+		self.input_field.setPlaceholderText("Type the start of the ai message here...")
+		self.right_panel.addWidget(self.input_field)
+		
 		w = QWidget()
 		w.setLayout(self.right_panel)
 		self.splitter.addWidget(w)
@@ -194,7 +201,7 @@ class Application(QMainWindow):
 			self._should_generate = False
 			
 		def chat():
-			response = self.llm.chat(conversation, stream=True)
+			response = self.llm.chat(conversation, start_str=self.input_field.toPlainText(), stream=True)
 			conversation.add_message(response.message)
 			while response.generate_more():
 				if not self._should_generate:
