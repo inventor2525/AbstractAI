@@ -21,6 +21,7 @@ class LLM_RawResponse:
 		self.message.source.serialized_raw_output = raw_response
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count = out_token_count
+		self.message.source.finished = True
 		
 		self.message.content = text
 		
@@ -35,6 +36,7 @@ class LLM_RawResponse:
 		
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count += out_token_count
+		self.message.source.finished = False
 		
 		if text is not None:
 			self.message.content += text
@@ -49,10 +51,14 @@ class LLM_RawResponse:
 		'''
 		assert self.is_streamed, "Next is only for streamed responses."
 		assert self.genenerate_more_func is not None, "genenerate_more_func not set. This should have been done by the model."
-		return self.genenerate_more_func()
+		has_more = self.genenerate_more_func()
+		if not has_more:
+			self.message.source.finished = True
+		return has_more
 	
 	def stop_streaming(self):
 		'''Call this to stop streaming and close the connection.'''
 		assert self.is_streamed, "Stop streaming is only for streamed responses."
 		if self.stop_streaming_func is not None:
 			self.stop_streaming_func()
+		self.message.source.finished = True

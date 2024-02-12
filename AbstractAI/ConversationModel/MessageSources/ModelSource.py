@@ -16,3 +16,4 @@ class ModelSource(MessageSource):
 	
 	in_token_count: int = 0
 	out_token_count: int = 0
+	finished: bool = False

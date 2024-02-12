@@ -1,3 +1,4 @@
+from threading import Thread, Lock
 from AbstractAI.ConversationModel import Conversation
 from AbstractAI.LLMs.LLM import LLM, LLMStats, LLM_RawResponse
 from AbstractAI.LLMs.ModelLoader import ModelLoader
@@ -7,16 +8,46 @@ from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from typing import Dict, Any, List
 import json
 
+class StreamResponse:
+	'''A class to continuously generate more of a response from a stream until it's done.'''
+	def __init__(self, response:LLM_RawResponse):
+		self.response = response
+		self.done = False
+		self.thread = Thread(target=self._generate_more)
+		self.lock = Lock()
+	
+	def start(self):
+		self.thread.start()
+	
+	def stop(self):
+		self.done = True
+		self.thread.join()
+	
+	def copy_current(self) -> Message:
+		with self.lock:
+			return self.response.message.deepcopy()
+	
+	def _generate_more(self):
+		while not self.done:
+			with self.lock:
+				self.done = not self.response.generate_more()
+	
+	def __del__(self):
+		self.stop()
+
 @Flaskify
 class RemoteLLM_Backend:
 	model_loader : ModelLoader
-	models : Dict[str,LLM]
+	models_by_name : Dict[str,LLM]
+	models_by_id : Dict[int,LLM]
+	streams : Dict[str,StreamResponse]
 	
 	@Flaskify.ServerInit
 	def server_init():
 		RemoteLLM_Backend.model_loader = ModelLoader()
 		RemoteLLM_Backend.models_by_name = {}
 		RemoteLLM_Backend.models_by_id = {}
+		RemoteLLM_Backend.streams = {}
 		
 	@StaticRoute
 	def init_model(model_name:str, loader_params:Dict[str, Any]) -> ModelInfo:
@@ -53,6 +84,13 @@ class RemoteLLM_Backend:
 			#same as above
 			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
 		return response.message
+	
+	@StaticRoute
+	def get_continuation(message_id:str) -> Message:
+		'''A really lazy slow way to request the updated response from a server side stream'''
+		return RemoteLLM_Backend.streams[message_id].copy_current()
+	
+	def 
 		
 class RemoteLLM(LLM):
 	def __init__(self, model_name:str, loader_params:Dict[str, Any]=None):
@@ -70,10 +108,11 @@ class RemoteLLM(LLM):
 			return LLM_RawResponse(message, message.source.in_token_count, stream)
 	
 	def complete_str(self, text:str, stream=False) -> LLM_RawResponse:
+		message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
 		if stream:
-			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+			response = LLM_RawResponse(message, message.source.in_token_count, stream)
+			response.stop_streaming_func
 		else:
-			message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
 			return LLM_RawResponse(message, message.source.in_token_count, stream)
 	
 	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_RawResponse:
