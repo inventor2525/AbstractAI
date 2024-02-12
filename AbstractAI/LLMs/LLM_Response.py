@@ -62,3 +62,12 @@ class LLM_Response:
 		if self.stop_streaming_func is not None:
 			self.stop_streaming_func()
 		self.message.source.finished = True
+	
+	def copy_from(self, other:Message):
+		'''Copy the response data from another message.'''
+		self.message.content = other.content
+		self.message.source.serialized_raw_output = other.source.serialized_raw_output
+		self.message.source.in_token_count = other.source.in_token_count
+		self.message.source.out_token_count = other.source.out_token_count
+		self.message.source.finished = other.source.finished
+		self.message.changed(self.message)

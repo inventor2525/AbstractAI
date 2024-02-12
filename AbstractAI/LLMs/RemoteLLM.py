@@ -15,13 +15,11 @@ class StreamResponse:
 		self.done = False
 		self.thread = Thread(target=self._generate_more)
 		self.lock = Lock()
-	
-	def start(self):
 		self.thread.start()
 	
 	def stop(self):
-		self.done = True
-		self.thread.join()
+		with self.lock:
+			self.done = True
 	
 	def copy_current(self) -> Message:
 		with self.lock:
@@ -34,6 +32,7 @@ class StreamResponse:
 	
 	def __del__(self):
 		self.stop()
+		self.thread.join()
 
 @Flaskify
 class RemoteLLM_Backend:
@@ -71,18 +70,14 @@ class RemoteLLM_Backend:
 	def chat(model_info:ModelInfo, conversation: Conversation, start_str: str = "", stream=False) -> Message:
 		response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream)
 		if stream:
-			#TODO: spawn a new thread to call response.genenerate_more until it returns False
-			#and keep the response object in a dictionary by it's message auto_id so that
-			#it can be accessed by the client to get the new response chunks
-			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+			RemoteLLM_Backend.streams[response.message.source.auto_id] = StreamResponse(response)
 		return response.message
 	
 	@StaticRoute
 	def complete_str(model_info:ModelInfo, text:str, stream=False) -> Message:
 		response = RemoteLLM_Backend.models_by_id[model_info.auto_id].complete_str(text, stream)
 		if stream:
-			#same as above
-			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
+			RemoteLLM_Backend.streams[response.message.source.auto_id] = StreamResponse(response)
 		return response.message
 	
 	@StaticRoute
@@ -90,8 +85,11 @@ class RemoteLLM_Backend:
 		'''A really lazy slow way to request the updated response from a server side stream'''
 		return RemoteLLM_Backend.streams[message_id].copy_current()
 	
-	def 
-		
+	@StaticRoute
+	def stop_stream(message_id:str):
+		RemoteLLM_Backend.streams[message_id].stop()
+		del RemoteLLM_Backend.streams[message_id]
+	
 class RemoteLLM(LLM):
 	def __init__(self, model_name:str, loader_params:Dict[str, Any]=None):
 		self.stats = LLMStats()
@@ -100,23 +98,29 @@ class RemoteLLM(LLM):
 	def _load_model(self):
 		RemoteLLM_Backend.load_model(self.model_info)
 	
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_Response:
+	def _gen_remote_response(self, message:Message, stream:bool=False):
+		response = LLM_Response(message, message.source.in_token_count, stream)
 		if stream:
-			raise NotImplementedError("Stream not yet implemented for RemoteLLM")
-		else:
-			message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream)
-			return LLM_Response(message, message.source.in_token_count, stream)
+			def stop_streaming_func():
+				RemoteLLM_Backend.stop_stream(message.source.auto_id)
+			response.stop_streaming_func = stop_streaming_func
+			
+			def genenerate_more_func():
+				new_msg = RemoteLLM_Backend.get_continuation(message.source.auto_id)
+				response.copy_from(new_msg)
+			response.genenerate_more_func = genenerate_more_func
+		return response
+	
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_Response:
+		message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream)
+		return self._gen_remote_response(message, stream)
 	
 	def complete_str(self, text:str, stream=False) -> LLM_Response:
 		message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
-		if stream:
-			response = LLM_Response(message, message.source.in_token_count, stream)
-			response.stop_streaming_func
-		else:
-			return LLM_Response(message, message.source.in_token_count, stream)
+		return self._gen_remote_response(message, stream)
 	
 	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
-		raise NotImplementedError()
+		raise NotImplementedError("This should never be called")
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		RemoteLLM_Backend.apply_chat_template(self.model_info, chat, start_str)
