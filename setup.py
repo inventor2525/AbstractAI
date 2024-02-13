@@ -34,7 +34,8 @@ setup(
 		'pyperclip',
 		'pyautogui',
         'pexpect',
-		'tzlocal'
+		'tzlocal',
+		'llama-cpp-python'
 	],
 	python_requires='~=3.10'
 )
