@@ -8,6 +8,8 @@ from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from typing import Dict, Any, List
 import json
 
+from copy import deepcopy
+
 class StreamResponse:
 	'''A class to continuously generate more of a response from a stream until it's done.'''
 	def __init__(self, response:LLM_Response):
@@ -23,7 +25,7 @@ class StreamResponse:
 	
 	def copy_current(self) -> Message:
 		with self.lock:
-			return self.response.message.deepcopy()
+			return deepcopy(self.response.message)
 	
 	def _generate_more(self):
 		while not self.done:
@@ -94,7 +96,8 @@ class RemoteLLM(LLM):
 	def __init__(self, model_name:str, loader_params:Dict[str, Any]={}):
 		self.stats = LLMStats()
 		self.model_info = RemoteLLM_Backend.init_model(model_name, loader_params)
-	
+		self.started = False
+		
 	def _load_model(self):
 		RemoteLLM_Backend.load_model(self.model_info)
 	
