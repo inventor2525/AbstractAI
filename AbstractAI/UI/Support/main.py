@@ -203,12 +203,18 @@ class Application(QMainWindow):
 			self._should_generate = False
 			
 		def chat():
+			print(f"chat:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			response = self.llm.chat(conversation, start_str=self.input_field.toPlainText(), stream=True)
+			print(f"chat done:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			conversation.add_message(response.message)
+			print(f"message added:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			while response.generate_more():
+				print(f"generate more:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 				if not self._should_generate:
 					response.stop_streaming()
 					break
+			print(f"generate more DONE:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
+			print(f"AI said: {response.message.content}")
 			return response.message
 			
 		self.task = BackgroundTask(chat)

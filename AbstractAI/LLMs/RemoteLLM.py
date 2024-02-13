@@ -30,7 +30,9 @@ class StreamResponse:
 	def _generate_more(self):
 		while not self.done:
 			with self.lock:
+				print("more...")
 				self.done = not self.response.generate_more()
+		print("Done!")
 	
 	def __del__(self):
 		self.stop()
@@ -109,7 +111,9 @@ class RemoteLLM(LLM):
 			response.stop_streaming_func = stop_streaming_func
 			
 			def genenerate_more_func():
+				print("more...")
 				new_msg = RemoteLLM_Backend.get_continuation(message.source.auto_id)
+				print("more!")
 				response.copy_from(new_msg)
 			response.genenerate_more_func = genenerate_more_func
 		return response
