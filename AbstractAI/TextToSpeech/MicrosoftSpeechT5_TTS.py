@@ -13,6 +13,7 @@ class MicrosoftSpeechT5_TTS(TextToSpeech):
 		self.model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts").to(self.device)
 		self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
 		embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
+		import torch
 		self.speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0).to(self.device)
 		self.sw.stop("load text to speech")
 
