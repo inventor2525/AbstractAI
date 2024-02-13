@@ -24,15 +24,23 @@ class StreamResponse:
 			self.done = True
 	
 	def copy_current(self) -> Message:
+		print("copy_current...")
+		m:Message = None
 		with self.lock:
-			return deepcopy(self.response.message)
+			print("copy_current deepcopy...")
+			m = deepcopy(self.response.message)
+		print("copy_current Done!")
+		return m
 	
 	def _generate_more(self):
+		print("_generate_more...")
 		while not self.done:
+			print("_generate_more in loop")
 			with self.lock:
-				print("more...")
+				print("_generate_more self.response.generate_more...")
 				self.done = not self.response.generate_more()
-		print("Done!")
+				print("self.response.generate_more Done!\n")
+		print("_generate_more Done!")
 	
 	def __del__(self):
 		self.stop()
