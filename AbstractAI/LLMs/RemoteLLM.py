@@ -91,7 +91,7 @@ class RemoteLLM_Backend:
 		del RemoteLLM_Backend.streams[message_id]
 	
 class RemoteLLM(LLM):
-	def __init__(self, model_name:str, loader_params:Dict[str, Any]=None):
+	def __init__(self, model_name:str, loader_params:Dict[str, Any]={}):
 		self.stats = LLMStats()
 		self.model_info = RemoteLLM_Backend.init_model(model_name, loader_params)
 	
