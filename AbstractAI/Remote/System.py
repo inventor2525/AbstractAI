@@ -28,12 +28,12 @@ class System():
 		from AbstractAI.SpeechToText.WhisperSTT import WhisperSTT
 		from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import MicrosoftSpeechT5_TTS
 		
-		System.whisper = WhisperSTT()
-		System.whisper.load_model("large")
+		# System.whisper = WhisperSTT()
+		# System.whisper.load_model("large")
 
-		System.tts = MicrosoftSpeechT5_TTS()
+		# System.tts = MicrosoftSpeechT5_TTS()
 		
-		System.model_loader = ModelLoader()
+		# System.model_loader = ModelLoader()
 	
 	##################################################
 	## System
