@@ -1,3 +1,4 @@
+from .TextEdit import TextEdit
 from .ConversationView import ConversationView
 from .RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
@@ -41,7 +42,7 @@ class ChatUI(QWidget):
 		self.role_combobox = RoleComboBox(self.roles, default_value=self.roles[0])
 		self.input_layout.addWidget(self.role_combobox, alignment=Qt.AlignBottom)
 
-		self.input_field = QTextEdit()
+		self.input_field = TextEdit()
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 		size_policy.setVerticalStretch(1)
 		self.input_field.setSizePolicy(size_policy)
@@ -49,6 +50,7 @@ class ChatUI(QWidget):
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
 		self.input_field.setPlaceholderText("Type your message here...")
+		self.input_field.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 		
 		# Create a button to send the message:

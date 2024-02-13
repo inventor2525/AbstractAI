@@ -122,7 +122,7 @@ class Application(QMainWindow):
 		self.right_panel.addWidget(self.chatUI)
 		self.chatUI.message_sent.connect(self.user_sent_message)
 		
-		self.input_field = QTextEdit()
+		self.input_field = TextEdit()
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 		self.input_field.setSizePolicy(size_policy)
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)

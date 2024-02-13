@@ -1,4 +1,5 @@
 from .ColoredFrame import *
+from .TextEdit import TextEdit
 from AbstractAI.ConversationModel.Message import Message
 from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
@@ -109,7 +110,7 @@ class MessageView(BaseMessageView):
 		self.left_layout.addLayout(self.arrow_layout)
 		
 		# Editable text box
-		self.text_edit = QTextEdit()
+		self.text_edit = TextEdit()
 		self.text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
 		self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
