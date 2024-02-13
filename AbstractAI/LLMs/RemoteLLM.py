@@ -75,6 +75,7 @@ class RemoteLLM_Backend:
 		response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream)
 		if stream:
 			RemoteLLM_Backend.streams[response.message.source.auto_id] = StreamResponse(response)
+		print("Return Chat...")
 		return response.message
 	
 	@StaticRoute
@@ -87,7 +88,10 @@ class RemoteLLM_Backend:
 	@StaticRoute
 	def get_continuation(message_id:str) -> Message:
 		'''A really lazy slow way to request the updated response from a server side stream'''
-		return RemoteLLM_Backend.streams[message_id].copy_current()
+		print("get_continuation...")
+		m = RemoteLLM_Backend.streams[message_id].copy_current()
+		print("Continuation gotten!")
+		return m
 	
 	@StaticRoute
 	def stop_stream(message_id:str):
