@@ -1,6 +1,7 @@
 from ClassyFlaskDB.Flaskify import *
-
+from AbstractAI.Helpers.Stopwatch import Stopwatch
 if __name__ == '__main__':
+	Stopwatch.singleton = Stopwatch(True)
 	# Make a server:
 	app = Flask(__name__)
 	Flaskify.make_server(app)
