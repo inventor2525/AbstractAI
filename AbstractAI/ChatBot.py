@@ -10,12 +10,12 @@ class ChatBot:
 		
 		if conversation is None:
 			conversation = Conversation()
+			conversations.append(conversation)
 		self.conversation = conversation
 		
 		self.default_source = UserSource()
 		
 		self.last_response = None
-		self.model.start()
 		
 	def prompt(self, prompt:str, source:MessageSource=None) -> str:
 		if source is None:
@@ -23,9 +23,8 @@ class ChatBot:
 			
 		msg = Message(prompt, source)
 		self.conversation.add_message(msg)
-		self.conversations.add_conversation(self.conversation)
 		
-		self.last_response = LLM_Response("Output Error", None, 0)
+		self.last_response = None
 		
 		try:
 			self.last_response = self.model.chat(self.conversation)
@@ -37,7 +36,9 @@ class ChatBot:
 					pass
 			else:
 				pass
-				
+		
+		if self.last_response is None:
+			return None
+		
 		self.conversation.add_message(self.last_response.message)
-		self.conversations.add_conversation(self.conversation)
 		return self.last_response.message.content
