@@ -128,6 +128,7 @@ class RemoteLLM(LLM):
 				new_msg = RemoteLLM_Backend.get_continuation(message.source.auto_id)
 				print("more!")
 				response.copy_from(new_msg)
+				return not new_msg.source.finished
 			response.genenerate_more_func = genenerate_more_func
 		return response
 	
