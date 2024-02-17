@@ -32,9 +32,10 @@ class HuggingFaceLLM(LLM):
 			"del_token_type_ids": True
 		}
 		
-		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if parameters["model"]["device_map"] == "auto" else parameters["model"].get("device", 'cpu')
+		params = merge_dictionaries(default, parameters)
+		self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if params["model"]["device_map"] == "auto" else params["model"].get("device", 'cpu')
 		
-		super().__init__(model_name, merge_dictionaries(default, parameters))
+		super().__init__(model_name, params)
 		self.model = None
 		self.tokenizer = None
 	
