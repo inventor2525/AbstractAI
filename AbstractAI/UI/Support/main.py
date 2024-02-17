@@ -8,6 +8,7 @@ from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
 from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 
+from AbstractAI.Helpers.Stopwatch import Stopwatch
 import json
 from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
 from ClassyFlaskDB.DATA import DATAEngine
@@ -39,13 +40,19 @@ class Application(QMainWindow):
 		
 	def __init__(self, model_loader:ModelLoader, settings:QSettings):
 		super().__init__()
+		Stopwatch.singleton.new_scope()
+		
 		self.model_loader = model_loader
 		self.settings = settings
 		
 		self.app = QApplication.instance()
+		Stopwatch.singleton.sequential("Connect to database", log_statistics=False)
 		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
+		
+		Stopwatch.singleton.sequential("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
 		
+		Stopwatch.singleton.sequential("Setup UI", log_statistics=False)
 		self.should_filter = False
 		self.filter_timmer = QTimer()
 		self.filter_timmer.setInterval(500)
@@ -62,6 +69,8 @@ class Application(QMainWindow):
 		self.read_settings()
 		
 		self.llm : LLM = None
+		
+		Stopwatch.singleton.end_scope(log_statistics=False)
 	
 	def init_ui(self):
 		#split view:
@@ -264,9 +273,13 @@ class Application(QMainWindow):
 		self.task.start()
 		
 if __name__ == "__main__":
+	Stopwatch.singleton = Stopwatch(True)
+	
+	Stopwatch.singleton.sequential("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
 	settings = QSettings("MyCompany", "MyApp")
 	
+	Stopwatch.singleton.sequential("Load models", log_statistics=False)
 	models = {
 		"Mistral": {
 			"LoaderType": "LLamaCPP",
@@ -298,6 +311,10 @@ if __name__ == "__main__":
 		}
 	}
 	model_loader = ModelLoader(models)
+	Stopwatch.singleton.sequential("Load window", log_statistics=False)
 	window = Application(model_loader, settings)
+	
+	Stopwatch.singleton.sequential("Show window", log_statistics=False)
 	window.show()
+	Stopwatch.singleton.stop("Show window", log_statistics=False)
 	sys.exit(app.exec_())
