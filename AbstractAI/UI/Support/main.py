@@ -28,6 +28,14 @@ class Application(QMainWindow):
 		self.description_field.setText(value.description)
 		self.chatUI.conversation = value
 		self.conversation_list_view.set_selected(value)
+	
+	@property
+	def llm(self) -> LLM:
+		return self._llm
+	@llm.setter
+	def llm(self, value:LLM):
+		self._llm = value
+		self.chatUI.send_button.setEnabled(value is not None)
 		
 	def __init__(self, model_loader:ModelLoader, settings:QSettings):
 		super().__init__()
@@ -192,12 +200,7 @@ class Application(QMainWindow):
 		self.write_settings()
 		super().closeEvent(event)
 	
-	def user_sent_message(self, conversation:Conversation, new_message:Message):
-		if self.llm is None:
-			#Show error an message using a QMessageBox
-			QMessageBox.critical(self, "No LLM Loaded", "Please load an LLM before sending messages.")
-			return
-		
+	def user_sent_message(self, conversation:Conversation, new_message:Message):		
 		self._should_generate = True
 		def stop_generating():
 			self._should_generate = False
