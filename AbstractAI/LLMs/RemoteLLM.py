@@ -24,28 +24,19 @@ class StreamResponse:
 		self.done = True
 	
 	def copy_current(self) -> Message:
-		print("copy_current...")
 		m:Message = None
 		with self.lock:
-			print("copy_current deepcopy...")
 			m = deepcopy(self.response.message)
-		print("copy_current Done!")
 		return m
 	
 	def _generate_more(self):
-		print("_generate_more...")
 		while not self.done:
-			print("_generate_more in loop")
 			with self.lock:
-				print("_generate_more self.response.generate_more...")
 				self.done = not self.response.generate_more()
-				print("self.response.generate_more Done!\n")
-		print("_generate_more Done!")
 	
 	def __del__(self):
 		self.stop()
 		self.thread.join()
-		print("StreamResponse deleted")
 
 @Flaskify
 class RemoteLLM_Backend:
@@ -84,7 +75,6 @@ class RemoteLLM_Backend:
 		response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream)
 		if stream:
 			RemoteLLM_Backend.streams[response.message.source.auto_id] = StreamResponse(response)
-		print("Return Chat...")
 		return response.message
 	
 	@StaticRoute
@@ -97,9 +87,7 @@ class RemoteLLM_Backend:
 	@StaticRoute
 	def get_continuation(message_id:str) -> Message:
 		'''A really lazy slow way to request the updated response from a server side stream'''
-		print("get_continuation...")
 		m = RemoteLLM_Backend.streams[message_id].copy_current()
-		print("Continuation gotten!")
 		return m
 	
 	@StaticRoute
@@ -124,9 +112,7 @@ class RemoteLLM(LLM):
 			response.stop_streaming_func = stop_streaming_func
 			
 			def genenerate_more_func():
-				print("more...")
 				new_msg = RemoteLLM_Backend.get_continuation(message.source.auto_id)
-				print("more!")
 				response.copy_from(new_msg)
 				return not new_msg.source.finished
 			response.genenerate_more_func = genenerate_more_func
