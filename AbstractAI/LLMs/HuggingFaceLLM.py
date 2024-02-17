@@ -9,26 +9,26 @@ class HuggingFaceLLM(LLM):
 		default = {
 			"tokenizer": {
 				"use_fast": False,
-				"trust_remote_code": True
+				# "trust_remote_code": True
 			},
 			"model": {
 				"torch_dtype": torch.float16,
 				"low_cpu_mem_usage": True,
 				"device_map": "auto",
-				"trust_remote_code": True
+				# "trust_remote_code": True
 			},
 			"generate": {
-				"do_sample":True,
-				"top_p":0.95,
-				"top_k":0,
-				"max_new_tokens":1024
+				# "do_sample":True,
+				# "top_p":0.95,
+				# "top_k":0,
+				# "max_new_tokens":1024
 			},
-			"bnb_config" : {
-				"load_in_4bit":True,
-				"bnb_4bit_quant_type":'nf4',
-				"bnb_4bit_use_double_quant":True,
-				"bnb_4bit_compute_dtype":torch.bfloat16
-			},
+			# "bnb_config" : {
+			# 	"load_in_4bit":True,
+			# 	"bnb_4bit_quant_type":'nf4',
+			# 	"bnb_4bit_use_double_quant":True,
+			# 	"bnb_4bit_compute_dtype":torch.bfloat16
+			# },
 			"del_token_type_ids": True
 		}
 		
