@@ -34,8 +34,11 @@ class StreamResponse:
 	def _generate_more(self):
 		while not self.done:
 			with self.lock:
-				with Stopwatch.singleton.timed_block("StreamResponse._generate_more"):
+				Stopwatch.singleton.stop("StreamResponse._generate_more off time")
+				with Stopwatch.singleton.timed_block("StreamResponse._generate_more generating"):
 					self.done = not self.response.generate_more()
+				if not self.done:
+					Stopwatch.singleton.start("StreamResponse._generate_more off time")
 	
 	def __del__(self):
 		self.stop()
