@@ -44,8 +44,8 @@ class HuggingFaceLLM(LLM):
 		bnb_config_dict = self.model_info.parameters.get("bnb_config", None)
 		if bnb_config_dict is not None:
 			bnb_config = transformers.BitsAndBytesConfig(**bnb_config_dict)
-		self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, **self.model_info.parameters["tokenizer"])
-		self.model = AutoModelForCausalLM.from_pretrained(self.model_name, quantization_config=bnb_config, **self.model_info.parameters["model"])
+		self.tokenizer = AutoTokenizer.from_pretrained(self.model_info.model_name, **self.model_info.parameters["tokenizer"])
+		self.model = AutoModelForCausalLM.from_pretrained(self.model_info.model_name, quantization_config=bnb_config, **self.model_info.parameters["model"])
 
 	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
 		inputs = self.tokenizer(prompt, return_tensors="pt")
