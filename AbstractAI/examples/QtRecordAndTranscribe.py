@@ -35,7 +35,7 @@ recorder = AudioRecorder()
 
 app = QApplication([])
 
-Stopwatch.singleton.debug = False
+Stopwatch.singleton.should_log = False
 transcriber = ChunkedTranscription(WhisperSTT("tiny.en"), WhisperSTT("small.en"))
 audio_app = AudioTranscriptionApp(recorder, transcriber)
 audio_app.show()
