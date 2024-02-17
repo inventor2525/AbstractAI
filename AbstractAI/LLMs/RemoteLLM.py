@@ -3,6 +3,7 @@ from AbstractAI.ConversationModel import Conversation
 from AbstractAI.LLMs.LLM import LLM, LLMStats, LLM_Response
 from AbstractAI.LLMs.ModelLoader import ModelLoader
 from AbstractAI.ConversationModel import *
+from AbstractAI.Helpers.FairLock import FairLock
 
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from typing import Dict, Any, List
@@ -16,12 +17,11 @@ class StreamResponse:
 		self.response = response
 		self.done = False
 		self.thread = Thread(target=self._generate_more)
-		self.lock = Lock()
+		self.lock = FairLock()
 		self.thread.start()
 	
 	def stop(self):
-		with self.lock:
-			self.done = True
+		self.done = True
 	
 	def copy_current(self) -> Message:
 		print("copy_current...")
@@ -45,6 +45,7 @@ class StreamResponse:
 	def __del__(self):
 		self.stop()
 		self.thread.join()
+		print("StreamResponse deleted")
 
 @Flaskify
 class RemoteLLM_Backend:
