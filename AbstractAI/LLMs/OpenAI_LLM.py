@@ -22,7 +22,7 @@ class OpenAI_LLM(LLM):
 	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False) -> LLM_Response:
 		raise Exception("This doesn't support string prompts")
 	
-	def chat(self, conversation: Conversation, stream:bool=False) -> LLM_Response:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_Response:
 		'''
 		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
