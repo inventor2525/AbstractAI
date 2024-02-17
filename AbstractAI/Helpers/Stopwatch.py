@@ -1,6 +1,7 @@
 import datetime
 import statistics
 from typing import Dict, Any, List
+from contextlib import contextmanager
 
 class TimerStats:
 	def __init__(self):
@@ -99,3 +100,9 @@ class Stopwatch:
 		
 		if len(self.previous_keys) > 1:
 			self.previous_keys.pop()
+	
+	@contextmanager
+	def timed_block(self, key:Any, details:str=None, log_start:bool=None, log_stop:bool=None, log_time_taken:bool=None, log_statistics:bool=None):
+		self.start(key, details, log_start)
+		yield
+		self.stop(key, log_stop, log_time_taken, log_statistics)
