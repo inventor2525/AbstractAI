@@ -35,7 +35,10 @@ setup(
 		'pyautogui',
         'pexpect',
 		'tzlocal',
-		'llama-cpp-python'
+		'llama-cpp-python',
+		'openai',
+		'auto-gptq',
+		'optimum',
 	],
 	python_requires='~=3.10'
 )
