@@ -10,7 +10,7 @@ from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 
 from AbstractAI.Helpers.Stopwatch import Stopwatch
 import json
-from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
+from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 from ClassyFlaskDB.DATA import DATAEngine
 
 from datetime import datetime
@@ -289,7 +289,11 @@ if __name__ == "__main__":
 		"Mixtral": {
 			"LoaderType": "LLamaCPP",
 			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf",
-			"Parameters": {}
+			"Parameters": { 
+				"model": {
+					"n_gpu_layers":0,
+				}
+			}
 		},
 		"GPT-3.5 Turbo": {
 			"ModelName": "gpt-3.5-turbo",

@@ -2,7 +2,7 @@ from AbstractAI.UI.Support.MessageView import *
 from AbstractAI.UI.Support.ConversationView import *
 
 import json
-from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
+from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 from ClassyFlaskDB.DATA import DATAEngine
 data_engine = DATAEngine(ConversationDATA)
 

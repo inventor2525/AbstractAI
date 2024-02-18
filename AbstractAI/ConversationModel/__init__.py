@@ -7,7 +7,7 @@ from .ModelInfo import ModelInfo
 
 def print_conversation(conversation:Conversation):
 	import json
-	from ClassyFlaskDB.Flaskify.serialization import FlaskifyJSONEncoder
+	from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 	
 	print("=====================================")
 	for message in conversation.message_sequence.messages:
@@ -15,5 +15,5 @@ def print_conversation(conversation:Conversation):
 		print(message.content)
 		print()
 	print("=====================================")
-	print(json.dumps(conversation.to_json(), indent=4, cls=FlaskifyJSONEncoder))
+	print(json.dumps(conversation.to_json(), indent=4, cls=JSONEncoder))
 	print("=====================================")
