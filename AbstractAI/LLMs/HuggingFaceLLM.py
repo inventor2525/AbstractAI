@@ -12,7 +12,7 @@ class HuggingFaceLLM(LLM):
 				# "trust_remote_code": True
 			},
 			"model": {
-				"torch_dtype": torch.float16,
+				# "torch_dtype": torch.float16,
 				"low_cpu_mem_usage": True,
 				"device_map": "auto",
 				# "trust_remote_code": True
@@ -42,7 +42,7 @@ class HuggingFaceLLM(LLM):
 	def _load_model(self):
 		bnb_config = None
 		bnb_config_dict = self.model_info.parameters.get("bnb_config", None)
-		more_model_params = {}
+		more_model_params = {"torch_dtype": torch.float16}
 		if bnb_config_dict is not None:
 			bnb_config = transformers.BitsAndBytesConfig(**bnb_config_dict)
 			more_model_params["quantization_config"] = bnb_config
