@@ -74,7 +74,5 @@ if __name__ == '__main__':
 
 	# Show the window near the cursor
 	transcription_window.showNearCursor()
-	transcription_window.hide()
-	transcription_window.showNearCursor()
-	transcription_window.hide()
+	#transcription_window.hide()
 	sys.exit(app.exec_())
