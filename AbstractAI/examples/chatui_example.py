@@ -12,7 +12,7 @@ app = QApplication(sys.argv)
 conv = Conversation("Test Conversation", "A test conversation")
 conv.add_message( Message("You are a helpful assistant", UserSource("System")) )
 conv.add_message( Message("Say hello", UserSource()) )
-conv.add_message( Message("Hello!", ModelSource("LLM","A model")) )
+conv.add_message( Message("Hello!", ModelSource(ModelInfo("LLM","A model"))) )
 conv.update_message_graph()
 
 #message_view = MessageView(message)
