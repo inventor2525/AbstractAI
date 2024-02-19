@@ -249,8 +249,15 @@ class Application(QMainWindow):
 		self.models_combobox.setCurrentIndex(0)
 		
 		def load_model():
-			self.llm = self.model_loader[model_name]
-			self.llm.start()
+			try:
+				self.llm = self.model_loader[model_name]
+				self.llm.start()
+				return True
+			except Exception as e:
+				print(f"Error loading model '{model_name}' with exception: {e}")
+				return False
+		
+		self.task = BackgroundTask(load_model, 200)
 		
 		def animate():
 			t = self.models_combobox.itemText(0)
@@ -263,11 +270,14 @@ class Application(QMainWindow):
 			
 		def model_loaded():
 			self.models_combobox.removeItem(0)
-			self.models_combobox.setCurrentText(model_name)
+			if self.task.return_val:
+				self.models_combobox.setCurrentText(model_name)
+			else:
+				self.models_combobox.insertItem(0, "Select A Model...")
+				self.models_combobox.setCurrentIndex(0)
 			self.models_combobox.currentTextChanged.connect(self.select_model)
 			self.models_combobox.setEnabled(True)
 		
-		self.task = BackgroundTask(load_model, 200)
 		self.task.finished.connect(model_loaded)
 		self.task.busy_indication.connect(animate)
 		self.task.start()
