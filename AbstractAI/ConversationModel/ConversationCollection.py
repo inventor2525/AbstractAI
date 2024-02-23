@@ -31,8 +31,10 @@ class ConversationCollection():
 			all_conversations = session.query(Conversation.auto_id, Conversation.name, Conversation.description, Conversation.creation_time__DateTimeObj, Conversation.creation_time__TimeZone, Conversation.last_modified__DateTimeObj, Conversation.last_modified__TimeZone).all()
 			for conversation_fields in all_conversations:
 				auto_id, name, description, creation_time, creation_timezone, last_modified, last_modified_timezone = deepcopy(conversation_fields)
-				creation_time.replace(tzinfo=pytz.timezone(creation_timezone))
-				last_modified.replace(tzinfo=pytz.timezone(last_modified_timezone))
+				if creation_timezone is not None:
+					creation_time.replace(tzinfo=pytz.timezone(creation_timezone))
+				if last_modified_timezone is not None:
+					last_modified.replace(tzinfo=pytz.timezone(last_modified_timezone))
 				conversation = Conversation(name, description, creation_time, last_modified, None)
 				conversation.auto_id = auto_id
 				
