@@ -18,7 +18,7 @@ class ConversationView(QListWidget):
 		if self._conversation is not None:
 			self._conversation.message_added.connect(self.render_message)
 			
-			for message in self._conversation.message_sequence.messages:
+			for message in self._conversation.get_message_sequence().messages:
 				self._render_message(message)
 	
 	def __init__(self, conversation: Conversation = None):

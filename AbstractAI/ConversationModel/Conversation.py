@@ -22,7 +22,8 @@ class Conversation:
 	#_root_messages: List[Message] = field(default_factory=list)
 
 	def __post_init__(self):
-		self.message_sequence.conversation = self
+		if self.message_sequence is not None:
+			self.message_sequence.conversation = self
 		
 	def new_message_sequence(self):
 		self.message_sequence = self.message_sequence.copy()
@@ -59,3 +60,6 @@ class Conversation:
 		# 	message._children.sort(key=lambda m: m.creation_time)
 		
 		self._root_messages.sort(key=lambda m: m.creation_time)
+	
+	def get_message_sequence(self):
+		return self.message_sequence
