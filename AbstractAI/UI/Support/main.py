@@ -164,6 +164,7 @@ class Application(QMainWindow):
 			name = "New Conversation"
 		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 		self.conversations.append(conv)
+		self.conversation = conv
 		return conv
 	
 	def _name_description_confirm(self):
