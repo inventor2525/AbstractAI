@@ -46,7 +46,7 @@ class ConversationListView(QListWidget):
 		for index in range(self.count()):
 			item = self.item(index)
 			if item.isSelected():
-				self.conversation_selected.emit(self.conversations[index])
+				self.conversation_selected.emit(self.conversations.load_completely(index))
 				break
 	
 	def set_selected(self, conversation:Conversation):

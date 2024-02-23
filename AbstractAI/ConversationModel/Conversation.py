@@ -60,6 +60,3 @@ class Conversation:
 		# 	message._children.sort(key=lambda m: m.creation_time)
 		
 		self._root_messages.sort(key=lambda m: m.creation_time)
-	
-	def get_message_sequence(self):
-		return self.message_sequence

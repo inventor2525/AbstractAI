@@ -2,7 +2,7 @@ from AbstractAI.ConversationModel import *
 from ClassyFlaskDB.DATA import DATAEngine
 from AbstractAI.Helpers.Signal import Signal
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Union
 import pytz
 
 from copy import deepcopy
@@ -12,15 +12,18 @@ class ConversationCollection():
 	engine : DATAEngine = None
 	
 	conversation_added: Signal[[Conversation], None] = Signal.field()
-				
-	def append(self, conversation:Conversation, should_notify=True) -> None:
-		self.conversations.append(conversation)
+			
+	def _register_conversation(self, conversation:Conversation) -> None:
 		def message_added(message):
 			self.engine.merge(message.conversation)
 			def message_changed(message):
 				self.engine.merge(message)
 			message.changed.connect(message_changed)
 		conversation.message_added.connect(message_added)
+			
+	def append(self, conversation:Conversation, should_notify=True) -> None:
+		self.conversations.append(conversation)
+		self._register_conversation(conversation)
 		if should_notify:
 			self.conversation_added(conversation)
 	
@@ -38,21 +41,25 @@ class ConversationCollection():
 				conversation = Conversation(name, description, creation_time, last_modified, None)
 				conversation.auto_id = auto_id
 				
-				def get_message_sequence(self):
-					if hasattr(self, "message_sequence") and self.message_sequence is not None:
-						return self.message_sequence
-					ms = collection._load_completely(self)
-					setattr(self, "message_sequence", ms)
-					return ms
-				setattr(conversation, 'get_message_sequence', lambda self=conversation: get_message_sequence(self))
-				collection.append(conversation, should_notify=False)
+				collection.conversations.append(conversation)
 			collection.engine = engine
 		return collection
 
-	def _load_completely(self, conversation:Conversation):
-		with self.engine.session() as session:
-			conversation = session.query(Conversation).filter(Conversation.auto_id == conversation.auto_id).first()
-			return conversation.message_sequence
+	def load_completely(self, conversation:Union[int, Conversation]) -> Conversation:
+		if isinstance(conversation, int):
+			conversation_index = conversation
+			conversation = self.conversations[conversation]
+		else:
+			conversation_index = self.conversations.index(conversation)
+		
+		if conversation.message_sequence is None:
+			with self.engine.session() as session:
+				whole_conversation = deepcopy(session.query(Conversation).filter(Conversation.auto_id == conversation.auto_id).first())
+				self.conversations[conversation_index] = whole_conversation
+				self._register_conversation(whole_conversation)
+				return whole_conversation
+		else:
+			return conversation
 	
 	def __iter__(self):
 		return iter(self.conversations)
@@ -64,7 +71,7 @@ class ConversationCollection():
 		return len(self.conversations)
 	
 	def __contains__(self, conversation):
-		return conversation in self.conversations
+		return conversation.auto_id in (c.auto_id for c in self.conversations)
 	
 	def __delitem__(self, index):
 		del self.conversations[index]
