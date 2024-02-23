@@ -89,6 +89,8 @@ class ConversationView(QListWidget):
 		self._render_message(message)
 		
 	def update_row_height(self, item: QListWidgetItem):
-		item_widget = self.itemWidget(item)
-		item.setSizeHint(QSize(0, item_widget.sizeHint().height()))
-	
+		try:
+			item_widget = self.itemWidget(item)
+			item.setSizeHint(QSize(0, item_widget.sizeHint().height()))
+		except:
+			pass
