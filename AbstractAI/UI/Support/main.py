@@ -18,6 +18,7 @@ from copy import deepcopy
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+import os
 
 class Application(QMainWindow):
 	@property
@@ -47,7 +48,8 @@ class Application(QMainWindow):
 		
 		self.app = QApplication.instance()
 		Stopwatch.singleton.sequential("Connect to database", log_statistics=False)
-		self.engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chats.db")
+		config_dir = os.path.expanduser("~/.config/AbstractAI/")
+		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{config_dir}chats.db")
 		
 		Stopwatch.singleton.sequential("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
