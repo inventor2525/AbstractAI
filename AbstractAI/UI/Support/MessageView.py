@@ -22,6 +22,8 @@ class MessageView(BaseMessageView):
 	# Signal fired when a message is deleted by the user, passes the message view to be deleted
 	message_deleted_clicked = pyqtSignal(BaseMessageView)
 	
+	regenerate_clicked = pyqtSignal(ModelSource)
+	
 	def __init__(self, message: Message, parent=None):
 		super().__init__(parent, message)
 		
@@ -32,9 +34,6 @@ class MessageView(BaseMessageView):
 		
 		self.left_layout = QVBoxLayout()
 		self.layout.addLayout(self.left_layout)
-		
-		self.message_source_view = MessageSourceView(message.source)
-		self.left_layout.addWidget(self.message_source_view)
 		
 		# Role (and optional name) label
 		# self.role_label = QLabel()
@@ -63,6 +62,10 @@ class MessageView(BaseMessageView):
 		# self.should_send_checkbox.setChecked(message.should_send)
 		# self.should_send_checkbox.stateChanged.connect(self.on_should_send_changed)
 		# self.left_layout.addWidget(self.should_send_checkbox)
+		
+		self.message_source_view = MessageSourceView(message.source)
+		self.message_source_view.regenerate_clicked.connect(lambda model_source:self.regenerate_clicked.emit(model_source))
+		self.left_layout.addWidget(self.message_source_view)
 		
 		# Spacer
 		self.left_layout.addStretch()

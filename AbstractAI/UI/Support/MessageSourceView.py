@@ -5,6 +5,8 @@ def pascal_case(string:str) -> str:
 	return " ".join([word.capitalize() for word in string.split(" ")])
 	
 class MessageSourceView(QWidget):
+	regenerate_clicked = pyqtSignal(ModelSource)
+	
 	def __init__(self, message_source:MessageSource):
 		super().__init__()
 		
@@ -13,6 +15,12 @@ class MessageSourceView(QWidget):
 		
 		self.label = QLabel()
 		self.layout.addWidget(self.label)
+		
+		self.regenerate_button = QPushButton(QIcon.fromTheme("view-refresh"), "")
+		self.regenerate_button.setMaximumWidth(self.regenerate_button.sizeHint().height())
+		self.regenerate_button.clicked.connect(lambda:self.regenerate_clicked.emit(message_source))
+		self.regenerate_button.setVisible(False)
+		self.layout.addWidget(self.regenerate_button)
 		self.setLayout(self.layout)
 		
 		self.set_message_source(message_source)
@@ -31,6 +39,7 @@ class MessageSourceView(QWidget):
 					f"{pascal_case(message_source.user_name)}:"
 				])
 		elif isinstance(message_source, ModelSource):
+			self.regenerate_button.setVisible(True)
 			return "\n".join([
 				"Model",
 				pascal_case(message_source.model_info.class_name),
@@ -44,6 +53,8 @@ class MessageSourceView(QWidget):
 			if most_original is None or most_original.source is None:
 				return "Edited from\nUnknown Source:"
 			else:
+				if isinstance(most_original.source, ModelSource):
+					self.regenerate_button.setVisible(True)
 				other_description = self._get_source_label(most_original.source)
 				other_description = other_description.replace(":", "")
 				return "\n".join([

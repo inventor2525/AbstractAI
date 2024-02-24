@@ -3,7 +3,9 @@ from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView import *
 
 class ConversationView(QListWidget):
-	message_changed = pyqtSignal(Message) # Message
+	message_changed = pyqtSignal(Message)
+	
+	regenerate_message = pyqtSignal(ModelSource)
 	
 	@property
 	def conversation(self) -> Conversation:
@@ -71,17 +73,18 @@ class ConversationView(QListWidget):
 	
 	def _render_message(self, message: Message):
 		item = QListWidgetItem()
-		item_widget = MessageView(message, self)
-		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
+		message_view = MessageView(message, self)
+		message_view.rowHeightChanged.connect(lambda: self.update_row_height(item))
 		def message_changed(message: Message):
 			self.conversation.replace_message(message.source.original, message.source.new, True)
 			self.message_changed.emit(message)
 			self.update_row_height(item)
-		item_widget.message_changed.connect(message_changed)
-		item.setSizeHint(item_widget.sizeHint())
+		message_view.message_changed.connect(message_changed)
+		item.setSizeHint(message_view.sizeHint())
 		self.addItem(item)
-		self.setItemWidget(item, item_widget)
-		item_widget.message_deleted_clicked.connect(self.delete_message)
+		self.setItemWidget(item, message_view)
+		message_view.message_deleted_clicked.connect(self.delete_message)
+		message_view.regenerate_clicked.connect(lambda msg_source: self.regenerate_message.emit(msg_source))
 		self.scrollToBottom()
 	
 	@run_in_main_thread

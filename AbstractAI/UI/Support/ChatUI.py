@@ -8,7 +8,7 @@ from AbstractAI.ConversationModel import *
 
 #TODO: this should hold the info to create a model source but should pass things up out of it and should itself be a chat view not directly tied to a model
 class ChatUI(QWidget):
-	message_sent = pyqtSignal(Conversation, Message)
+	user_added_message = pyqtSignal(Conversation)
 	stop_generating = pyqtSignal()
 	
 	@property
@@ -71,10 +71,7 @@ class ChatUI(QWidget):
 		self.input_field.setFocus()
 		
 	def send_message(self):
-		self.send_button.clicked.disconnect(self.send_message)
-		self.send_button.clicked.connect(self._stop_generating)
-		self.send_button.setText("Stop")
-		
+		self.change_to_stop()
 		new_message = Message(self.input_field.toPlainText())
 		selected_role = self.role_combobox.currentText()
 		if selected_role == "Human":
@@ -86,8 +83,13 @@ class ChatUI(QWidget):
 		self.conversation.add_message(new_message)
 		self.input_field.clear()
 		
-		self.message_sent.emit(self.conversation, new_message)
+		self.user_added_message.emit(self.conversation)
 	
+	def change_to_stop(self):
+		self.send_button.clicked.disconnect(self.send_message)
+		self.send_button.clicked.connect(self._stop_generating)
+		self.send_button.setText("Stop")
+		
 	def change_to_send(self):
 		self.send_button.clicked.disconnect(self._stop_generating)
 		self.send_button.clicked.connect(self.send_message)

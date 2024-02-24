@@ -140,8 +140,8 @@ class Application(QMainWindow):
 		
 		self.chatUI = ChatUI()
 		self.right_panel.addWidget(self.chatUI)
-		self.chatUI.message_sent.connect(self.user_sent_message)
-		
+		self.chatUI.user_added_message.connect(self.generate_ai_response)
+		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
 		self.input_field = TextEdit()
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 		self.input_field.setSizePolicy(size_policy)
@@ -212,7 +212,7 @@ class Application(QMainWindow):
 		self.write_settings()
 		super().closeEvent(event)
 	
-	def user_sent_message(self, conversation:Conversation, new_message:Message):		
+	def generate_ai_response(self, conversation:Conversation):		
 		self._should_generate = True
 		def stop_generating():
 			self._should_generate = False
@@ -241,7 +241,21 @@ class Application(QMainWindow):
 		self.task.started.connect(lambda:self.chatUI.stop_generating.connect(stop_generating))
 		self.task.finished.connect(finished)
 		self.task.start()
+		
+		self.chatUI.conversation_view.scrollToBottom()
 	
+	def regenerate(self, message_source:ModelSource):
+		if self.llm is None:
+			return
+		self.chatUI.change_to_stop()
+		conv = self.chatUI.conversation_view.conversation
+		self.chatUI.conversation_view.conversation = None
+		
+		conv.message_sequence = message_source.message_sequence
+		self.chatUI.conversation_view.conversation = conv
+		
+		self.generate_ai_response(conv)
+		
 	def select_model(self, model_name:str):
 		self.models_combobox.currentTextChanged.disconnect(self.select_model)
 		if self.models_combobox.itemText(0) == "Select A Model...":
