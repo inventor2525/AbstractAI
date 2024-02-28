@@ -6,6 +6,7 @@ from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageSourceView import MessageSourceView
 from .RoleColorPallet import RoleColorPallet
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QTextCursor
 
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
@@ -262,6 +263,39 @@ class MessageView(BaseMessageView):
 	
 	@run_in_main_thread
 	def on_message_changed(self, message: Message):
+		# Access the vertical scroll bar
+		verticalScrollBar = self.text_edit.verticalScrollBar()
+		
+		# Calculate the current scroll percentage
+		oldMax = verticalScrollBar.maximum()
+		oldValue = verticalScrollBar.value()
+		wasAtBottom = verticalScrollBar.value() == verticalScrollBar.maximum()
+		scrollPercentage = 1 if wasAtBottom else oldValue / oldMax
+		
+		# Save current selection
+		cursor = self.text_edit.textCursor()
+		anchorPos = cursor.anchor()
+		cursorPos = cursor.position()
+
+		# Set new text
 		self.text_edit.setPlainText(message.content)
+
+		# Try to restore selection
+		# Restore selection
+		cursor = self.text_edit.textCursor()
+		cursor.setPosition(anchorPos)
+		cursor.setPosition(cursorPos, QTextCursor.KeepAnchor)
+		self.text_edit.setTextCursor(cursor)
+
+		# Restore the scroll position
+		if wasAtBottom:
+			#Auto scroll:
+			verticalScrollBar.setValue(verticalScrollBar.maximum())
+		else:
+			# Calculate the new scroll position based on the old percentage
+			newMax = verticalScrollBar.maximum()
+			newValue = newMax * (scrollPercentage * oldMax / newMax)
+			verticalScrollBar.setValue(int(newValue))
+
 		self.text_edit.setStyleSheet("")
 		self.update_text_edit_height()
