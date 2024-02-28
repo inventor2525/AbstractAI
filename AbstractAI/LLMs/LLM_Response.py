@@ -14,6 +14,9 @@ class LLM_Response:
 	genenerate_more_func:Callable[[],bool] = None
 	stop_streaming_func:Callable[[],None] = None
 	
+	def __post_init__(self):
+		self.message.source.generating = True
+
 	def set_response(self, text:str, out_token_count:int, raw_response:Dict[str, Any]):
 		'''Used by the model to set the response of a blocking response.'''
 		assert not self.is_streamed, "Set response is only for blocking responses. Use add_response_chunk for streamed responses."
@@ -22,6 +25,8 @@ class LLM_Response:
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count = out_token_count
 		self.message.source.finished = True
+		self.message.source.generating = False
+		print("dn!")
 		
 		self.message.content = text
 		
@@ -54,6 +59,8 @@ class LLM_Response:
 		has_more = self.genenerate_more_func()
 		if not has_more:
 			self.message.source.finished = True
+			self.message.source.generating = False
+			print("donne!")
 		return has_more
 	
 	def stop_streaming(self):
@@ -61,7 +68,9 @@ class LLM_Response:
 		assert self.is_streamed, "Stop streaming is only for streamed responses."
 		if self.stop_streaming_func is not None:
 			self.stop_streaming_func()
-		self.message.source.finished = True
+		self.message.source.generating = False
+		self.message.changed(self.message)
+		print("stp!")
 	
 	def copy_from(self, other:Message):
 		'''Copy the response data from another message.'''

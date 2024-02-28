@@ -24,11 +24,31 @@ class MessageView(BaseMessageView):
 	
 	regenerate_clicked = pyqtSignal(ModelSource)
 	
+	@property
+	def editing(self) -> bool:
+		return self._editing
+	@editing.setter
+	def editing(self, value:bool):
+		self._editing = value
+		self._update_edit_state()
+
+	@property
+	def edit_enabled(self) -> bool:
+		return self._edit_enabled
+	@edit_enabled.setter
+	def edit_enabled(self, value:bool):
+		self._edit_enabled = value
+		self.text_edit.setReadOnly(not self._edit_enabled)
+		if not self._edit_enabled:
+			self.editing = False
+
 	def __init__(self, message: Message, parent=None):
 		super().__init__(parent, message)
 		
 		self.parent = parent
-		
+		self._editing = False
+		self._edit_enabled = True
+
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
 		
@@ -171,22 +191,25 @@ class MessageView(BaseMessageView):
 	def toggle_expand(self, checked):
 		self.expand_btn.setArrowType(Qt.DownArrow if checked else Qt.RightArrow)
 		self.update_text_edit_height()
-		
-	def on_text_changed(self):
-		text = self.text_edit.toPlainText()
-		if text != self.message.content:
+	
+	def _update_edit_state(self):
+		if self.editing:
 			self.confirm_btn.setVisible(True)
-			# self.text_edit.setStyleSheet("border: 3px solid rgba(0, 0, 255, 0.3);")
 			self.text_edit.setStyleSheet("QTextEdit {border: 3px solid rgba(0, 0, 255, 0.3);}")
-
 		else:
 			self.confirm_btn.setVisible(False)
 			self.text_edit.setStyleSheet("")
-			
-		if self.expand_btn.isChecked():
-			self.text_edit.setMinimumHeight(int(self.text_edit.document().size().height()))
-			self.text_edit.updateGeometry()
-			self.rowHeightChanged.emit()
+	
+	def on_text_changed(self):
+		text = self.text_edit.toPlainText()
+		self._update_can_edit()
+
+		if self.edit_enabled and text != self.message.content:
+			self.editing = True
+		else:
+			self.editing = False
+		
+		self.update_text_edit_height()
 		
 		# self.token_count_label.setText(f"{tokens_in_string(text)} tokens")
 		
@@ -194,20 +217,26 @@ class MessageView(BaseMessageView):
 		self.message_deleted_clicked.emit(self)
 
 	def confirm_changes(self):
-		self.message = self.message.create_edited(self.text_edit.toPlainText())
-		
-		self.message_changed.emit(self.message)
+		if self.editing:
+			self.message = self.message.create_edited(self.text_edit.toPlainText())
+			self.message_changed.emit(self.message)
 	
 	def _origional_source(self, source:MessageSource):
 		if isinstance(source, EditSource):
 			source = EditSource.most_original(source).source
 		return source
 	
+	def _update_can_edit(self):
+		#a field added to ModelSource by a model to know if it is done generating, defaults to false for other source types or when loaded from db:
+		self.edit_enabled = not getattr(self.message.source, "generating", False) 
+
 	@property
 	def message(self):
 		return self._message
 	@message.setter
 	def message(self, value:Message):
+		self.editing = False
+
 		if self._message is not None:
 			self._message.changed.disconnect(self.on_message_changed)
 		self._message = value
@@ -216,22 +245,21 @@ class MessageView(BaseMessageView):
 			self._message.changed.connect(self.on_message_changed)
 		
 		self.message_source_view.set_message_source(value.source)
-		self.confirm_btn.setVisible(False)
 		
 		# self.role_label.setText(f"{value.full_role}:")
 		# self.token_count_label.setText(f"{tokens_in_message(value)} tokens")
 		
 		self.text_edit.setPlainText(value.content)
-		self.text_edit.setStyleSheet("")
-		
-		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
-		
+		self._update_can_edit()
+
+		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))	
+
 		# self.should_send_checkbox.setChecked(value.should_send)
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		self.update_text_edit_height()
 		self.update()
-		
+	
 	@run_in_main_thread
 	def on_message_changed(self, message: Message):
 		self.text_edit.setPlainText(message.content)

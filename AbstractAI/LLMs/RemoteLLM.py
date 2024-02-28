@@ -138,11 +138,13 @@ class RemoteLLM(LLM):
 	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_Response:
 		with Stopwatch.singleton.timed_block("RemoteLLM.chat"):
 			message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream)
+			message.source.generating = stream
 			return self._gen_remote_response(message, stream)
 	
 	def complete_str(self, text:str, stream=False) -> LLM_Response:
 		with Stopwatch.singleton.timed_block("RemoteLLM.complete_str"):
 			message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
+			message.source.generating = stream
 			return self._gen_remote_response(message, stream)
 		
 	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
