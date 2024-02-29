@@ -106,3 +106,6 @@ class Stopwatch:
 		self.start(key, details, log_start)
 		yield
 		self.stop(key, log_stop, log_time_taken, log_statistics)
+	
+	def __call__(self, key:Any, details:str=None, should_log:bool=None, log_time_taken:bool=None, log_statistics:bool=None) -> Dict[str, Any]:
+		return self.sequential(key, details, should_log, log_time_taken, log_statistics)
