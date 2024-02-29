@@ -3,7 +3,7 @@ from .ConversationView import ConversationView
 from .RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.ConversationModel import *
-
+from AbstractAI.Helpers.log_caller_info import log_caller_info
 #TODO: this needs to be more compatible with tool use, break it up to include or not include a send button, vs cancel accept buttons, etc.
 
 #TODO: this should hold the info to create a model source but should pass things up out of it and should itself be a chat view not directly tied to a model
@@ -18,12 +18,18 @@ class ChatUI(QWidget):
 	def conversation(self, value:Conversation):
 		self.conversation_view.conversation = value
 	
-	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Terminal", "Assistant"], max_new_message_lines=5):
+	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=5):
 		super().__init__()
 		
 		self.conversation_view = ConversationView(conversation)
 		
-		self.roles = roles #TODO: Change role strings for chat
+		self.roles = roles
+		
+		self.role_source_map = {
+			"Human": UserSource(),
+			"Assistant": ModelInfo("ChatUI", "Impersonation", log_caller_info(except_keys=['instance_id'])),
+			"System": SystemSource(),
+		}
 		
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
@@ -57,10 +63,11 @@ class ChatUI(QWidget):
 		self.send_button = QPushButton('Send')
 		self.send_button.clicked.connect(self.send_message)
 		
-		self.send_add_toggle = QCheckBox()
-		self.send_add_toggle.setCheckState(Qt.Checked)
-		self.send_add_toggle.stateChanged.connect(lambda: self.update_send_button_text())
-		self.input_layout.addWidget(self.send_add_toggle, alignment=Qt.AlignBottom)
+		self.respond_on_send_toggle = QCheckBox()
+		self.respond_on_send_toggle.setCheckState(Qt.Checked)
+		self.respond_on_send_toggle.stateChanged.connect(lambda: self.update_send_button_text())
+		self.respond_on_send_toggle.clicked.connect(lambda: self.update_send_button_text())
+		self.input_layout.addWidget(self.respond_on_send_toggle, alignment=Qt.AlignBottom)
 		
 		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
 		
@@ -71,28 +78,41 @@ class ChatUI(QWidget):
 		self.input_field.setFocus()
 		
 	def send_message(self):
-		self.change_to_stop()
-		new_message = Message(self.input_field.toPlainText())
 		selected_role = self.role_combobox.currentText()
-		if selected_role == "Human":
-			new_message.source = UserSource()
-		elif selected_role == "Terminal":
-			new_message.source = TerminalSource()
-		elif selected_role == "Assistant":
-			new_message.source = ModelSource("ChatUI", "User Entry")
-		self.conversation.add_message(new_message)
-		self.input_field.clear()
 		
-		self.user_added_message.emit(self.conversation)
+		new_message = Message(self.input_field.toPlainText())
+		if selected_role == "Assistant":
+			new_message.source = ModelSource(self.role_source_map[selected_role], self.conversation.message_sequence)
+		else:
+			new_message.source = self.role_source_map[selected_role]
+		
+		self.conversation.add_message(new_message)
+		
+		self.input_field.clear()
+		if self.respond_on_send_toggle.isChecked():
+			self.change_to_stop()
+			self.user_added_message.emit(self.conversation)
 	
+	def update_send_button_text(self):
+		if self.respond_on_send_toggle.isChecked():
+			self.send_button.setText("Send")
+		else:
+			self.send_button.setText("Add")
+			
 	def change_to_stop(self):
-		self.send_button.clicked.disconnect(self.send_message)
-		self.send_button.clicked.connect(self._stop_generating)
+		try:
+			self.send_button.clicked.disconnect(self.send_message)
+			self.send_button.clicked.connect(self._stop_generating)
+		except:
+			pass
 		self.send_button.setText("Stop")
 		
 	def change_to_send(self):
-		self.send_button.clicked.disconnect(self._stop_generating)
-		self.send_button.clicked.connect(self.send_message)
+		try:
+			self.send_button.clicked.disconnect(self._stop_generating)
+			self.send_button.clicked.connect(self.send_message)
+		except:
+			pass
 		self.send_button.setText("Send")
 		
 	def _stop_generating(self):
@@ -123,6 +143,3 @@ class ChatUI(QWidget):
 		if self.num_lines < n_lines:
 			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
 		self.num_lines = n_lines
-	
-	def respond_on_send(self) -> bool:
-		return self.send_add_toggle.isChecked()

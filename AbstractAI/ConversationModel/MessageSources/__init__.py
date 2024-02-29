@@ -1,4 +1,4 @@
-from .MessageSource import MessageSource
+from .MessageSource import MessageSource, SystemSource
 from .UserSource import UserSource
 from .ModelSource import ModelSource
 from .EditSource import EditSource

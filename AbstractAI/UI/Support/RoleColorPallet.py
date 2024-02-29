@@ -15,7 +15,6 @@ class RoleColorPallet:
 	def __init__(self):
 		self._colors = {
 			UserSource:{
-				"system": "lightgrey",
 				"user": "#9DFFA6",
 			},
 			ModelSource:"#FFC4B0",
@@ -28,11 +27,11 @@ class RoleColorPallet:
 		if source is None:
 			return QColor(Qt.white)
 		
-		#TODO: Get the non EditSource message source from source
+		if source.system_message:
+			return QColor("lightgrey")
 		
 		inner = self._colors.get(type(source), "#FFFFFF")
 		if isinstance(inner, dict):
-			# source is a user source (so far)
 			lower_name = source.user_name.lower()
 			if lower_name in inner:
 				return QColor(inner[lower_name])

@@ -1,6 +1,6 @@
 import inspect
 import subprocess
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import os
 
 # Dictionary for caching commit hashes
@@ -45,7 +45,7 @@ def get_git_commit(directory: str) -> str:
 	except subprocess.CalledProcessError as e:
 		return str(e)
 
-def log_caller_info(up_count:int=0) -> Dict[str, str]:
+def log_caller_info(up_count:int=0, except_keys:List[str]=[]) -> Dict[str, str]:
 	"""
 	Gather information about the caller of this function, including module, class, and method details.
 
@@ -89,11 +89,17 @@ def log_caller_info(up_count:int=0) -> Dict[str, str]:
 	# Get the directory of the calling module
 	module_directory = os.path.dirname(file_path)
 
-	return {
+	ret = {
 		'module_name': module_name,
 		'function_name': function_name,
 		'class_name': class_name,
 		'instance_id': instance_id,
 		'file_path': file_path,
-		'git_commit': get_git_commit(module_directory)
+		'git_commit': 0
 	}
+	for key in except_keys:
+		if key in ret:
+			del ret[key]
+	if 'git_commit' in ret:
+		ret['git_commit'] = get_git_commit(module_directory)
+	return ret
