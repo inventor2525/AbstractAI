@@ -1,25 +1,37 @@
+from AbstractAI.Helpers.Stopwatch import Stopwatch
+Stopwatch.singleton = Stopwatch(True)
+
+Stopwatch.singleton.sequential("Imports", log_statistics=False)
+Stopwatch.singleton.new_scope()
+
+Stopwatch.singleton.sequential("UI", log_statistics=False)
 from AbstractAI.UI.Support.MessageView import *
 from AbstractAI.UI.Support.ConversationView import *
 from AbstractAI.UI.Support.ChatUI import *
 from AbstractAI.UI.Support.ConversationListView import *
-
-from AbstractAI.Remote.client import System, RemoteLLM
-from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
 from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 
-from AbstractAI.Helpers.Stopwatch import Stopwatch
-import json
-from AbstractAI.Helpers.JSONEncoder import JSONEncoder
+Stopwatch.singleton.sequential("Remote client", log_statistics=False)
+from AbstractAI.Remote.client import System, RemoteLLM
+Stopwatch.singleton.sequential("ModelLoader", log_statistics=False)
+from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
+
+Stopwatch.singleton.sequential("DATAEngine", log_statistics=False)
 from ClassyFlaskDB.DATA import DATAEngine
 
+Stopwatch.singleton.sequential("basics", log_statistics=False)
+import json
 from datetime import datetime
 from copy import deepcopy
-
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 import os
 
+Stopwatch.singleton.sequential("PyQT5", log_statistics=False)
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+
+Stopwatch.singleton.sequential("Application", log_statistics=False)
 class Application(QMainWindow):
 	@property
 	def conversation(self) -> Conversation:
@@ -299,9 +311,8 @@ class Application(QMainWindow):
 		self.task.busy_indication.connect(animate)
 		self.task.start()
 		
-if __name__ == "__main__":
-	Stopwatch.singleton = Stopwatch(True)
-	
+Stopwatch.singleton.end_scope(log_statistics=False)
+if __name__ == "__main__":	
 	Stopwatch.singleton.sequential("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
 	settings = QSettings("MyCompany", "MyApp")
