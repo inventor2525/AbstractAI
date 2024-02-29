@@ -38,6 +38,7 @@ class ChatUI(QWidget):
 		
 	def init_ui(self):
 		self.layout = QVBoxLayout()
+		self.layout.setContentsMargins(0, 0, 0, 0)
 		self.setLayout(self.layout)
 		
 		# Create a list view to display the conversation:
