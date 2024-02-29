@@ -1,5 +1,5 @@
 from AbstractAI.ConversationModel import *
-from ._CommonImports import *
+from AbstractAI.UI.Support._CommonImports import *
 
 class RoleComboBox(QComboBox):
 	def __init__(self, values:List[str], default_value:str="Human", *args, **kwargs):

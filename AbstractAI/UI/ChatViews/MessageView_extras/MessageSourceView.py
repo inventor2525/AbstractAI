@@ -1,5 +1,5 @@
 from AbstractAI.ConversationModel.MessageSources import *
-from ._CommonImports import *
+from AbstractAI.UI.Support._CommonImports import *
 
 def pascal_case(string:str) -> str:
 	return " ".join([word.capitalize() for word in string.split(" ")])

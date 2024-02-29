@@ -1,5 +1,5 @@
-from AbstractAI.UI.Support.MessageView import *
-from AbstractAI.UI.Support.ConversationView import *
+from AbstractAI.UI.ChatViews.MessageView_extras import *
+from AbstractAI.UI.ChatViews.ConversationView import *
 
 import json
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder

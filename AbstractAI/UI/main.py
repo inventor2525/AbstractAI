@@ -6,10 +6,10 @@ Stopwatch("Imports", log_statistics=False)
 Stopwatch.new_scope()
 
 Stopwatch("UI", log_statistics=False)
-from AbstractAI.UI.Support.MessageView import *
-from AbstractAI.UI.Support.ConversationView import *
-from AbstractAI.UI.Support.ChatUI import *
-from AbstractAI.UI.Support.ConversationListView import *
+from AbstractAI.UI.ChatViews.MessageView_extras import *
+from AbstractAI.UI.ChatViews.ConversationView import *
+from AbstractAI.UI.ChatViews.ChatUI import *
+from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
 from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 

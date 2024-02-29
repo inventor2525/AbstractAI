@@ -2,10 +2,10 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import pyqtSignal, QObject
 
-from AbstractAI.UI.Support.RecordingIndicator import RecordingIndicator
+from AbstractAI.UI.Elements.RecordingIndicator import RecordingIndicator
 from AbstractAI.UI.Support.TextTyper import TextTyper
 from AbstractAI.UI.Support.KeyComboHandler import KeyComboHandler, KeyAction, KeyEvent
-from AbstractAI.UI.Support.TranscriptionWindow import TranscriptionWindow
+from AbstractAI.UI.Elements.TranscriptionWindow import TranscriptionWindow
 from AbstractAI.SpeechToText.LiveSpeechToText import LiveSpeechToText
 
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder

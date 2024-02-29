@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
-from AbstractAI.UI.Support.ConversationView import ConversationView, Conversation, ConversationCollection
+from AbstractAI.UI.ChatViews.ConversationView import ConversationView, Conversation, ConversationCollection
 from PyQt5.QtCore import pyqtSignal
 
 from typing import List

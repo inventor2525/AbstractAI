@@ -16,7 +16,7 @@
 			"name": "main.py",
 			"type": "python",
 			"request": "launch",
-			"program": "${workspaceFolder}/AbstractAI/UI/Support/main.py",
+			"program": "${workspaceFolder}/AbstractAI/UI/main.py",
 			"console": "integratedTerminal",
 			"justMyCode": false
 		}

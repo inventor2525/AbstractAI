@@ -1,10 +1,10 @@
-from .ColoredFrame import *
-from .TextEdit import TextEdit
+from AbstractAI.UI.Support.ColoredFrame import *
+from AbstractAI.UI.Elements.TextEdit import TextEdit
 from AbstractAI.ConversationModel.Message import Message
 from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
-from .MessageSourceView import MessageSourceView
-from .RoleColorPallet import RoleColorPallet
+from .MessageView_extras.MessageSourceView import MessageSourceView
+from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 
