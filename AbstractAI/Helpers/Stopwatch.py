@@ -61,9 +61,9 @@ class Stopwatch:
 		
 		if self._bool(self.should_log and self.log_starts, should_log):
 			if details is None:
-				self.print(f"Starting {key}")
+				self.print(f"Starting \"{key}\" timmer")
 			else:
-				self.print(f"Starting {key} {details}")
+				self.print(f"Starting \"{key} {details}\" timmer")
 		if key not in self.timers:
 			self.timers[key] = TimerStats()
 		self.timers[key].start()
@@ -73,7 +73,7 @@ class Stopwatch:
 			et = self.timers[key].stop()
 			stats = self.timers[key].get_stats()
 			if self._bool(self.should_log and self.log_stops, should_log):
-				msg = f"Stopping {key}"
+				msg = f"Stopping \"{key}\" timmer"
 				if self._bool(self.log_time_taken, log_time_taken):
 					msg += f" after: {et}"
 				if self._bool(self.log_statistics, log_statistics):
