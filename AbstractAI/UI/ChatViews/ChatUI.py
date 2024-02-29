@@ -61,12 +61,14 @@ class ChatUI(QWidget):
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 		
 		# Create a button to send the message:
-		self.send_button = QPushButton('Send')
+		self.send_button = QPushButton('Send Msg')
 		self.send_button.clicked.connect(self.send_message)
 		
-		self.respond_on_send_toggle = QCheckBox()
-		self.respond_on_send_toggle.setCheckState(Qt.Checked)
-		self.respond_on_send_toggle.stateChanged.connect(lambda: self.update_send_button_text())
+		self.respond_on_send_toggle = QToolButton()
+		self.respond_on_send_toggle.setCheckable(True)
+		self.respond_on_send_toggle.setChecked(True)
+		self.respond_on_send_toggle.setText("Auto Respond")
+		self.respond_on_send_toggle.setToolTip("Automatically respond to this message")
 		self.respond_on_send_toggle.clicked.connect(lambda: self.update_send_button_text())
 		self.input_layout.addWidget(self.respond_on_send_toggle, alignment=Qt.AlignBottom)
 		
@@ -96,9 +98,9 @@ class ChatUI(QWidget):
 	
 	def update_send_button_text(self):
 		if self.respond_on_send_toggle.isChecked():
-			self.send_button.setText("Send")
+			self.send_button.setText("Send Msg")
 		else:
-			self.send_button.setText("Add")
+			self.send_button.setText("Add Msg")
 			
 	def change_to_stop(self):
 		try:
@@ -106,7 +108,7 @@ class ChatUI(QWidget):
 			self.send_button.clicked.connect(self._stop_generating)
 		except:
 			pass
-		self.send_button.setText("Stop")
+		self.send_button.setText("Stop!")
 		
 	def change_to_send(self):
 		try:
@@ -114,7 +116,7 @@ class ChatUI(QWidget):
 			self.send_button.clicked.connect(self.send_message)
 		except:
 			pass
-		self.send_button.setText("Send")
+		self.update_send_button_text()
 		
 	def _stop_generating(self):
 		# self.change_to_send()
