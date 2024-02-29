@@ -174,6 +174,7 @@ class MessageView(BaseMessageView):
 		self.message.should_send = state == Qt.Checked
 	
 	def update_text_edit_height(self):
+		self._update_edit_state()
 		margins = self.text_edit.contentsMargins()
 		
 		new_height = max(
@@ -199,7 +200,7 @@ class MessageView(BaseMessageView):
 			self.text_edit.setStyleSheet("QTextEdit {border: 3px solid rgba(0, 0, 255, 0.3);}")
 		else:
 			self.confirm_btn.setVisible(False)
-			self.text_edit.setStyleSheet("")
+			self.text_edit.setStyleSheet("QTextEdit {border: 3px solid rgba(0, 0, 0, 0);}")
 	
 	def on_text_changed(self):
 		text = self.text_edit.toPlainText()
