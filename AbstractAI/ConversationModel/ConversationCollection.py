@@ -63,7 +63,11 @@ class ConversationCollection():
 		
 		if conversation.message_sequence is None:
 			with self.engine.session() as session:
-				whole_conversation = deepcopy(session.query(Conversation).filter(Conversation.auto_id == conversation.auto_id).first())
+				conversations_message_sequences = deepcopy(session.query(MessageSequence).filter(MessageSequence.conversation_fk == conversation.auto_id).all())
+				if len(conversations_message_sequences) == 0:
+					whole_conversation = deepcopy(session.query(Conversation).filter(Conversation.auto_id == conversation.auto_id).first())
+				else:
+					whole_conversation = conversations_message_sequences[0].conversation
 				self.conversations[conversation_index] = whole_conversation
 				self._register_conversation(whole_conversation)
 				return whole_conversation
