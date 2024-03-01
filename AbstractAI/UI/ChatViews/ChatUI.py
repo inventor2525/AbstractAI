@@ -4,9 +4,7 @@ from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.log_caller_info import log_caller_info
-#TODO: this needs to be more compatible with tool use, break it up to include or not include a send button, vs cancel accept buttons, etc.
 
-#TODO: this should hold the info to create a model source but should pass things up out of it and should itself be a chat view not directly tied to a model
 class ChatUI(QWidget):
 	user_added_message = pyqtSignal(Conversation)
 	stop_generating = pyqtSignal()

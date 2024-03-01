@@ -23,6 +23,7 @@ class ConversationView(QListWidget):
 			
 			for message in self._conversation.message_sequence.messages:
 				self._render_message(message)
+			self.scrollToBottom()
 	
 	def __init__(self, conversation: Conversation = None):
 		super().__init__()
@@ -76,20 +77,23 @@ class ConversationView(QListWidget):
 				self.clearSelection()
 	
 	def _render_message(self, message: Message):
-		item = QListWidgetItem()
+		message_item = QListWidgetItem()
+		
+		# Create the message view
 		message_view = MessageView(message, self)
-		message_view.rowHeightChanged.connect(lambda: self.update_row_height(item))
+		message_view.rowHeightChanged.connect(lambda: self.update_row_height(message_item))
+		message_view.message_deleted_clicked.connect(self.delete_message)
+		message_view.regenerate_clicked.connect(lambda msg_source: self.regenerate_message.emit(msg_source))
 		def message_changed(message: Message):
 			self.conversation.replace_message(message.source.original, message.source.new, True)
 			self.message_changed.emit(message)
-			self.update_row_height(item)
+			self.update_row_height(message_item)
 		message_view.message_changed.connect(message_changed)
-		item.setSizeHint(message_view.sizeHint())
-		self.addItem(item)
-		self.setItemWidget(item, message_view)
-		message_view.message_deleted_clicked.connect(self.delete_message)
-		message_view.regenerate_clicked.connect(lambda msg_source: self.regenerate_message.emit(msg_source))
-		self.scrollToBottom()
+		
+		# Set the message view as the widget for the item
+		message_item.setSizeHint(message_view.sizeHint())
+		self.setItemWidget(message_item, message_view)
+		self.addItem(message_item)
 	
 	@run_in_main_thread
 	def render_message(self, message: Message):
