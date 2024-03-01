@@ -18,7 +18,7 @@ class ChatUI(QWidget):
 	def conversation(self, value:Conversation):
 		self.conversation_view.conversation = value
 	
-	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=5):
+	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=10):
 		super().__init__()
 		
 		self.conversation_view = ConversationView(conversation)
@@ -54,7 +54,6 @@ class ChatUI(QWidget):
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 		size_policy.setVerticalStretch(1)
 		self.input_field.setSizePolicy(size_policy)
-		self.input_field.setMaximumHeight(self.input_field.fontMetrics().lineSpacing())
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
 		self.input_field.setPlaceholderText("Type your message here...")
@@ -76,10 +75,13 @@ class ChatUI(QWidget):
 		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
 		
 		self.layout.addLayout(self.input_layout)
-		self.input_field.setMinimumHeight(self.send_button.sizeHint().height())
 		
 		# Set the chat text box as selected:
 		self.input_field.setFocus()
+		self.adjust_input_field_size()
+		self.respond_on_send_toggle.setFixedHeight(self.input_field.height())
+		self.send_button.setFixedHeight(self.input_field.height())
+		self.role_combobox.setFixedHeight(self.input_field.height())
 		
 	def send_message(self):
 		selected_role = self.role_combobox.currentText()
@@ -132,18 +134,10 @@ class ChatUI(QWidget):
 	
 	def adjust_input_field_size(self):
 		"""Adjust the height of the input field to fit the text up to max lines"""
-		n_lines = self.input_field.document().blockCount()
-		lines_to_show = min(n_lines, self.max_new_message_lines)
-		new_height = self.input_field.fontMetrics().lineSpacing() * lines_to_show + 10
-		self.input_field.setMaximumHeight(int(new_height))
-
-		if n_lines >= self.max_new_message_lines:
-			self.input_field.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-		else:
-			self.input_field.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-			
-		self.input_field.updateGeometry()
+		content_height = self.input_field.document().size().height()
+		content_margin_sum = + self.input_field.contentsMargins().top() + self.input_field.contentsMargins().bottom()
 		
-		if self.num_lines < n_lines:
-			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
-		self.num_lines = n_lines
+		max_height = self.input_field.fontMetrics().lineSpacing()*self.max_new_message_lines + self.input_field.document().documentMargin()*2
+		
+		new_height = min(content_height, max_height) + content_margin_sum
+		self.input_field.setFixedHeight(int(new_height))
