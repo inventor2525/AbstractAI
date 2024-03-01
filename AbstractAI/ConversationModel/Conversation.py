@@ -35,10 +35,12 @@ class Conversation:
 		self.last_modified = get_local_time()
 	
 	def remove_message(self, message:Message):
+		self.new_message_sequence()
 		self.message_sequence.remove_message(message)
 		self.last_modified = get_local_time()
 		
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
+		self.new_message_sequence()
 		self.message_sequence.replace_message(old_message, new_message, keeping_latter)
 		self.last_modified = get_local_time()
 		
