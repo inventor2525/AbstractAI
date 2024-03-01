@@ -42,9 +42,7 @@ class ConversationView(QListWidget):
 				message_view.set_selected(item.isSelected())
 
 	def wheelEvent(self, event):
-		# Slow down the scroll speed, loosely based on how much the items are bigger than the default size to try and make it feel more like the default speed
-		newEvent = QWheelEvent(event.pos(), event.globalPos(), event.pixelDelta(), event.angleDelta() *24 / 96, event.buttons(), event.modifiers(), event.phase(), event.inverted(), event.source())
-		super(ConversationView, self).wheelEvent(newEvent)
+		self.verticalScrollBar().setValue(self.verticalScrollBar().value() - event.pixelDelta().y())
 	
 	def keyPressEvent(self, event):
 		item_widget = self.itemWidget(self.currentItem())
