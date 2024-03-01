@@ -12,6 +12,7 @@ from AbstractAI.UI.ChatViews.ChatUI import *
 from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
 from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
+from AbstractAI.UI.Context import Context
 
 Stopwatch("Remote client", log_statistics=False)
 from AbstractAI.Remote.client import System, RemoteLLM
@@ -52,12 +53,12 @@ class Application(QMainWindow):
 		self._llm = value
 		self.chatUI.send_button.setEnabled(value is not None)
 		
-	def __init__(self, model_loader:ModelLoader, settings:QSettings):
+		Context.llm_loaded = value is not None
+		Context.context_changed()
+		
+	def __init__(self):
 		super().__init__()
 		Stopwatch.new_scope()
-		
-		self.model_loader = model_loader
-		self.settings = settings
 		
 		self.app = QApplication.instance()
 		Stopwatch("Connect to database", log_statistics=False)
@@ -134,7 +135,7 @@ class Application(QMainWindow):
 		self.name_description_layout = QHBoxLayout()
 		self.models_combobox = QComboBox()
 		self.models_combobox.addItem("Select A Model...")
-		self.models_combobox.addItems(self.model_loader.model_names)
+		self.models_combobox.addItems(Context.model_loader.model_names)
 		self.models_combobox.currentTextChanged.connect(self.select_model)
 		self.name_description_layout.addWidget(self.models_combobox)
 		self.name_field = QLineEdit()
@@ -155,7 +156,7 @@ class Application(QMainWindow):
 		self.right_panel.addWidget(self.chatUI)
 		self.chatUI.user_added_message.connect(self.generate_ai_response)
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
-		self.input_field = TextEdit()
+		self.input_field = TextEdit("AI message prefix field", auto_save=True)
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 		self.input_field.setSizePolicy(size_policy)
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
@@ -216,10 +217,10 @@ class Application(QMainWindow):
 			self.conversation_list_view.conversations = ConversationCollection(filtered_conversations)
 	
 	def read_settings(self):
-		self.restoreGeometry(self.settings.value("geometry", QByteArray()))
+		self.restoreGeometry(Context.settings.value("geometry", QByteArray()))
 
 	def write_settings(self):
-		self.settings.setValue("geometry", self.saveGeometry())
+		Context.settings.setValue("geometry", self.saveGeometry())
 	
 	def closeEvent(self, event):
 		self.write_settings()
@@ -280,7 +281,7 @@ class Application(QMainWindow):
 		
 		def load_model():
 			try:
-				self.llm = self.model_loader[model_name]
+				self.llm = Context.model_loader[model_name]
 				self.llm.start()
 				return True
 			except Exception as e:
@@ -313,10 +314,10 @@ class Application(QMainWindow):
 		self.task.start()
 		
 Stopwatch.end_scope(log_statistics=False)
-if __name__ == "__main__":	
+if __name__ == "__main__":
 	Stopwatch("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
-	settings = QSettings("MyCompany", "MyApp")
+	Context.settings = QSettings("Inventor2525", "AbstractAI")
 	
 	Stopwatch("Load models", log_statistics=False)
 	models = {
@@ -338,24 +339,24 @@ if __name__ == "__main__":
 			"ModelName": "gpt-3.5-turbo",
 			"LoaderType": "OpenAI",
 			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
+			"APIKey": APIKeyGetter("OpenAI", Context.settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
 		},
 		"GPT-4": {
 			"ModelName": "gpt-4",
 			"LoaderType": "OpenAI",
 			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
+			"APIKey": APIKeyGetter("OpenAI", Context.settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
 		},
 		"GPT-4 (OLD)" : {
 			"ModelName": "gpt-4-0613",
 			"LoaderType": "OpenAI",
 			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", settings)
+			"APIKey": APIKeyGetter("OpenAI", Context.settings)
 		}
 	}
-	model_loader = ModelLoader(models)
+	Context.model_loader = ModelLoader(models)
 	Stopwatch("Load window", log_statistics=False)
-	window = Application(model_loader, settings)
+	window = Application()
 	
 	Stopwatch("Show window", log_statistics=False)
 	window.show()

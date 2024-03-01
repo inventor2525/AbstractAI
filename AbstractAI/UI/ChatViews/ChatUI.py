@@ -4,6 +4,7 @@ from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.log_caller_info import log_caller_info
+from PyQt5.QtCore import QTimer
 
 class ChatUI(QWidget):
 	user_added_message = pyqtSignal(Conversation)
@@ -50,7 +51,7 @@ class ChatUI(QWidget):
 		self.input_layout.addWidget(self.role_combobox, alignment=Qt.AlignBottom)
 		
 		# Create a text box to type the message:
-		self.input_field = TextEdit()
+		self.input_field = TextEdit("New Message Input Field", auto_save=True)
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
 		self.input_field.setPlaceholderText("Type your message here...")

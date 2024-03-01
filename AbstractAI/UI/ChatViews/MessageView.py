@@ -7,6 +7,7 @@ from .MessageView_extras.MessageSourceView import MessageSourceView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
+from AbstractAI.UI.Context import Context
 
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
@@ -110,7 +111,7 @@ class MessageView(BaseMessageView):
 		self.arrow_layout.addWidget(self.right_arrow_btn)
 		
 		# Editable text box (The message -- in the middle of the view)
-		self.text_edit = TextEdit()
+		self.text_edit = TextEdit("Message Text Box")
 		self.text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
 		self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
