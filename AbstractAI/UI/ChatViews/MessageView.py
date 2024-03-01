@@ -49,50 +49,37 @@ class MessageView(BaseMessageView):
 		self.parent = parent
 		self._editing = False
 		self._edit_enabled = True
-
+		
+		self.init_ui()
+		
+		# Set the message to the one passed in
+		self.message = message
+		QTimer.singleShot(0, self.update_text_edit_height)
+	
+	def init_ui(self):
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
 		
 		self.left_layout = QVBoxLayout()
 		self.layout.addLayout(self.left_layout)
 		
-		# Role (and optional name) label
-		# self.role_label = QLabel()
-		# #Get the role from the message, capitalizing the first letter of each word:
-		# pascal_role = " ".join([word.capitalize() for word in message.full_role.split(" ")])
-		# self.role_label.setText(f"{pascal_role}:")
-		# self.role_label.setFixedWidth(100)
-		# self.role_label.setWordWrap(True)
-		# self.left_layout.addWidget(self.role_label)
-		
-		# Date label
+		# Date label (left side of message)
 		self.date_label = QLabel()
 		self.date_label.setFixedWidth(100)
 		self.date_label.setWordWrap(True)
 		self.left_layout.addWidget(self.date_label)
 		
-		# # Token count label
-		# self.token_count_label = QLabel()
-		# self.token_count_label.setText(f"{tokens_in_message(message)} tokens")
-		# self.token_count_label.setFixedWidth(100)
-		# self.token_count_label.setWordWrap(True)
-		# self.left_layout.addWidget(self.token_count_label)
-		
-		# # Should send toggle
-		# self.should_send_checkbox = QCheckBox("Send")
-		# self.should_send_checkbox.setChecked(message.should_send)
-		# self.should_send_checkbox.stateChanged.connect(self.on_should_send_changed)
-		# self.left_layout.addWidget(self.should_send_checkbox)
-		
-		self.message_source_view = MessageSourceView(message.source)
+		# Message source view (left side of message)
+		self.message_source_view = MessageSourceView()
 		self.message_source_view.regenerate_clicked.connect(lambda model_source:self.regenerate_clicked.emit(model_source))
 		self.left_layout.addWidget(self.message_source_view)
 		
-		# Spacer
+		# Spacer (left side of message)
 		self.left_layout.addStretch()
 		
-		# Horizontal layout for left and right arrow buttons
+		# Horizontal layout for left and right arrow buttons (left side of message)
 		self.arrow_layout = QHBoxLayout()
+		self.left_layout.addLayout(self.arrow_layout)
 		
 		# Left arrow button for selecting previous version of message:
 		self.left_arrow_btn = QToolButton()
@@ -106,8 +93,8 @@ class MessageView(BaseMessageView):
 				if index < 0:
 					index = 0
 				self.message = self.message.prev_message._children[index]
-				
 		self.left_arrow_btn.clicked.connect(left_arrow_clicked)
+		self.arrow_layout.addWidget(self.left_arrow_btn)
 		
 		# Right arrow button for selecting next version of message:
 		self.right_arrow_btn = QToolButton()
@@ -122,18 +109,9 @@ class MessageView(BaseMessageView):
 					index = len(self.message.prev_message._children)-1
 				self.message = self.message.prev_message._children[index]
 		self.right_arrow_btn.clicked.connect(right_arrow_clicked)
-		
-		# create another 2 buttons to the left of the left and
-		# right of the right that also swap the children out:
-		# TODO: make these buttons work
-		# TODO: track the changes in the message sequence and have proper notifications
-		
-		self.arrow_layout.addWidget(self.left_arrow_btn)
 		self.arrow_layout.addWidget(self.right_arrow_btn)
 		
-		self.left_layout.addLayout(self.arrow_layout)
-		
-		# Editable text box
+		# Editable text box (The message -- in the middle of the view)
 		self.text_edit = TextEdit()
 		self.text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
 		self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
@@ -142,34 +120,31 @@ class MessageView(BaseMessageView):
 		self.text_edit.textChanged.connect(self.update_text_edit_height)
 		self.layout.addWidget(self.text_edit)
 
-		# Vertical panel
+		# Vertical panel (right side of message)
 		self.panel_layout = QVBoxLayout()
 		self.panel_layout.setAlignment(Qt.AlignTop)
 		self.layout.addLayout(self.panel_layout)
 
-		# Delete button (X)
+		# Delete button (X -- top right of message)
 		self.delete_btn = QPushButton("X")
 		self.delete_btn.clicked.connect(self.delete_message)
 		self.delete_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.delete_btn, alignment=Qt.AlignTop)
 		self.delete_btn.clicked.connect(lambda: self.message_deleted_clicked.emit(self))
 		
-		# Confirm button (checkmark)
+		# Confirm button (checkmark -- top right of message)
 		self.confirm_btn = QPushButton("✓")
 		self.confirm_btn.clicked.connect(self.confirm_changes)
 		self.confirm_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.confirm_btn, alignment=Qt.AlignTop)
 
-		# Expand message view button (rotating arrow)
+		# Expand message view button (rotating arrow -- top right of message)
 		self.expand_btn = QToolButton()
 		self.expand_btn.setCheckable(True)
 		self.expand_btn.setArrowType(Qt.RightArrow)
 		self.expand_btn.toggled.connect(self.toggle_expand)
 		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignTop)
 		
-		self.message = message
-		QTimer.singleShot(0, self.update_text_edit_height)
-	
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked
 	
@@ -246,7 +221,7 @@ class MessageView(BaseMessageView):
 		if self._message is not None:
 			self._message.changed.connect(self.on_message_changed)
 		
-		self.message_source_view.set_message_source(value.source)
+		self.message_source_view.message_source = value.source
 		
 		# self.role_label.setText(f"{value.full_role}:")
 		# self.token_count_label.setText(f"{tokens_in_message(value)} tokens")
@@ -298,5 +273,4 @@ class MessageView(BaseMessageView):
 			newValue = newMax * (scrollPercentage * oldMax / newMax)
 			verticalScrollBar.setValue(int(newValue))
 
-		self.text_edit.setStyleSheet("")
 		self.update_text_edit_height()

@@ -19,11 +19,7 @@ class ChatUI(QWidget):
 		self.conversation_view.conversation = value
 	
 	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=10):
-		super().__init__()
-		
-		self.conversation_view = ConversationView(conversation)
-		self.conversation_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-		
+		super().__init__()		
 		self.roles = roles
 		
 		self.role_source_map = {
@@ -35,35 +31,36 @@ class ChatUI(QWidget):
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
 		
-		self.init_ui()
+		self.init_ui(conversation)
 		
-	def init_ui(self):
+	def init_ui(self, conversation:Conversation = None):
 		self.layout = QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
 		self.setLayout(self.layout)
 		
 		# Create a list view to display the conversation:
+		self.conversation_view = ConversationView(conversation)
+		self.conversation_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 		self.layout.addWidget(self.conversation_view)
 		
-		# Create a text field to enter new messages:
+		# Create a layout to hold the user input and send button:
 		self.input_layout = QHBoxLayout()
+		self.layout.addLayout(self.input_layout)
+		
+		# Allow the user to select a role to send the message as:
 		self.role_combobox = RoleComboBox(self.roles, default_value=self.roles[0])
 		self.input_layout.addWidget(self.role_combobox, alignment=Qt.AlignBottom)
-
+		
+		# Create a text box to type the message:
 		self.input_field = TextEdit()
-		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-		size_policy.setVerticalStretch(1)
-		self.input_field.setSizePolicy(size_policy)
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_field.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
+		self.input_field.setFocus()
 		
-		# Create a button to send the message:
-		self.send_button = QPushButton('Send Msg')
-		self.send_button.clicked.connect(self.send_message)
-		
+		# Create a button to toggle whether the chat should be processed by the model on send:
 		self.respond_on_send_toggle = QToolButton()
 		self.respond_on_send_toggle.setCheckable(True)
 		self.respond_on_send_toggle.setChecked(True)
@@ -72,12 +69,14 @@ class ChatUI(QWidget):
 		self.respond_on_send_toggle.clicked.connect(lambda: self.update_send_button_text())
 		self.input_layout.addWidget(self.respond_on_send_toggle, alignment=Qt.AlignBottom)
 		
+		# Create a button to send the message:
+		# This is a multi-use button that can be used to send a message, 
+		# add it, or stop the generation of a message:
+		self.send_button = QPushButton('Send Msg')
+		self.send_button.clicked.connect(self.send_message)
 		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
 		
-		self.layout.addLayout(self.input_layout)
-		
-		# Set the chat text box as selected:
-		self.input_field.setFocus()
+		# Adjust the size of the bottom row to fit the input field:
 		self.adjust_input_field_size()
 		self.respond_on_send_toggle.setFixedHeight(self.input_field.height())
 		self.send_button.setFixedHeight(self.input_field.height())
@@ -122,9 +121,8 @@ class ChatUI(QWidget):
 		self.update_send_button_text()
 		
 	def _stop_generating(self):
-		# self.change_to_send()
-		
 		self.stop_generating.emit()
+		self.change_to_send()
 		
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:

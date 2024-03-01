@@ -7,25 +7,44 @@ def pascal_case(string:str) -> str:
 class MessageSourceView(QWidget):
 	regenerate_clicked = pyqtSignal(ModelSource)
 	
-	def __init__(self, message_source:MessageSource):
+	@property
+	def message_source(self) -> MessageSource:
+		return self._message_source
+	@message_source.setter
+	def message_source(self, value:MessageSource):
+		self._message_source = value
+		if value is None:
+			self.label.setText("Unknown\nSource:")
+		else:
+			self.label.setText(self._get_source_label(value))
+		
+	def __init__(self, message_source:MessageSource=None):
 		super().__init__()
 		
+		self.init_ui()
+		self.message_source = message_source
+	
+	def init_ui(self):
+		# Create a layout
 		self.setFixedWidth(75)
 		self.layout = QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
+		self.setLayout(self.layout)
 		
+		# Create a label to display the source of the message
 		self.label = QLabel()
 		self.layout.addWidget(self.label)
 		
+		# Create a button for regenerating the message, if it's from a model
 		self.regenerate_button = QPushButton(QIcon.fromTheme("view-refresh"), "")
 		self.regenerate_button.setMaximumWidth(self.regenerate_button.sizeHint().height())
-		self.regenerate_button.clicked.connect(lambda:self.regenerate_clicked.emit(message_source))
+		self.regenerate_button.clicked.connect(self._fire_regenerate_clicked)
 		self.regenerate_button.setVisible(False)
 		self.layout.addWidget(self.regenerate_button)
-		self.setLayout(self.layout)
-		
-		self.set_message_source(message_source)
 	
+	def _fire_regenerate_clicked(self):
+		self.regenerate_clicked.emit(self.message_source)
+		
 	def _get_source_label(self, message_source:MessageSource) -> str:
 		if message_source is None:
 			return "Unknown\nSource:"
@@ -64,8 +83,3 @@ class MessageSourceView(QWidget):
 				])
 		else:
 			return "Unknown\nSource:"
-		
-	def set_message_source(self, message_source:MessageSource):
-		self.message_source = message_source
-		self.label.setText(self._get_source_label(message_source))
-	
