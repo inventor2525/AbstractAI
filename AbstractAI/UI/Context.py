@@ -21,7 +21,7 @@ class Context:
 	def __post_init__(self):
 		Context.singleton = self
 	
-	def has_llm(conversation: Conversation):
-		return Context.singleton().llm_loaded
+	def has_llm(self, conversation: Conversation):
+		return self.llm_loaded
 
 Context = Context.singleton()

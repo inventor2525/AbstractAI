@@ -72,7 +72,6 @@ class MessageView(BaseMessageView):
 		
 		# Message source view (left side of message)
 		self.message_source_view = MessageSourceView()
-		self.message_source_view.regenerate_clicked.connect(lambda model_source:self.regenerate_clicked.emit(model_source))
 		self.left_layout.addWidget(self.message_source_view)
 		
 		# Spacer (left side of message)
@@ -144,6 +143,22 @@ class MessageView(BaseMessageView):
 		self.expand_btn.toggled.connect(self.toggle_expand)
 		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignTop)
 		
+		# Add some space on the right side of the message
+		self.panel_layout.addStretch()
+		
+		# Create a button for regenerating the message, if it's from a model (bottom right of message)
+		self.regenerate_button = QPushButton(QIcon.fromTheme("view-refresh"), "")
+		self.regenerate_button.setMaximumWidth(self.regenerate_button.sizeHint().height())
+		self.regenerate_button.clicked.connect(lambda: self.regenerate_clicked.emit(self.message.source))
+		self.regenerate_button.setVisible(False)
+		self.panel_layout.addWidget(self.regenerate_button)
+		
+		# Regester the context changed event
+		def context_changed():
+			self.regenerate_button.setEnabled(Context.has_llm(self.message.conversation))
+		Context.context_changed.connect(context_changed, auto_disconnect=True)
+		context_changed()
+		
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked
 	
@@ -162,6 +177,8 @@ class MessageView(BaseMessageView):
 			set_height(max(new_height, int(self.text_edit.document().size().height())))
 		else:
 			set_height(new_height)
+		
+		self.expand_btn.setVisible(self.text_edit.document().size().height() > new_height)
 		self.rowHeightChanged.emit()
 		
 	def toggle_expand(self, checked):
@@ -226,6 +243,13 @@ class MessageView(BaseMessageView):
 		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
+		
+		if self.message.source is not None:
+			most_origional = self.message.source
+			if isinstance(most_origional, EditSource):
+				most_origional = EditSource.most_original(most_origional).source
+			self.regenerate_button.setVisible(isinstance(most_origional, ModelSource))
+		
 		self.update_text_edit_height()
 		self.update()
 	
