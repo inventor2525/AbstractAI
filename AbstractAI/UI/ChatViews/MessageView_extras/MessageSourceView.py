@@ -10,6 +10,7 @@ class MessageSourceView(QWidget):
 	def __init__(self, message_source:MessageSource):
 		super().__init__()
 		
+		self.setFixedWidth(75)
 		self.layout = QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
 		
