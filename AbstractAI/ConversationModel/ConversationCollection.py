@@ -12,14 +12,23 @@ class ConversationCollection():
 	engine : DATAEngine = None
 	
 	conversation_added: Signal[[Conversation], None] = Signal.field()
-			
+	
 	def _register_conversation(self, conversation:Conversation) -> None:
+		def message_changed(message):
+			self.engine.merge(message)
+			
 		def message_added(message):
-			self.engine.merge(message.conversation)
-			def message_changed(message):
-				self.engine.merge(message)
+			self.engine.merge(message)
 			message.changed.connect(message_changed)
 		conversation.message_added.connect(message_added)
+		
+		def message_removed(message):
+			message.changed.disconnect(message_changed)
+		conversation.message_removed.connect(message_removed)
+		
+		def conversation_changed(conversation):
+			self.engine.merge(conversation)
+		conversation.conversation_changed.connect(conversation_changed)
 			
 	def append(self, conversation:Conversation, should_notify=True) -> None:
 		self.conversations.append(conversation)

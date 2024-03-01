@@ -14,15 +14,19 @@ class ConversationView(QListWidget):
 	@conversation.setter
 	def conversation(self, value:Conversation):
 		if getattr(self, "_conversation", None) is not None:
-			self._conversation.message_added.disconnect(self.render_message)
+			self._conversation.message_added.disconnect(self.render_messages)
+			for message in self._conversation.message_sequence.messages:
+				del message._view
+				del message._item
 		self.clear()
 		
 		self._conversation = value
 		if self._conversation is not None:
-			self._conversation.message_added.connect(self.render_message)
+			self._conversation.message_added.connect(self.render_messages)
 			
 			for message in self._conversation.message_sequence.messages:
-				self._render_message(message)
+				self.addItem(self._render_message(message))
+				self.setItemWidget(message._item, message._view)
 			self.scrollToBottom()
 	
 	def __init__(self, conversation: Conversation = None):
@@ -76,7 +80,7 @@ class ConversationView(QListWidget):
 				
 				self.clearSelection()
 	
-	def _render_message(self, message: Message):
+	def _render_message(self, message: Message) -> QListWidgetItem:
 		message_item = QListWidgetItem()
 		
 		# Create the message view
@@ -92,12 +96,24 @@ class ConversationView(QListWidget):
 		
 		# Set the message view as the widget for the item
 		message_item.setSizeHint(message_view.sizeHint())
-		self.setItemWidget(message_item, message_view)
-		self.addItem(message_item)
+		message._view = message_view
+		message._item = message_item
+		return message_item
 	
 	@run_in_main_thread
-	def render_message(self, message: Message):
-		self._render_message(message)
+	def render_messages(self, *args):
+		for msg_index, msg in enumerate(self.conversation.message_sequence.messages):
+			msg_item = getattr(msg, "_item", None)
+			
+			if msg_item is None:
+				self.insertItem(msg_index, self._render_message(msg))
+				self.setItemWidget(msg._item, msg._view)
+			elif self.item(msg_index) != msg_item:
+				self.takeItem(msg_index)
+				self.insertItem(msg_index, self._render_message(msg))
+				self.setItemWidget(msg_item, msg._view)
+		for i in range(msg_index+1, self.count()):
+			self.takeItem(i)
 		
 	def update_row_height(self, item: QListWidgetItem):
 		try:

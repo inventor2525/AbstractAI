@@ -8,37 +8,61 @@ class MessageSequence:
 	conversation: "Conversation" = field(default=None, compare=False)
 	
 	def add_message(self, message: Message):
-		message.conversation = self.conversation
-		
-		if len(self.messages)>0:
-			message.prev_message = self.messages[-1]
-		self.messages.append(message)
+		self._add_message(message)
 		self.new_id()
+		
+		if self.conversation is not None:
+			self.conversation.message_added(message)
+			self.conversation.conversation_changed(self.conversation)
 		
 	def remove_message(self, message: Message):
 		self.messages.remove(message)
 		self.new_id()
 		
+		if self.conversation is not None:
+			self.conversation.message_removed(message)
+			self.conversation.conversation_changed(self.conversation)
+		
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
+		found = False
+		removed_messages = []
+		
 		if keeping_latter:
 			try:
-				self.messages[self.messages.index(old_message)] = new_message
+				old_message_index = self.messages.index(old_message)
+				self.messages[old_message_index] = new_message
+				if old_message_index>0:
+					new_message.prev_message = self.messages[old_message_index-1]
+				else:
+					new_message.prev_message = None
+				removed_messages.append(old_message)
+				found = True
 			except ValueError:
 				pass
 		else:
-			found = False
 			new_messages = []
 			for m in self.messages:
-				if m is old_message:
-					found = True
-					break
+				if found:
+					removed_messages.append(m)
 				else:
-					new_messages.append(m)
+					if m is old_message:
+						found = True
+						removed_messages.append(m)
+					else:
+						new_messages.append(m)
 					
 			if found:
 				self.messages = new_messages
-				self.add_message(new_message)
-		self.new_id()
+				self._add_message(new_message)
+		
+		if found:
+			self.new_id()
+			
+			if self.conversation is not None:
+				for m in removed_messages:
+					self.conversation.message_removed(m)
+				self.conversation.message_added(new_message)
+				self.conversation.conversation_changed(self.conversation)
 	
 	def copy(self):
 		new_sequence = MessageSequence()
@@ -47,6 +71,13 @@ class MessageSequence:
 		new_sequence.new_id()
 		return new_sequence
 	
+	def _add_message(self, message: Message):
+		message.conversation = self.conversation
+		
+		if len(self.messages)>0:
+			message.prev_message = self.messages[-1]
+		self.messages.append(message)
+		
 	def __iter__(self):
 		return iter(self.messages)
 	

@@ -87,7 +87,6 @@ class MessageView(BaseMessageView):
 		self.left_arrow_btn.setFixedHeight(15)
 		self.left_arrow_btn.setFixedWidth(15)
 		def left_arrow_clicked():
-			self.message.conversation.update_message_graph()
 			if self.message.prev_message is not None:
 				index = self.message.prev_message._children.index(self.message)-1
 				if index < 0:
@@ -102,7 +101,6 @@ class MessageView(BaseMessageView):
 		self.right_arrow_btn.setFixedHeight(15)
 		self.right_arrow_btn.setFixedWidth(15)
 		def right_arrow_clicked():
-			self.message.conversation.update_message_graph()
 			if self.message.prev_message is not None:
 				index = self.message.prev_message._children.index(self.message)+1
 				if index >= len(self.message.prev_message._children):
