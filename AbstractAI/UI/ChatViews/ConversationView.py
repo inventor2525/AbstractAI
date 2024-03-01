@@ -1,6 +1,7 @@
 from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView import *
+from PyQt5.QtGui import QWheelEvent
 
 class ConversationView(QListWidget):
 	message_changed = pyqtSignal(Message)
@@ -39,6 +40,11 @@ class ConversationView(QListWidget):
 			message_view = self.itemWidget(item)
 			if message_view is not None:
 				message_view.set_selected(item.isSelected())
+
+	def wheelEvent(self, event):
+		# Slow down the scroll speed, loosely based on how much the items are bigger than the default size to try and make it feel more like the default speed
+		newEvent = QWheelEvent(event.pos(), event.globalPos(), event.pixelDelta(), event.angleDelta() *24 / 96, event.buttons(), event.modifiers(), event.phase(), event.inverted(), event.source())
+		super(ConversationView, self).wheelEvent(newEvent)
 	
 	def keyPressEvent(self, event):
 		item_widget = self.itemWidget(self.currentItem())
