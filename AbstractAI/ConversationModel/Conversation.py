@@ -16,7 +16,7 @@ class Conversation:
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)
 	
-	conversation_changed:Signal[['Conversation'],None] = Signal.field()
+	conversation_changed:Signal[[],None] = Signal.field()
 	message_added:Signal[[Message],None] = Signal.field()
 	message_removed:Signal[[Message],None] = Signal.field()
 	

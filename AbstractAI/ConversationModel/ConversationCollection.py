@@ -28,7 +28,7 @@ class ConversationCollection():
 		
 		def conversation_changed(conversation):
 			self.engine.merge(conversation)
-		conversation.conversation_changed.connect(conversation_changed)
+		conversation.conversation_changed.connect(lambda conversation=conversation: conversation_changed(conversation))
 			
 	def append(self, conversation:Conversation, should_notify=True) -> None:
 		self.conversations.append(conversation)

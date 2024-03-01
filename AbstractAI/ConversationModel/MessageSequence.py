@@ -13,7 +13,7 @@ class MessageSequence:
 		
 		if self.conversation is not None:
 			self.conversation.message_added(message)
-			self.conversation.conversation_changed(self.conversation)
+			self.conversation.conversation_changed()
 		
 	def remove_message(self, message: Message):
 		self.messages.remove(message)
@@ -21,7 +21,7 @@ class MessageSequence:
 		
 		if self.conversation is not None:
 			self.conversation.message_removed(message)
-			self.conversation.conversation_changed(self.conversation)
+			self.conversation.conversation_changed()
 		
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
 		found = False
@@ -62,7 +62,7 @@ class MessageSequence:
 				for m in removed_messages:
 					self.conversation.message_removed(m)
 				self.conversation.message_added(new_message)
-				self.conversation.conversation_changed(self.conversation)
+				self.conversation.conversation_changed()
 	
 	def copy(self):
 		new_sequence = MessageSequence()
