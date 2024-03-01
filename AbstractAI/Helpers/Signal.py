@@ -1,4 +1,4 @@
-from typing import Callable, TypeVar, Generic, List, Set, Optional, Dict
+from typing import Callable, TypeVar, Generic, List, Set, Optional, Dict, Any, Tuple
 from typing_extensions import ParamSpec
 from threading import Lock
 
@@ -9,14 +9,14 @@ R = TypeVar('R')
 
 class Signal(Generic[P, R]):
 	def __init__(self):
-		self._listeners: Dict[Optional[str], Callable[P, R]] = {}
+		self._listeners: Dict[Optional[str], Tuple[Callable[P, R], bool]] = {}
 		self.lock = Lock()
 
-	def connect(self, listener: Callable[P, R], key: Optional[str] = None) -> None:
+	def connect(self, listener: Callable[P, R], key: Optional[str] = None, auto_disconnect:bool=False) -> None:
 		with self.lock:
 			if key is None:
 				key = listener
-			self._listeners[key] = listener
+			self._listeners[key] = (listener, auto_disconnect)
 
 	def disconnect(self, listener: Callable[P, R], key: Optional[str] = None) -> None:
 		with self.lock:
@@ -30,9 +30,15 @@ class Signal(Generic[P, R]):
 		with self.lock:
 			listeners = self._listeners.copy()
 		for key, listener in listeners.items():
-			r = listener(*args, **kwargs)
-			if isinstance(key, str):
-				results[key] = r
+			try:
+				r = listener[0](*args, **kwargs)
+				if isinstance(key, str):
+					results[key] = r
+			except Exception as e:
+				if listener[1]:
+					self.disconnect(listener[0], key)
+				else:
+					raise e
 				
 		return results
 	
