@@ -22,6 +22,7 @@ class ChatUI(QWidget):
 		super().__init__()
 		
 		self.conversation_view = ConversationView(conversation)
+		self.conversation_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 		
 		self.roles = roles
 		
