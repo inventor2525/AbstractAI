@@ -188,8 +188,6 @@ class MessageView(BaseMessageView):
 		
 		self.update_text_edit_height()
 		
-		# self.token_count_label.setText(f"{tokens_in_string(text)} tokens")
-		
 	def delete_message(self):
 		self.message_deleted_clicked.emit(self)
 
@@ -223,15 +221,10 @@ class MessageView(BaseMessageView):
 		
 		self.message_source_view.message_source = value.source
 		
-		# self.role_label.setText(f"{value.full_role}:")
-		# self.token_count_label.setText(f"{tokens_in_message(value)} tokens")
-		
 		self.text_edit.setPlainText(value.content)
 		self._update_can_edit()
 
-		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))	
-
-		# self.should_send_checkbox.setChecked(value.should_send)
+		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		self.update_text_edit_height()
