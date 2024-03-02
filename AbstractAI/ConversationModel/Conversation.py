@@ -66,4 +66,14 @@ class Conversation:
 		the same messages as conversation.message_sequence up to the last
 		message.
 		'''
-		raise NotImplementedError()
+		messages_to_match = [msg.auto_id for msg in self.message_sequence.messages]
+		if message is not None and message in messages_to_match:
+			messages_to_match = messages_to_match[:messages_to_match.index(message.auto_id)+1]
+		
+		alternates = [
+			ms for ms in self.all_message_sequences
+			if [msg.auto_id for msg in
+				ms.messages[:len(messages_to_match)]
+				] == messages_to_match
+		]
+		return alternates
