@@ -1,6 +1,6 @@
 from AbstractAI.ConversationModel.ModelBase import *
 from .Message import Message
-from typing import List
+from typing import List, Optional
 
 @ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
 class MessageSequence:
@@ -105,3 +105,14 @@ class MessageSequence:
 	
 	def __contains__(self, message):
 		return message in self.messages
+	
+	def index_in(self, message_sequences:List["MessageSequence"]) -> Optional[int]:
+		'''
+		Returns the index of this message sequence in message_sequences.
+		
+		Returns None if not found.
+		'''
+		for i, ms in enumerate(message_sequences):
+			if ms.auto_id == self.auto_id:
+				return i
+		return None

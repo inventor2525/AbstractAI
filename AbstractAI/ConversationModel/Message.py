@@ -6,7 +6,7 @@ from .MessageSources.HardCodedSource import HardCodedSource
 from datetime import datetime
 
 from typing import Iterable, List, Union
-	
+
 @ConversationDATA
 class Message:
 	content: str
@@ -16,8 +16,6 @@ class Message:
 	
 	prev_message: "Message" = field(default=None, compare=False)
 	conversation: "Conversation" = field(default=None, compare=False)
-	
-	_children: List["Message"] = field(default_factory=list, compare=False)
 	
 	changed:Signal[["Message"],None] = Signal.field()
 	

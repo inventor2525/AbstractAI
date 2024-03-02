@@ -78,17 +78,20 @@ class MessageView(BaseMessageView):
 		self.arrow_layout = QHBoxLayout()
 		self.left_layout.addLayout(self.arrow_layout)
 		
+		def swap_message_sequence():
+			# self_index = self.conversation.message_sequence.messages.index(self.message)
+			self.message.conversation.message_sequence = self.alternates[self.alternate_index]
+			self._update_arrow_buttons()
+			
+			self.message.conversation.conversation_changed()
 		# Left arrow button for selecting previous version of message:
 		self.left_arrow_btn = QToolButton()
 		self.left_arrow_btn.setArrowType(Qt.LeftArrow)
 		self.left_arrow_btn.setFixedHeight(15)
 		self.left_arrow_btn.setFixedWidth(15)
 		def left_arrow_clicked():
-			if self.message.prev_message is not None:
-				index = self.message.prev_message._children.index(self.message)-1
-				if index < 0:
-					index = 0
-				self.message = self.message.prev_message._children[index]
+			self.alternate_index -= 1
+			swap_message_sequence()
 		self.left_arrow_btn.clicked.connect(left_arrow_clicked)
 		self.arrow_layout.addWidget(self.left_arrow_btn)
 		
@@ -98,11 +101,8 @@ class MessageView(BaseMessageView):
 		self.right_arrow_btn.setFixedHeight(15)
 		self.right_arrow_btn.setFixedWidth(15)
 		def right_arrow_clicked():
-			if self.message.prev_message is not None:
-				index = self.message.prev_message._children.index(self.message)+1
-				if index >= len(self.message.prev_message._children):
-					index = len(self.message.prev_message._children)-1
-				self.message = self.message.prev_message._children[index]
+			self.alternate_index += 1
+			swap_message_sequence()
 		self.right_arrow_btn.clicked.connect(right_arrow_clicked)
 		self.arrow_layout.addWidget(self.right_arrow_btn)
 		
@@ -154,7 +154,18 @@ class MessageView(BaseMessageView):
 			self.regenerate_button.setEnabled(Context.has_llm(self.message.conversation))
 		Context.context_changed.connect(context_changed, auto_disconnect=True)
 		context_changed()
-		
+	
+	def _compute_alternates(self):
+		self.alternates = self.message.conversation.alternates(self.message)
+		self.alternate_index = self.message.conversation.message_sequence.index_in(self.alternates)
+		if self.alternate_index is None:
+			raise Exception("Message not found in conversation it is supposed to be in")
+		self._update_arrow_buttons()
+	
+	def _update_arrow_buttons(self):
+		self.left_arrow_btn.setVisible(self.alternate_index > 0)
+		self.right_arrow_btn.setVisible(self.alternate_index < len(self.alternates)-1)
+	
 	def on_should_send_changed(self, state):
 		self.message.should_send = state == Qt.Checked
 	
@@ -246,6 +257,7 @@ class MessageView(BaseMessageView):
 				most_origional = EditSource.most_original(most_origional).source
 			self.regenerate_button.setVisible(isinstance(most_origional, ModelSource))
 		
+		self._compute_alternates()
 		self.update_text_edit_height()
 		self.update()
 	

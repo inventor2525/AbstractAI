@@ -20,17 +20,26 @@ class Conversation:
 	message_added:Signal[[Message],None] = Signal.field()
 	message_removed:Signal[[Message],None] = Signal.field()
 	
+	@property
+	def all_message_sequences(self) -> List[MessageSequence]:
+		if not hasattr(self, "_all_message_sequences"):
+			if self.message_sequence is not None:
+				self._all_message_sequences = [self.message_sequence]
+			else:
+				self._all_message_sequences = []
+		return self._all_message_sequences
+	
 	def __post_init__(self):
 		if self.message_sequence is not None:
 			self.message_sequence.conversation = self
 		def conversation_changed():
 			self.last_modified = get_local_time()
-			self.update_message_graph()
 		self.conversation_changed.connect(conversation_changed)
 		
 	def new_message_sequence(self):
 		self.message_sequence = self.message_sequence.copy()
 		self.message_sequence.conversation = self
+		self.all_message_sequences.append(self.message_sequence)
 		
 	def add_message(self, message:Message):
 		self.new_message_sequence()
@@ -47,6 +56,14 @@ class Conversation:
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
 		self.new_message_sequence()
 		self.message_sequence.replace_message(old_message, new_message, keeping_latter)
+	
+	def alternates(self, message:Message) -> List[MessageSequence]:
+		'''
+		Returns a list of MessageSequences that have the same messages as
+		conversation.message_sequence up to message.
 		
-	def update_message_graph(self):
-		pass
+		If message is None, returns a list of MessageSequences that have
+		the same messages as conversation.message_sequence up to the last
+		message.
+		'''
+		raise NotImplementedError()
