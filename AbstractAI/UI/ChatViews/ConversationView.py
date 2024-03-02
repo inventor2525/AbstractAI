@@ -12,9 +12,10 @@ class ConversationView(QListWidget):
 	def conversation(self) -> Conversation:
 		return self._conversation
 	@conversation.setter
-	def conversation(self, value:Conversation):
+	def conversation(self, value:Conversation):		
 		if getattr(self, "_conversation", None) is not None:
-			self._conversation.message_added.disconnect(self.render_messages)
+			self._conversation.message_removed.disconnect(self._remove_message)
+			self._conversation.conversation_changed.disconnect(self.render_messages)
 			for message in self._conversation.message_sequence.messages:
 				del message._view
 				del message._item
@@ -22,7 +23,8 @@ class ConversationView(QListWidget):
 		
 		self._conversation = value
 		if self._conversation is not None:
-			self._conversation.message_added.connect(self.render_messages)
+			self._conversation.message_removed.connect(self._remove_message, auto_disconnect=True)
+			self._conversation.conversation_changed.connect(self.render_messages)
 			
 			for message in self._conversation.message_sequence.messages:
 				self.addItem(self._render_message(message))
@@ -52,41 +54,20 @@ class ConversationView(QListWidget):
 	def keyPressEvent(self, event):
 		item_widget = self.itemWidget(self.currentItem())
 		if event.key() == Qt.Key_Delete and not item_widget.text_edit.hasFocus():
-			#if selection is not empty, delete all selected messages
-			if self.selectedItems():
-				for item in self.selectedItems():
-					item_widget = self.itemWidget(item)
-					self.delete_message(item_widget)
+			selected_messages = [item.message for item in self.selectedItems()]
+			self.conversation.remove_messages(selected_messages)
 		elif event.key() == Qt.Key_Escape:
 			self.clearSelection()
 		else:
 			super().keyPressEvent(event)
 	
-	def delete_message(self, message_widget): #TODO: this needs to take a message not a widget
-		if message_widget is not None:
-			item = None
-			for index in range(self.count()):
-				current_item = self.item(index)
-				if self.itemWidget(current_item) == message_widget:
-					item = current_item
-					break
-
-			if item is not None:
-				row = self.row(item)
-				item = self.takeItem(row)
-
-				message_to_remove = message_widget.message
-				self.conversation.remove_message(message_to_remove)
-				
-				self.clearSelection()
-	
 	def _render_message(self, message: Message) -> QListWidgetItem:
 		message_item = QListWidgetItem()
+		message_item.message = message
 		
 		# Create the message view
 		message_view = MessageView(message, self)
 		message_view.rowHeightChanged.connect(lambda: self.update_row_height(message_item))
-		message_view.message_deleted_clicked.connect(self.delete_message)
 		message_view.regenerate_clicked.connect(lambda msg_source: self.regenerate_message.emit(msg_source))
 		def message_changed(message: Message):
 			self.conversation.replace_message(message.source.original, message.source.new, True)
@@ -100,8 +81,17 @@ class ConversationView(QListWidget):
 		message._item = message_item
 		return message_item
 	
+	def _remove_message(self, message: Message) -> None:
+		self.takeItem(self.row(message._item))
+		del message._view
+		del message._item
+		
 	@run_in_main_thread
 	def render_messages(self, *args):
+		if self.conversation is None or self.conversation.message_sequence is None or len(self.conversation.message_sequence) == 0:
+			self.clear()
+			return
+		
 		for msg_index, msg in enumerate(self.conversation.message_sequence.messages):
 			msg_item = getattr(msg, "_item", None)
 			

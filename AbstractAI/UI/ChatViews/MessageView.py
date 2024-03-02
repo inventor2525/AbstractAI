@@ -21,9 +21,6 @@ class MessageView(BaseMessageView):
 	# Signal fired when a message change is confirmed by the user, passes the new message
 	message_changed = pyqtSignal(Message)
 	
-	# Signal fired when a message is deleted by the user, passes the message view to be deleted
-	message_deleted_clicked = pyqtSignal(BaseMessageView)
-	
 	regenerate_clicked = pyqtSignal(ModelSource)
 	
 	@property
@@ -128,7 +125,6 @@ class MessageView(BaseMessageView):
 		self.delete_btn.clicked.connect(self.delete_message)
 		self.delete_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.delete_btn, alignment=Qt.AlignTop)
-		self.delete_btn.clicked.connect(lambda: self.message_deleted_clicked.emit(self))
 		
 		# Confirm button (checkmark -- top right of message)
 		self.confirm_btn = QPushButton("✓")
@@ -205,7 +201,7 @@ class MessageView(BaseMessageView):
 		self.update_text_edit_height()
 		
 	def delete_message(self):
-		self.message_deleted_clicked.emit(self)
+		self.message.conversation.remove_message(self.message)
 
 	def confirm_changes(self):
 		if self.editing:
@@ -233,7 +229,7 @@ class MessageView(BaseMessageView):
 		self._message = value
 		
 		if self._message is not None:
-			self._message.changed.connect(self.on_message_changed)
+			self._message.changed.connect(self.on_message_changed, auto_disconnect=True)
 		
 		self.message_source_view.message_source = value.source
 		
@@ -255,38 +251,41 @@ class MessageView(BaseMessageView):
 	
 	@run_in_main_thread
 	def on_message_changed(self, message: Message):
-		# Access the vertical scroll bar
-		verticalScrollBar = self.text_edit.verticalScrollBar()
-		
-		# Calculate the current scroll percentage
-		oldMax = verticalScrollBar.maximum()
-		oldValue = verticalScrollBar.value()
-		wasAtBottom = verticalScrollBar.value() == verticalScrollBar.maximum()
-		scrollPercentage = 1 if wasAtBottom else oldValue / oldMax
-		
-		# Save current selection
-		cursor = self.text_edit.textCursor()
-		anchorPos = cursor.anchor()
-		cursorPos = cursor.position()
+		try:
+			# Access the vertical scroll bar
+			verticalScrollBar = self.text_edit.verticalScrollBar()
+			
+			# Calculate the current scroll percentage
+			oldMax = verticalScrollBar.maximum()
+			oldValue = verticalScrollBar.value()
+			wasAtBottom = verticalScrollBar.value() == verticalScrollBar.maximum()
+			scrollPercentage = 1 if wasAtBottom else oldValue / oldMax
+			
+			# Save current selection
+			cursor = self.text_edit.textCursor()
+			anchorPos = cursor.anchor()
+			cursorPos = cursor.position()
 
-		# Set new text
-		self.text_edit.setPlainText(message.content)
+			# Set new text
+			self.text_edit.setPlainText(message.content)
 
-		# Try to restore selection
-		# Restore selection
-		cursor = self.text_edit.textCursor()
-		cursor.setPosition(anchorPos)
-		cursor.setPosition(cursorPos, QTextCursor.KeepAnchor)
-		self.text_edit.setTextCursor(cursor)
+			# Try to restore selection
+			# Restore selection
+			cursor = self.text_edit.textCursor()
+			cursor.setPosition(anchorPos)
+			cursor.setPosition(cursorPos, QTextCursor.KeepAnchor)
+			self.text_edit.setTextCursor(cursor)
 
-		# Restore the scroll position
-		if wasAtBottom:
-			#Auto scroll:
-			verticalScrollBar.setValue(verticalScrollBar.maximum())
-		else:
-			# Calculate the new scroll position based on the old percentage
-			newMax = verticalScrollBar.maximum()
-			newValue = newMax * (scrollPercentage * oldMax / newMax)
-			verticalScrollBar.setValue(int(newValue))
+			# Restore the scroll position
+			if wasAtBottom:
+				#Auto scroll:
+				verticalScrollBar.setValue(verticalScrollBar.maximum())
+			else:
+				# Calculate the new scroll position based on the old percentage
+				newMax = verticalScrollBar.maximum()
+				newValue = newMax * (scrollPercentage * oldMax / newMax)
+				verticalScrollBar.setValue(int(newValue))
 
-		self.update_text_edit_height()
+			self.update_text_edit_height()
+		except Exception as e:
+			pass

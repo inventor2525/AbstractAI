@@ -22,7 +22,23 @@ class MessageSequence:
 		if self.conversation is not None:
 			self.conversation.message_removed(message)
 			self.conversation.conversation_changed()
+	
+	def remove_messages(self, messages_to_remove: List[Message]):
+		new_messages = []
+		removed_messages = []
+		for m in self.messages:
+			if m in messages_to_remove:
+				removed_messages.append(m)
+			else:
+				new_messages.append(m)
+		self.messages = new_messages
+		self.new_id()
 		
+		if self.conversation is not None:
+			for m in removed_messages:
+				self.conversation.message_removed(m)
+			self.conversation.conversation_changed()
+			
 	def replace_message(self, old_message:Message, new_message:Message, keeping_latter:bool=False):
 		found = False
 		removed_messages = []
@@ -89,5 +105,3 @@ class MessageSequence:
 	
 	def __contains__(self, message):
 		return message in self.messages
-	
-	#TODO better follow collection pattern for other methods above
