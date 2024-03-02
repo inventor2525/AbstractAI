@@ -14,7 +14,6 @@ class ConversationView(QListWidget):
 	@conversation.setter
 	def conversation(self, value:Conversation):		
 		if getattr(self, "_conversation", None) is not None:
-			self._conversation.message_removed.disconnect(self._remove_message)
 			self._conversation.conversation_changed.disconnect(self.render_messages)
 			for message in self._conversation.message_sequence.messages:
 				del message._view
@@ -23,7 +22,6 @@ class ConversationView(QListWidget):
 		
 		self._conversation = value
 		if self._conversation is not None:
-			self._conversation.message_removed.connect(self._remove_message, auto_disconnect=True)
 			self._conversation.conversation_changed.connect(self.render_messages)
 			
 			for message in self._conversation.message_sequence.messages:
@@ -81,8 +79,10 @@ class ConversationView(QListWidget):
 		message._item = message_item
 		return message_item
 	
-	def _remove_message(self, message: Message) -> None:
-		self.takeItem(self.row(message._item))
+	def _remove_row(self, row: int) -> None:
+		item = self.item(row)
+		message = item.message
+		self.takeItem(row)
 		del message._view
 		del message._item
 		
@@ -92,16 +92,20 @@ class ConversationView(QListWidget):
 			self.clear()
 			return
 		
+		def insert(msg_index, msg):
+			self.insertItem(msg_index, self._render_message(msg))
+			self.setItemWidget(msg._item, msg._view)
+			
 		for msg_index, msg in enumerate(self.conversation.message_sequence.messages):
 			msg_item = getattr(msg, "_item", None)
 			
 			if msg_item is None:
-				self.insertItem(msg_index, self._render_message(msg))
-				self.setItemWidget(msg._item, msg._view)
-			elif self.item(msg_index) != msg_item:
-				self.takeItem(msg_index)
-				self.insertItem(msg_index, self._render_message(msg))
-				self.setItemWidget(msg_item, msg._view)
+				insert(msg_index, msg)
+			else:
+				while self.item(msg_index) != msg_item and msg_index < self.count():
+					self._remove_row(msg_index)
+				if msg_index >= self.count():
+					insert(msg_index, msg)
 		for i in range(msg_index+1, self.count()):
 			self.takeItem(i)
 		
