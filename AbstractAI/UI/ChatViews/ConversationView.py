@@ -102,10 +102,12 @@ class ConversationView(QListWidget):
 			if msg_item is None:
 				insert(msg_index, msg)
 			else:
-				while self.item(msg_index) != msg_item and msg_index < self.count():
-					self._remove_row(msg_index)
-				if msg_index >= self.count():
-					insert(msg_index, msg)
+				while self.item(msg_index) != msg_item:
+					try:
+						self._remove_row(msg_index)
+					except:
+						insert(msg_index, msg)
+						break
 		for i in range(msg_index+1, self.count()):
 			self.takeItem(i)
 		
