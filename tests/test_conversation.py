@@ -230,6 +230,25 @@ class TestConversation(unittest.TestCase):
 				
 			if message1.conversation is not None:
 				self.assertEqual(message1.conversation.get_primary_key(), message2.conversation.get_primary_key())
-
+	
+	def test_alternates(self):
+		conv = Conversation()
+		user_source = UserSource()
+		
+		messages = [
+			Message(str(i), user_source) for i in range(1, 6)
+		]
+		
+		alternates_ground_truth = []
+		for index, msg in enumerate(messages):
+			conv.add_message(msg)
+			if index >= 2:
+				alternates_ground_truth.append(conv.message_sequence)
+		
+		alternates = conv.alternates(messages[2])
+		for real_alt, alt in zip(alternates_ground_truth, alternates):
+			self.assertEqual(real_alt.get_primary_key(), alt.get_primary_key())
+		self.assertEqual(len(alternates), len(alternates_ground_truth))
+		
 if __name__ == '__main__':
 	unittest.main()

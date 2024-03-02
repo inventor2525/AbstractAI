@@ -67,7 +67,7 @@ class Conversation:
 		message.
 		'''
 		messages_to_match = [msg.auto_id for msg in self.message_sequence.messages]
-		if message is not None and message in messages_to_match:
+		if message is not None and message.auto_id in messages_to_match:
 			messages_to_match = messages_to_match[:messages_to_match.index(message.auto_id)+1]
 		
 		alternates = [
