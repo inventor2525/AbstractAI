@@ -64,7 +64,7 @@ class ConversationCollection():
 					whole_conversation = deepcopy(session.query(Conversation).filter(Conversation.auto_id == conversation.auto_id).first())
 				else:
 					whole_conversation = conversations_message_sequences[0].conversation
-					whole_conversation.all_message_sequences = conversations_message_sequences
+					whole_conversation._all_message_sequences = conversations_message_sequences
 				self.conversations[conversation_index] = whole_conversation
 				self._register_conversation(whole_conversation)
 				return whole_conversation
