@@ -156,7 +156,17 @@ class MessageView(BaseMessageView):
 		context_changed()
 	
 	def _compute_alternates(self):
-		self.alternates = self.message.conversation.alternates(self.message)
+		#TODO: fix 0 index browsing
+		self_index = self.message.conversation.message_sequence.index(self.message)
+		if self_index == 0:
+			prior_message_in_sequence = None
+		else:
+			prior_message_in_sequence = self.message.conversation.message_sequence[self_index-1]
+		self.alternates = self.message.conversation.alternates(prior_message_in_sequence)
+		
+		#TODO: filter alternates to only include those with different next messages (the most recent of which)
+		#TODO: add ability to browse the end (where a deleted message was)
+		#TODO: (optional) speed up alternates calculation by caching results if needed.
 		self.alternate_index = self.message.conversation.message_sequence.index_in(self.alternates)
 		if self.alternate_index is None:
 			raise Exception("Message not found in conversation it is supposed to be in")

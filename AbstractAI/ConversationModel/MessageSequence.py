@@ -106,6 +106,17 @@ class MessageSequence:
 	def __contains__(self, message):
 		return message in self.messages
 	
+	def index(self, message:Message) -> Optional[int]:
+		'''
+		Returns the index of message in this message sequence.
+		
+		Returns None if not found.
+		'''
+		for i, m in enumerate(self.messages):
+			if m.auto_id == message.auto_id:
+				return i
+		return None
+	
 	def index_in(self, message_sequences:List["MessageSequence"]) -> Optional[int]:
 		'''
 		Returns the index of this message sequence in message_sequences.

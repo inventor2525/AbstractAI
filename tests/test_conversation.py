@@ -239,16 +239,23 @@ class TestConversation(unittest.TestCase):
 			Message(str(i), user_source) for i in range(1, 6)
 		]
 		
+		all_sequences = [conv.message_sequence]
 		alternates_ground_truth = []
 		for index, msg in enumerate(messages):
 			conv.add_message(msg)
+			all_sequences.append(conv.message_sequence)
 			if index >= 2:
 				alternates_ground_truth.append(conv.message_sequence)
 		
 		alternates = conv.alternates(messages[2])
+		self.assertEqual(len(alternates), len(alternates_ground_truth))
 		for real_alt, alt in zip(alternates_ground_truth, alternates):
 			self.assertEqual(real_alt.get_primary_key(), alt.get_primary_key())
-		self.assertEqual(len(alternates), len(alternates_ground_truth))
+			
+		alternates = conv.alternates(None)
+		self.assertEqual(len(alternates), len(all_sequences))
+		for real_alt, alt in zip(all_sequences, alternates):
+			self.assertEqual(real_alt.get_primary_key(), alt.get_primary_key())
 		
 if __name__ == '__main__':
 	unittest.main()
