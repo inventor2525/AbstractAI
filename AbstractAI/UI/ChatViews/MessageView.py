@@ -1,6 +1,6 @@
 from AbstractAI.UI.Support.ColoredFrame import *
 from AbstractAI.UI.Elements.TextEdit import TextEdit
-from AbstractAI.ConversationModel.Message import Message
+from AbstractAI.ConversationModel import Message, MessageSequence
 from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView_extras.MessageSourceView import MessageSourceView
@@ -8,7 +8,7 @@ from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColor
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 from AbstractAI.UI.Context import Context
-
+from datetime import datetime
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
 	def __init__(self, parent, message: Message):
@@ -156,15 +156,14 @@ class MessageView(BaseMessageView):
 		context_changed()
 	
 	def _compute_alternates(self):
-		#TODO: fix 0 index browsing
 		self_index = self.message.conversation.message_sequence.index(self.message)
 		if self_index == 0:
 			prior_message_in_sequence = None
 		else:
 			prior_message_in_sequence = self.message.conversation.message_sequence[self_index-1]
 		self.alternates = self.message.conversation.alternates(prior_message_in_sequence)
-		
-		#TODO: filter alternates to only include those with different next messages (the most recent of which)
+		self.alternates = MessageSequence.filter_sequences_for_next(self.alternates, self_index, keep=self.message.conversation.message_sequence)
+		self.alternates = sorted(self.alternates, key=lambda seq: getattr(getattr(seq,'messages',None), 'creation_time', datetime.now()), reverse=True) #seq.messages[self_index].creation_time)
 		#TODO: add ability to browse the end (where a deleted message was)
 		#TODO: (optional) speed up alternates calculation by caching results if needed.
 		self.alternate_index = self.message.conversation.message_sequence.index_in(self.alternates)

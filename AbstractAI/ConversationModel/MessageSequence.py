@@ -127,3 +127,29 @@ class MessageSequence:
 			if ms.auto_id == self.auto_id:
 				return i
 		return None
+	
+	
+	@staticmethod
+	def filter_sequences_for_next(message_sequences:List['MessageSequence'], filter_index:int, keep:'MessageSequence'=None):
+		'''
+		Return those message sequences who's message at filter_index is different.
+		'''
+		closed_set = {}
+		filtered_sequences = []
+		for ms in reversed(message_sequences):
+			if keep is not None and ms.auto_id == keep.auto_id:
+				m = ms.messages[filter_index].auto_id
+				if m in closed_set:
+					filtered_sequences[closed_set[m]] = ms
+				else:
+					closed_set[m] = len(filtered_sequences)
+					filtered_sequences.append(ms)
+				continue
+			if filter_index >= len(ms.messages):
+				continue
+			else:
+				m = ms.messages[filter_index].auto_id
+			if m not in closed_set:
+				closed_set[m] = len(filtered_sequences)
+				filtered_sequences.append(ms)
+		return filtered_sequences
