@@ -108,8 +108,13 @@ class ConversationView(QListWidget):
 					except:
 						insert(msg_index, msg)
 						break
-		for i in range(msg_index+1, self.count()):
-			self.takeItem(i)
+	
+		remove_index = msg_index+1
+		for i in range(remove_index, self.count()):
+			m = self.item(remove_index).message
+			del m._view
+			del m._item
+			self.takeItem(remove_index)
 		
 	def update_row_height(self, item: QListWidgetItem):
 		try:

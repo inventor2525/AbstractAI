@@ -157,7 +157,7 @@ class MessageView(BaseMessageView):
 	
 	def _compute_alternates(self):
 		self_index = self.message.conversation.message_sequence.index(self.message)
-		if self_index == 0:
+		if self_index == 0 or self_index is None:
 			prior_message_in_sequence = None
 		else:
 			prior_message_in_sequence = self.message.conversation.message_sequence[self_index-1]
