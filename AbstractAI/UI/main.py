@@ -156,12 +156,6 @@ class Application(QMainWindow):
 		self.right_panel.addWidget(self.chatUI)
 		self.chatUI.user_added_message.connect(self.generate_ai_response)
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
-		self.input_field = TextEdit("AI message prefix field", auto_save=True)
-		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-		self.input_field.setSizePolicy(size_policy)
-		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
-		self.input_field.setPlaceholderText("Type the start of the ai message here...")
-		self.right_panel.addWidget(self.input_field)
 		
 		w = QWidget()
 		w.setLayout(self.right_panel)
@@ -233,7 +227,7 @@ class Application(QMainWindow):
 			
 		def chat():
 			print(f"chat:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
-			response = self.llm.chat(conversation, start_str=self.input_field.toPlainText(), stream=True)
+			response = self.llm.chat(conversation, start_str=self.chatUI.message_prefix, stream=True)
 			print(f"chat done:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			conversation.add_message(response.message)
 			print(f"message added:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")

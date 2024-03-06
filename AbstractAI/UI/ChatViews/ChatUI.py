@@ -2,6 +2,7 @@ from AbstractAI.UI.Elements.TextEdit import TextEdit
 from AbstractAI.UI.ChatViews.ConversationView import ConversationView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
+from AbstractAI.UI.Context import Context
 from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from PyQt5.QtCore import QTimer
@@ -16,6 +17,10 @@ class ChatUI(QWidget):
 	@conversation.setter
 	def conversation(self, value:Conversation):
 		self.conversation_view.conversation = value
+	
+	@property
+	def message_prefix(self) -> str:
+		return self.message_prefix_field.toPlainText()
 	
 	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=10):
 		super().__init__()		
@@ -46,6 +51,20 @@ class ChatUI(QWidget):
 		self.input_layout = QHBoxLayout()
 		self.layout.addLayout(self.input_layout)
 		
+		# Create a layout to hold the advanced controls:
+		self.advanced_controls = QWidget()
+		self.advanced_controls.setContentsMargins(0, 0, 0, 0)
+		self.advanced_controls_layout = QVBoxLayout()
+		self.advanced_controls.setLayout(self.advanced_controls_layout)
+		self.layout.addWidget(self.advanced_controls)
+		
+		self.message_prefix_field = TextEdit("AI message prefix field", auto_save=True)
+		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+		self.message_prefix_field.setSizePolicy(size_policy)
+		self.message_prefix_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+		self.message_prefix_field.setPlaceholderText("Type the start of the ai message here...")
+		self.advanced_controls_layout.addWidget(self.message_prefix_field)
+		
 		# Allow the user to select a role to send the message as:
 		self.role_combobox = RoleComboBox(self.roles, default_value=self.roles[0])
 		self.input_layout.addWidget(self.role_combobox, alignment=Qt.AlignBottom)
@@ -68,6 +87,20 @@ class ChatUI(QWidget):
 		self.respond_on_send_toggle.clicked.connect(lambda: self.update_send_button_text())
 		self.input_layout.addWidget(self.respond_on_send_toggle, alignment=Qt.AlignBottom)
 		
+		# Create a button to toggle the advanced controls:
+		self.advanced_controls_toggle = QToolButton()
+		self.advanced_controls_toggle.setCheckable(True)
+		self.advanced_controls_toggle.setChecked(Context.settings.value("ChatUI/ShowAdvancedControls", False, type=bool))
+		# self.advanced_controls_toggle.setText("
+		self.advanced_controls_toggle.setIcon(QIcon.fromTheme("preferences-system"))
+		self.advanced_controls_toggle.setToolTip("Show advanced controls")
+		def toggle_advanced_controls():
+			Context.settings.setValue("ChatUI/ShowAdvancedControls", self.advanced_controls_toggle.isChecked())
+			self.advanced_controls.setVisible(self.advanced_controls_toggle.isChecked())
+		self.advanced_controls_toggle.clicked.connect(toggle_advanced_controls)
+		self.input_layout.addWidget(self.advanced_controls_toggle, alignment=Qt.AlignBottom)
+		toggle_advanced_controls()
+		
 		# Create a button to send the message:
 		# This is a multi-use button that can be used to send a message, 
 		# add it, or stop the generation of a message:
@@ -77,6 +110,7 @@ class ChatUI(QWidget):
 		
 		# Adjust the size of the bottom row to fit the input field:
 		self.adjust_input_field_size()
+		self.advanced_controls_toggle.setFixedHeight(self.input_field.height())
 		self.respond_on_send_toggle.setFixedHeight(self.input_field.height())
 		self.send_button.setFixedHeight(self.input_field.height())
 		self.role_combobox.setFixedHeight(self.input_field.height())
