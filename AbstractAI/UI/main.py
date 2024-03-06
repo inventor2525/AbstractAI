@@ -222,12 +222,14 @@ class Application(QMainWindow):
 	
 	def generate_ai_response(self, conversation:Conversation):		
 		self._should_generate = True
+		start_str = self.chatUI.message_prefix
+		max_tokens = self.chatUI.max_tokens
 		def stop_generating():
 			self._should_generate = False
 			
 		def chat():
 			print(f"chat:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
-			response = self.llm.chat(conversation, start_str=self.chatUI.message_prefix, stream=True)
+			response = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
 			print(f"chat done:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			conversation.add_message(response.message)
 			print(f"message added:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")

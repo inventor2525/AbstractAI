@@ -49,7 +49,7 @@ class HuggingFaceLLM(LLM):
 		self.tokenizer = AutoTokenizer.from_pretrained(self.model_info.model_name, **self.model_info.parameters["tokenizer"])
 		self.model = AutoModelForCausalLM.from_pretrained(self.model_info.model_name, **self.model_info.parameters["model"], **more_model_params)
 
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
 		inputs = self.tokenizer(prompt, return_tensors="pt")
 		inputs_len = len(inputs['input_ids'][0])
 		inputs = inputs.to(self.device)
@@ -67,6 +67,8 @@ class HuggingFaceLLM(LLM):
 		else:
 			params = self.model_info.parameters["generate"]
 			params = replace_keys(params, {"generate": {"max_tokens": "max_new_tokens"}})
+			if max_tokens is not None:
+				params = replace_parameters(params, {"max_new_tokens": max_tokens})
 			output_tokens = self.model.generate(**inputs, **params)
 			response_tokens = output_tokens[0][inputs_len:]
 			

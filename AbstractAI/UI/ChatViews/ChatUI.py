@@ -22,6 +22,14 @@ class ChatUI(QWidget):
 	def message_prefix(self) -> str:
 		return self.message_prefix_field.toPlainText()
 	
+	@property
+	def max_tokens(self) -> Optional[int]:
+		try:
+			return int(self.max_tokens_field.toPlainText())
+		except:
+			self.max_tokens_field.setText("")
+			None
+	
 	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=10):
 		super().__init__()		
 		self.roles = roles
@@ -57,6 +65,10 @@ class ChatUI(QWidget):
 		self.advanced_controls_layout = QVBoxLayout()
 		self.advanced_controls.setLayout(self.advanced_controls_layout)
 		self.layout.addWidget(self.advanced_controls)
+		
+		self.max_tokens_field = TextEdit("Max Tokens Field", auto_save=True)
+		self.max_tokens_field.setPlaceholderText("Max Tokens")
+		self.advanced_controls_layout.addWidget(self.max_tokens_field)
 		
 		self.message_prefix_field = TextEdit("AI message prefix field", auto_save=True)
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)

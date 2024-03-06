@@ -34,7 +34,7 @@ class LLM(ABC):
 		print(f"LLM \"{self.model_info.model_name}\" loaded!")
 		self.started = True
 		
-	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_Response:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> LLM_Response:
 		'''
 		Prompts the model with a Conversation and starts it's answer with
 		start_str using a blocking method and creates a LLM_RawResponse
@@ -43,15 +43,15 @@ class LLM(ABC):
 		chat = self.conversation_to_list(conversation)
 		conversation_str = self._apply_chat_template(chat, start_str)
 		wip_message = self._new_message(conversation_str, conversation, start_str)
-		return self._complete_str_into(conversation_str, wip_message, stream)
+		return self._complete_str_into(conversation_str, wip_message, stream, max_tokens)
 		
-	def complete_str(self, text:str, stream=False) -> LLM_Response:
+	def complete_str(self, text:str, stream=False, max_tokens:int=None) -> LLM_Response:
 		'''
 		Similar to prompt, but allows passing raw strings to the model
 		without any additional formatting being added.
 		'''
 		wip_message = self._new_message(text)
-		return self._complete_str_into(text, wip_message, stream)
+		return self._complete_str_into(text, wip_message, stream, max_tokens)
 	
 	@abstractmethod
 	def _load_model(self):
@@ -59,7 +59,7 @@ class LLM(ABC):
 		pass
 	
 	@abstractmethod
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False) -> LLM_Response:
+	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
 		'''
 		Pass a string prompt to the model, and it will fill in wip_message.
 		

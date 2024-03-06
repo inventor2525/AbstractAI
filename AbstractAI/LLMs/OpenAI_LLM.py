@@ -19,10 +19,10 @@ class OpenAI_LLM(LLM):
 		}
 		super().__init__(model_name, merge_dictionaries(default, parameters))
 	
-	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False) -> LLM_Response:
+	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
 		raise Exception("This doesn't support string prompts")
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False) -> LLM_Response:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> LLM_Response:
 		'''
 		Prompts the model with a Conversation using a blocking method
 		and creates a LLM_RawResponse from what it returns.
@@ -43,10 +43,15 @@ class OpenAI_LLM(LLM):
 		wip_message = self._new_message(json.dumps(message_list, indent=4), conversation, "")
 		response = LLM_Response(wip_message, 0, stream)
 		
+		params = self.model_info.parameters["generate"]
+		if max_tokens is not None:
+			params = replace_parameters(params, {"max_tokens": max_tokens})
+		print(max_tokens)
+		print(params)
 		completion = self.client.chat.completions.create(
 			model=self.model_info.model_name,
 			messages=message_list,
-			**self.model_info.parameters["generate"],
+			**params,
 			stream=stream
 		)
 		if stream:

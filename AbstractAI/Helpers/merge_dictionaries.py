@@ -28,3 +28,14 @@ def replace_keys(dictionary:dict, replace_map:dict):
 				dictionary[rm_value] = value
 			del dictionary[key]
 	return dictionary
+
+def replace_parameters(dictionary:dict, replace_map:dict):
+	dictionary = dictionary.copy()
+	for key, value in dictionary.items():
+		if key in replace_map:
+			rm_value = replace_map[key]
+			if isinstance(value, dict):
+				dictionary[key] = replace_parameters(value, rm_value)
+			else:
+				dictionary[key] = rm_value
+	return dictionary
