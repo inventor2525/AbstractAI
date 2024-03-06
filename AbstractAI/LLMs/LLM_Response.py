@@ -39,6 +39,8 @@ class LLM_Response:
 			self.message.source.serialized_raw_output["Chunks"] = []
 		self.message.source.serialized_raw_output["Chunks"].append(response_chunk)
 		
+		if "x_groq" in response_chunk:
+			self.input_token_count = response_chunk["x_groq"].get("usage",{}).get("prompt_tokens",-1) # This is a hack to get the prompt tokens from the groq response, TODO: refactor this
 		self.message.source.in_token_count = self.input_token_count
 		self.message.source.out_token_count += out_token_count
 		self.message.source.finished = False

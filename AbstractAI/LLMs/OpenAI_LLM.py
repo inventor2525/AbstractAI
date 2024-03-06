@@ -9,8 +9,9 @@ import os
 
 class OpenAI_LLM(LLM):
 	def __init__(self, api_key:str, model_name:str, parameters:Dict[str, Any]={}):
-		self.client = OpenAI(api_key=api_key)
-		print(api_key)
+		self.client = None
+		self.api_key = api_key
+		
 		default = {
 			"generate": {
 				"temperature":0.2,
@@ -46,8 +47,7 @@ class OpenAI_LLM(LLM):
 		params = self.model_info.parameters["generate"]
 		if max_tokens is not None:
 			params = replace_parameters(params, {"max_tokens": max_tokens})
-		print(max_tokens)
-		print(params)
+		
 		completion = self.client.chat.completions.create(
 			model=self.model_info.model_name,
 			messages=message_list,
@@ -61,9 +61,7 @@ class OpenAI_LLM(LLM):
 					next_response:ChatCompletionChunk = next(completion)
 					if response.input_token_count == 0:
 						try:
-							in_tokens = tiktoken.encoding_for_model(next_response.model).encode(self._apply_chat_template(message_list))
-							response.input_token_count = len(in_tokens)
-							print(response.input_token_count)
+							response.input_token_count = self.count_tokens(self._apply_chat_template(message_list), next_response.model)
 						except Exception as e:
 							print(e)
 					content = next_response.choices[0].delta.content
@@ -90,4 +88,10 @@ class OpenAI_LLM(LLM):
 		return "\n\n".join(prompt_peices)
 	
 	def _load_model(self):
-		pass
+		self.client = OpenAI(api_key=self.api_key)
+	
+	def count_tokens(self, text:str, model_name:str=None) -> int:
+		'''Count the number of tokens in the passed text.'''
+		if model_name is None:
+			model_name = self.model_info.model_name
+		return len(tiktoken.encoding_for_model(model_name).encode(text))

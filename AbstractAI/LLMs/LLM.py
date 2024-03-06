@@ -53,6 +53,10 @@ class LLM(ABC):
 		wip_message = self._new_message(text)
 		return self._complete_str_into(text, wip_message, stream, max_tokens)
 	
+	def count_tokens(self, text:str) -> int:
+		'''Count the number of tokens in the passed text.'''
+		raise NotImplementedError("This LLM does not support token counting.")
+	
 	@abstractmethod
 	def _load_model(self):
 		'''Load the model into memory.'''

@@ -30,12 +30,11 @@ class LLamaCPP_LLM(LLM):
 		self.model = Llama(**self.model_info.parameters["model"])
 	
 	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
-		prompt_tokens = self.model.tokenize(prompt.encode("utf-8"), special=True) if prompt != "" else [self.model.token_bos()]
 		params = self.model_info.parameters["generate"]
 		if max_tokens is not None:
 			params = replace_parameters(params, {"max_tokens": max_tokens})
 		completion = self.model.create_completion(prompt, **params, stream=stream)
-		response = LLM_Response(wip_message, len(prompt_tokens), stream)
+		response = LLM_Response(wip_message, len(self.count_tokens(prompt)), stream)
 		if not stream:
 			response.set_response(completion['choices'][0]['text'], completion["usage"]["completion_tokens"], completion)
 		else:
@@ -58,3 +57,7 @@ class LLamaCPP_LLM(LLM):
 		
 		chat_formatted:ChatFormatterResponse = formatter(chat)
 		return chat_formatted.prompt + start_str
+	
+	def count_tokens(self, text:str) -> int:
+		'''Count the number of tokens in the passed text.'''
+		return len(self.model.tokenize(text.encode("utf-8") if text != "" else [self.model.token_bos()], special=True))

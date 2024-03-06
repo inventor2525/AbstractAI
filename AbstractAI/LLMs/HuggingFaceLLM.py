@@ -82,3 +82,7 @@ class HuggingFaceLLM(LLM):
 		if start_str is not None and len(start_str) > 0:
 			chat_str = chat_str + start_str
 		return chat_str
+	
+	def count_tokens(self, text:str) -> int:
+		'''Count the number of tokens in the passed text.'''
+		return len(self.tokenizer(text)["input_ids"][0])
