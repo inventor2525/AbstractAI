@@ -12,6 +12,7 @@ class ModelType(Enum):
 	LLamaCPP = "LLamaCPP"
 	OpenAI = "OpenAI"
 	RemoteLLM = "RemoteLLM"
+	GroqLLM = "GroqLLM"
 
 class ModelLoader():
 	def __init__(self, model_configs:Dict[str, Any]={}):
@@ -71,6 +72,13 @@ class ModelLoader():
 			from AbstractAI.LLMs.RemoteLLM import RemoteLLM
 			llm = RemoteLLM(model_name, config.get("Parameters", {}))
 		
+		elif loader_type == ModelType.GroqLLM.value:
+			assert "APIKey" in config, f"Model '{model_name}' does not have an APIKey."
+			api_key = config["APIKey"]
+			
+			from AbstractAI.LLMs.Groq_LLM import Groq_LLM
+			llm = Groq_LLM(api_key, model_name, config.get("Parameters", {}))
+			
 		if llm is not None:
 			llm.model_info.config = config
 		
