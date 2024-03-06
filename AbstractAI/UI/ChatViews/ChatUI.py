@@ -65,16 +65,20 @@ class ChatUI(QWidget):
 		self.advanced_controls_layout.setContentsMargins(0, 0, 0, 0)
 		self.advanced_controls.setLayout(self.advanced_controls_layout)
 		self.layout.addWidget(self.advanced_controls)
+		self.advanced_controls_layout.addWidget(QLabel("Advanced Generation Controls:"))
+		self.advanced_controls_layout.addWidget(QHLine())
 		
+		# Create a field to set the max tokens:
 		self.message_prefix_field_h_layout = QHBoxLayout()
-		self.message_prefix_field_h_layout.addWidget(QLabel("Max Tokens"))
+		self.message_prefix_field_h_layout.addWidget(QLabel("Max Tokens:"))
 		self.max_tokens_field = TextEdit("Max Tokens Field", auto_save=True)
 		self.max_tokens_field.setFixedHeight(25)
 		self.max_tokens_field.setPlaceholderText("Max Tokens")
 		self.message_prefix_field_h_layout.addWidget(self.max_tokens_field)
 		self.advanced_controls_layout.addLayout(self.message_prefix_field_h_layout)
 		
-		self.advanced_controls_layout.addWidget(QLabel("AI Message Prefix"))
+		# Create a field to set the message prefix:
+		self.advanced_controls_layout.addWidget(QLabel("AI Message Prefix:"))
 		self.message_prefix_field = TextEdit("AI message prefix field", auto_save=True)
 		self.message_prefix_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.message_prefix_field.setPlaceholderText("Type the start of the ai message here...")
@@ -83,6 +87,7 @@ class ChatUI(QWidget):
 			self.advanced_controls.setFixedHeight(self.advanced_controls_layout.sizeHint().height())
 		self.message_prefix_field.textChanged.connect(adjust_advanced_controls_size)
 		self.advanced_controls_layout.addWidget(self.message_prefix_field)
+		adjust_advanced_controls_size()
 		
 		# Allow the user to select a role to send the message as:
 		self.role_combobox = RoleComboBox(self.roles, default_value=self.roles[0])
@@ -133,7 +138,6 @@ class ChatUI(QWidget):
 		self.respond_on_send_toggle.setFixedHeight(self.input_field.height())
 		self.send_button.setFixedHeight(self.input_field.height())
 		self.role_combobox.setFixedHeight(self.input_field.height())
-		adjust_advanced_controls_size()
 		
 	def send_message(self):
 		selected_role = self.role_combobox.currentText()
@@ -185,7 +189,7 @@ class ChatUI(QWidget):
 	
 	def adjust_text_field_size(self, text_field:QTextEdit=None):
 		"""Adjust the height of the input field to fit the text up to max lines"""
-		content_height = text_field.document().size().height()
+		content_height = max(text_field.document().size().height(), text_field.fontMetrics().lineSpacing()+text_field.document().documentMargin()*2)
 		content_margin_sum = + text_field.contentsMargins().top() + text_field.contentsMargins().bottom()
 		
 		max_height = text_field.fontMetrics().lineSpacing()*self.max_new_message_lines + text_field.document().documentMargin()*2
