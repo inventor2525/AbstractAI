@@ -16,3 +16,15 @@ def merge_dictionaries(dictionary1:dict, dictionary2:dict):
 				else:
 					dict1[key] = value
 	return dictionary1
+
+def replace_keys(dictionary:dict, replace_map:dict):
+	dictionary = dictionary.copy()
+	for key, value in dictionary.items():
+		if key in replace_map:
+			rm_value = replace_map[key]
+			if isinstance(value, dict):
+				dictionary[replace_map[key]] = replace_keys(value, rm_value)
+			else:
+				dictionary[rm_value] = value
+			del dictionary[key]
+	return dictionary

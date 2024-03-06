@@ -65,7 +65,9 @@ class HuggingFaceLLM(LLM):
 		if stream:
 			raise NotImplementedError("Stream not yet implemented for HuggingFaceLLM")
 		else:
-			output_tokens = self.model.generate(**inputs, **self.model_info.parameters["generate"])
+			params = self.model_info.parameters["generate"]
+			params = replace_keys(params, {"generate": {"max_tokens": "max_new_tokens"}})
+			output_tokens = self.model.generate(**inputs, **params)
 			response_tokens = output_tokens[0][inputs_len:]
 			
 			response_str = self.tokenizer.decode(response_tokens, skip_special_tokens=True)

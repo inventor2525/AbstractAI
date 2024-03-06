@@ -2,7 +2,7 @@ from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.LLMStats import LLMStats
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder
-from AbstractAI.Helpers.merge_dictionaries import merge_dictionaries
+from AbstractAI.Helpers.merge_dictionaries import *
 from .LLM_Response import LLM_Response
 
 from datetime import datetime
