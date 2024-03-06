@@ -47,28 +47,34 @@ class ModelLoader():
 		if loader_type is None:
 			raise KeyError(f"Model '{model_name}' does not have a LoaderType.")
 		
+		llm = None
 		if loader_type == ModelType.HuggingFace.value:
 			from AbstractAI.LLMs.HuggingFaceLLM import HuggingFaceLLM
-			return HuggingFaceLLM(model_name, config.get("Parameters", {}))
+			llm = HuggingFaceLLM(model_name, config.get("Parameters", {}))
 		
-		if loader_type == ModelType.LLamaCPP.value:
+		elif loader_type == ModelType.LLamaCPP.value:
 			model_path = config.get("ModelPath", None)
 			if model_path is None:
 				raise KeyError(f"Model '{model_name}' does not have a ModelPath.")
 			
 			from AbstractAI.LLMs.LLamaCPP_LLM import LLamaCPP_LLM
-			return LLamaCPP_LLM(model_name, model_path, config.get("Parameters", {}))
+			llm = LLamaCPP_LLM(model_name, model_path, config.get("Parameters", {}))
 		
-		if loader_type == ModelType.OpenAI.value:
+		elif loader_type == ModelType.OpenAI.value:
 			assert "APIKey" in config, f"Model '{model_name}' does not have an APIKey."
 			api_key = config["APIKey"]
 			
 			from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
-			return OpenAI_LLM(api_key, model_name, config.get("Parameters", {}))
+			llm = OpenAI_LLM(api_key, model_name, config.get("Parameters", {}))
 		
-		if loader_type == ModelType.RemoteLLM.value:
+		elif loader_type == ModelType.RemoteLLM.value:
 			from AbstractAI.LLMs.RemoteLLM import RemoteLLM
-			return RemoteLLM(model_name, config.get("Parameters", {}))
+			llm = RemoteLLM(model_name, config.get("Parameters", {}))
+		
+		if llm is not None:
+			llm.model_info.config = config
+		
+		return llm
 		
 	def add_config(self, model_name:str, loader_type:ModelType, model_path:str=None, parameters:Dict[str, Any]={}):
 		if loader_type == ModelType.LLamaCPP:

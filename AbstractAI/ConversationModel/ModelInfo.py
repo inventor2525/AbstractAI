@@ -6,3 +6,4 @@ class ModelInfo:
 	class_name: str
 	model_name: str
 	parameters: Dict[str, Any] = field(default_factory=dict)
+	config: Dict[str, Any] = field(default_factory=dict, init=False)
