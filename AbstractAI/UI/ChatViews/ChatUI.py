@@ -61,20 +61,27 @@ class ChatUI(QWidget):
 		
 		# Create a layout to hold the advanced controls:
 		self.advanced_controls = QWidget()
-		self.advanced_controls.setContentsMargins(0, 0, 0, 0)
 		self.advanced_controls_layout = QVBoxLayout()
+		self.advanced_controls_layout.setContentsMargins(0, 0, 0, 0)
 		self.advanced_controls.setLayout(self.advanced_controls_layout)
 		self.layout.addWidget(self.advanced_controls)
 		
+		self.message_prefix_field_h_layout = QHBoxLayout()
+		self.message_prefix_field_h_layout.addWidget(QLabel("Max Tokens"))
 		self.max_tokens_field = TextEdit("Max Tokens Field", auto_save=True)
+		self.max_tokens_field.setFixedHeight(25)
 		self.max_tokens_field.setPlaceholderText("Max Tokens")
-		self.advanced_controls_layout.addWidget(self.max_tokens_field)
+		self.message_prefix_field_h_layout.addWidget(self.max_tokens_field)
+		self.advanced_controls_layout.addLayout(self.message_prefix_field_h_layout)
 		
+		self.advanced_controls_layout.addWidget(QLabel("AI Message Prefix"))
 		self.message_prefix_field = TextEdit("AI message prefix field", auto_save=True)
-		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-		self.message_prefix_field.setSizePolicy(size_policy)
 		self.message_prefix_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.message_prefix_field.setPlaceholderText("Type the start of the ai message here...")
+		def adjust_advanced_controls_size():
+			self.adjust_text_field_size(self.message_prefix_field)
+			self.advanced_controls.setFixedHeight(self.advanced_controls_layout.sizeHint().height())
+		self.message_prefix_field.textChanged.connect(adjust_advanced_controls_size)
 		self.advanced_controls_layout.addWidget(self.message_prefix_field)
 		
 		# Allow the user to select a role to send the message as:
@@ -84,7 +91,7 @@ class ChatUI(QWidget):
 		# Create a text box to type the message:
 		self.input_field = TextEdit("New Message Input Field", auto_save=True)
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
-		self.input_field.textChanged.connect(self.adjust_input_field_size)
+		self.input_field.textChanged.connect(lambda: self.adjust_text_field_size(self.input_field))
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_field.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
@@ -121,11 +128,12 @@ class ChatUI(QWidget):
 		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
 		
 		# Adjust the size of the bottom row to fit the input field:
-		self.adjust_input_field_size()
+		self.adjust_text_field_size(self.input_field)
 		self.advanced_controls_toggle.setFixedHeight(self.input_field.height())
 		self.respond_on_send_toggle.setFixedHeight(self.input_field.height())
 		self.send_button.setFixedHeight(self.input_field.height())
 		self.role_combobox.setFixedHeight(self.input_field.height())
+		adjust_advanced_controls_size()
 		
 	def send_message(self):
 		selected_role = self.role_combobox.currentText()
@@ -175,12 +183,12 @@ class ChatUI(QWidget):
 		else:
 			super().keyPressEvent(event)
 	
-	def adjust_input_field_size(self):
+	def adjust_text_field_size(self, text_field:QTextEdit=None):
 		"""Adjust the height of the input field to fit the text up to max lines"""
-		content_height = self.input_field.document().size().height()
-		content_margin_sum = + self.input_field.contentsMargins().top() + self.input_field.contentsMargins().bottom()
+		content_height = text_field.document().size().height()
+		content_margin_sum = + text_field.contentsMargins().top() + text_field.contentsMargins().bottom()
 		
-		max_height = self.input_field.fontMetrics().lineSpacing()*self.max_new_message_lines + self.input_field.document().documentMargin()*2
+		max_height = text_field.fontMetrics().lineSpacing()*self.max_new_message_lines + text_field.document().documentMargin()*2
 		
 		new_height = min(content_height, max_height) + content_margin_sum
-		self.input_field.setFixedHeight(int(new_height))
+		text_field.setFixedHeight(int(new_height))
