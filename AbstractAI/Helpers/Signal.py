@@ -54,7 +54,7 @@ class Signal(Generic[P, R]):
 		return field(default_factory=cls, compare=compare, repr=repr, hash=hash, init=init, kw_only=kw_only)
 
 class LazySignal(Signal[P, R]):
-	def __init__(self, timeout: float = 0.5):
+	def __init__(self, timeout: float = 0.2):
 		super().__init__()
 		self.lock = FairLock()
 		self.dirty = False
