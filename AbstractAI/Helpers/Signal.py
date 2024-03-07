@@ -60,18 +60,20 @@ class LazySignal(Signal[P, R]):
 		self.dirty = False
 		self.timeout = timeout
 		self.condition = Condition()
-		self.thread = Thread(target=self._run___)
-		self.thread.daemon = True
-		self.thread.start()
-	
-	def _run___(self):
+		
+		self.thread_running = False
+			
+	def _run(self):
 		while True:
 			with self.condition:
-				while not self.dirty:
-					self.condition.wait(self.timeout/10)
-				self.dirty = False
+				if not self.dirty:
+					self.condition.wait(1)
 			
 			with self.lock:
+				if not self.dirty:
+					self.thread_running = False
+					return
+				self.dirty = False
 				listeners = self._listeners.copy()
 				self._call(listeners, *self.args, **self.kwargs)
 			sleep(self.timeout)
@@ -80,9 +82,16 @@ class LazySignal(Signal[P, R]):
 		with self.lock:
 			self.args = args
 			self.kwargs = kwargs
-			
-		with self.condition:
 			self.dirty = True
+			
+			if not self.thread_running:
+				self.thread_running = True
+				
+				self.thread = Thread(target=self._run)
+				self.thread.daemon = True
+				self.thread.start()
+		
+		with self.condition:
 			self.condition.notify_all()
 			
 if __name__ == "__main__":
