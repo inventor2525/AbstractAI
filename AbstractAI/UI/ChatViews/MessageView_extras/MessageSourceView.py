@@ -49,8 +49,8 @@ class MessageSourceView(QWidget):
 		elif isinstance(message_source, ModelSource):
 			return "\n".join([
 				"Model",
-				pascal_case(message_source.model_info.class_name),
-				pascal_case(message_source.model_info.model_name),
+				message_source.model_info.class_name,
+				message_source.model_info.model_name,
 			])
 		elif isinstance(message_source, TerminalSource):
 			return "Terminal:"
