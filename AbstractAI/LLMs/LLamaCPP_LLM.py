@@ -34,7 +34,7 @@ class LLamaCPP_LLM(LLM):
 		if max_tokens is not None:
 			params = replace_parameters(params, {"max_tokens": max_tokens})
 		completion = self.model.create_completion(prompt, **params, stream=stream)
-		response = LLM_Response(wip_message, len(self.count_tokens(prompt)), stream)
+		response = LLM_Response(wip_message, self.count_tokens(prompt), stream)
 		if not stream:
 			response.set_response(completion['choices'][0]['text'], completion["usage"]["completion_tokens"], completion)
 		else:
