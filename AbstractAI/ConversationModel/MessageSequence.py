@@ -136,19 +136,27 @@ class MessageSequence:
 		'''
 		closed_set = {}
 		filtered_sequences = []
-		for ms in reversed(message_sequences):
-			if keep is not None and ms.auto_id == keep.auto_id:
+		for ms in reversed(message_sequences):			
+			if ms.messages is None or len(ms.messages) == 0:
+				m = None
+			elif filter_index is None:
+				m = ms.messages[0].auto_id
+			elif filter_index >= len(ms.messages):
+				m = None
+			else:
 				m = ms.messages[filter_index].auto_id
+				
+			if keep is not None and ms.auto_id == keep.auto_id:
 				if m in closed_set:
 					filtered_sequences[closed_set[m]] = ms
 				else:
 					closed_set[m] = len(filtered_sequences)
 					filtered_sequences.append(ms)
 				continue
-			if filter_index >= len(ms.messages):
+			
+			if m is None:
 				continue
-			else:
-				m = ms.messages[filter_index].auto_id
+			
 			if m not in closed_set:
 				closed_set[m] = len(filtered_sequences)
 				filtered_sequences.append(ms)
