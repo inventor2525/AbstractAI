@@ -81,17 +81,17 @@ class RemoteLLM_Backend:
 			return RemoteLLM_Backend.models_by_id[model_info.auto_id]._apply_chat_template(chat, start_str)
 	
 	@StaticRoute
-	def chat(model_info:ModelInfo, conversation: Conversation, start_str: str = "", stream=False) -> Message:
+	def chat(model_info:ModelInfo, conversation: Conversation, start_str: str = "", stream=False, max_tokens:int=None) -> Message:
 		with Stopwatch.singleton.timed_block("RemoteLLM.chat"):
-			response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream)
+			response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream, max_tokens)
 			if stream:
 				RemoteLLM_Backend.streams[response.message.source.auto_id] = StreamResponse(response)
 			return response.message
 	
 	@StaticRoute
-	def complete_str(model_info:ModelInfo, text:str, stream=False) -> Message:
+	def complete_str(model_info:ModelInfo, text:str, stream=False, max_tokens:int=None) -> Message:
 		with Stopwatch.singleton.timed_block("RemoteLLM.complete_str"):
-			response = RemoteLLM_Backend.models_by_id[model_info.auto_id].complete_str(text, stream)
+			response = RemoteLLM_Backend.models_by_id[model_info.auto_id].complete_str(text, stream, max_tokens)
 			if stream:
 				RemoteLLM_Backend.streams[response.message.source.auto_id] = StreamResponse(response)
 			return response.message
@@ -135,15 +135,15 @@ class RemoteLLM(LLM):
 			response.genenerate_more_func = genenerate_more_func
 		return response
 	
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False) -> LLM_Response:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens:int=None) -> LLM_Response:
 		with Stopwatch.singleton.timed_block("RemoteLLM.chat"):
-			message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream)
+			message = RemoteLLM_Backend.chat(self.model_info, conversation, start_str, stream, max_tokens)
 			message.source.generating = stream
 			return self._gen_remote_response(message, stream)
 	
-	def complete_str(self, text:str, stream=False) -> LLM_Response:
+	def complete_str(self, text:str, stream=False, max_tokens:int=None) -> LLM_Response:
 		with Stopwatch.singleton.timed_block("RemoteLLM.complete_str"):
-			message = RemoteLLM_Backend.complete_str(self.model_info, text, stream)
+			message = RemoteLLM_Backend.complete_str(self.model_info, text, stream, max_tokens)
 			message.source.generating = stream
 			return self._gen_remote_response(message, stream)
 		
