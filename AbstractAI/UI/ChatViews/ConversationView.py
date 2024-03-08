@@ -53,11 +53,26 @@ class ConversationView(QListWidget):
 	
 	def keyPressEvent(self, event):
 		item_widget = self.itemWidget(self.currentItem())
-		if event.key() == Qt.Key_Delete and not item_widget.text_edit.hasFocus():
-			selected_messages = [item.message for item in self.selectedItems()]
-			self.conversation.remove_messages(selected_messages)
-		elif event.key() == Qt.Key_Escape:
+		if event.key() == Qt.Key_Escape:
 			self.clearSelection()
+		elif not item_widget.text_edit.hasFocus():
+			if event.key() == Qt.Key_Delete:
+				selected_messages = [item.message for item in self.selectedItems()]
+				self.conversation.remove_messages(selected_messages)
+			elif event.key() == Qt.Key_Left:
+				if self.currentItem() is not None:
+					message = self.currentItem().message
+					if message._view.left_arrow_btn.isVisible():
+						self._auto_scroll = False
+						message._view.left_arrow_btn.click()
+			elif event.key() == Qt.Key_Right:
+				if self.currentItem() is not None:
+					message = self.currentItem().message
+					if message._view.right_arrow_btn.isVisible():
+						self._auto_scroll = False
+						message._view.right_arrow_btn.click()
+			else:
+				super().keyPressEvent(event)
 		else:
 			super().keyPressEvent(event)
 	
@@ -79,6 +94,11 @@ class ConversationView(QListWidget):
 		message_item.setSizeHint(message_view.sizeHint())
 		message._view = message_view
 		message._item = message_item
+		
+		def message_selected(msg:Message):
+			self.clearSelection()
+			self.setCurrentItem(msg._item)
+		message_view.message_selected.connect(message_selected)
 		return message_item
 	
 	def _remove_row(self, row: int) -> None:

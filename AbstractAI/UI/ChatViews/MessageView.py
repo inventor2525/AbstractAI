@@ -23,6 +23,8 @@ class MessageView(BaseMessageView):
 	
 	regenerate_clicked = pyqtSignal(ModelSource)
 	
+	message_selected = pyqtSignal(Message)
+	
 	@property
 	def editing(self) -> bool:
 		return self._editing
@@ -80,11 +82,16 @@ class MessageView(BaseMessageView):
 		self.left_layout.addLayout(self.arrow_layout)
 		
 		def swap_message_sequence():
-			# self_index = self.conversation.message_sequence.messages.index(self.message)
+			self_index = self.message.conversation.message_sequence.messages.index(self.message)
 			self.message.conversation.message_sequence = self.alternates[self.alternate_index]
 			self._update_arrow_buttons()
 			
 			self.message.conversation.conversation_changed()
+			
+			if self_index is not None:
+				new_self = self.message.conversation.message_sequence.messages[self_index]
+				if new_self is not None:
+					self.message_selected.emit(new_self)
 		# Left arrow button for selecting previous version of message:
 		self.left_arrow_btn = QToolButton()
 		self.left_arrow_btn.setArrowType(Qt.LeftArrow)
