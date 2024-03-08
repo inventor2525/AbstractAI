@@ -32,7 +32,7 @@ class ConversationView(QListWidget):
 	def __init__(self, conversation: Conversation = None):
 		super().__init__()
 		
-		self.setAutoScroll(False)
+		self.setAutoScroll(True)
 		self._auto_scroll = True
 		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
