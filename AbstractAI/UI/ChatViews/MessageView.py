@@ -164,7 +164,17 @@ class MessageView(BaseMessageView):
 			prior_message_in_sequence = self.message.conversation.message_sequence[self_index-1]
 		self.alternates = self.message.conversation.alternates(prior_message_in_sequence)
 		self.alternates = MessageSequence.filter_sequences_for_next(self.alternates, self_index, keep=self.message.conversation.message_sequence)
-		self.alternates = sorted(self.alternates, key=lambda seq: getattr(getattr(seq,'messages',None), 'creation_time', datetime.now()), reverse=True) #seq.messages[self_index].creation_time)
+		def sort_func(seq):
+			messages = getattr(seq,'messages',None)
+			si = self_index
+			if self_index is None:
+				si = 0
+			if messages is not None and len(messages) > si:
+				return messages[si].creation_time
+			else:
+				m = None
+			return getattr(m, 'creation_time', datetime.now())
+		self.alternates = sorted(self.alternates, key=sort_func, reverse=False)
 		#TODO: add ability to browse the end (where a deleted message was)
 		#TODO: (optional) speed up alternates calculation by caching results if needed.
 		self.alternate_index = self.message.conversation.message_sequence.index_in(self.alternates)
