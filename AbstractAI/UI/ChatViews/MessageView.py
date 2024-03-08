@@ -94,7 +94,7 @@ class MessageView(BaseMessageView):
 			self.alternate_index -= 1
 			swap_message_sequence()
 		self.left_arrow_btn.clicked.connect(left_arrow_clicked)
-		self.arrow_layout.addWidget(self.left_arrow_btn)
+		self.arrow_layout.addWidget(self.left_arrow_btn, alignment=Qt.AlignLeft)
 		
 		# Right arrow button for selecting next version of message:
 		self.right_arrow_btn = QToolButton()
@@ -105,7 +105,7 @@ class MessageView(BaseMessageView):
 			self.alternate_index += 1
 			swap_message_sequence()
 		self.right_arrow_btn.clicked.connect(right_arrow_clicked)
-		self.arrow_layout.addWidget(self.right_arrow_btn)
+		self.arrow_layout.addWidget(self.right_arrow_btn, alignment=Qt.AlignRight)
 		
 		# Editable text box (The message -- in the middle of the view)
 		self.text_edit = TextEdit("Message Text Box")
