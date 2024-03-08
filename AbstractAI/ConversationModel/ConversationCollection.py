@@ -2,7 +2,10 @@ from AbstractAI.ConversationModel import *
 from ClassyFlaskDB.DATA import DATAEngine
 from AbstractAI.Helpers.Signal import Signal
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List, Union, Dict
+
+from datetime import datetime
+import tzlocal
 import pytz
 
 from copy import deepcopy
@@ -11,7 +14,13 @@ class ConversationCollection():
 	conversations: List[Conversation] = field(default_factory=list)
 	engine : DATAEngine = None
 	
+	conversation_indicies: Dict[str, int] = field(default_factory=dict)
 	conversation_added: Signal[[Conversation], None] = Signal.field()
+	
+	def __post_init__(self):
+		for index, conversation in enumerate(self.conversations):
+			self.conversation_indicies[conversation.auto_id] = index
+			self._register_conversation(conversation)
 	
 	def _register_conversation(self, conversation:Conversation) -> None:
 		def message_changed(message):
@@ -28,6 +37,7 @@ class ConversationCollection():
 			
 	def append(self, conversation:Conversation, should_notify=True) -> None:
 		self.conversations.append(conversation)
+		self.conversation_indicies[conversation.auto_id] = len(self.conversations) - 1
 		self._register_conversation(conversation)
 		if should_notify:
 			self.conversation_added(conversation)
@@ -35,25 +45,34 @@ class ConversationCollection():
 	@classmethod
 	def all_from_engine(cls, engine: DATAEngine) -> 'ConversationCollection':
 		collection = cls()
+		local_timezone = tzlocal.get_localzone()
 		with engine.session() as session:
 			all_conversations = session.query(Conversation.auto_id, Conversation.name, Conversation.description, Conversation.creation_time__DateTimeObj, Conversation.creation_time__TimeZone, Conversation.last_modified__DateTimeObj, Conversation.last_modified__TimeZone).all()
 			for conversation_fields in all_conversations:
 				auto_id, name, description, creation_time, creation_timezone, last_modified, last_modified_timezone = deepcopy(conversation_fields)
 				if creation_timezone is not None:
-					creation_time.replace(tzinfo=pytz.timezone(creation_timezone))
+					creation_time = creation_time.replace(tzinfo=pytz.timezone(creation_timezone))
+				else:
+					creation_time = creation_time.replace(tzinfo=local_timezone)
 				if last_modified_timezone is not None:
-					last_modified.replace(tzinfo=pytz.timezone(last_modified_timezone))
+					last_modified = last_modified.replace(tzinfo=pytz.timezone(last_modified_timezone))
+				else:
+					last_modified = last_modified.replace(tzinfo=local_timezone)
 				conversation = Conversation(name, description, creation_time, last_modified, None)
 				conversation.auto_id = auto_id
 				
 				collection.conversations.append(conversation)
+				collection.conversation_indicies[auto_id] = len(collection.conversations) - 1
 			collection.engine = engine
 		return collection
 
-	def load_completely(self, conversation:Union[int, Conversation]) -> Conversation:
+	def load_completely(self, conversation:Union[int, str, Conversation]) -> Conversation:
 		if isinstance(conversation, int):
 			conversation_index = conversation
 			conversation = self.conversations[conversation]
+		elif isinstance(conversation, str):
+			conversation_index = self.conversation_indicies[conversation]
+			conversation = self.conversations[conversation_index]
 		else:
 			conversation_index = self.conversations.index(conversation)
 		
