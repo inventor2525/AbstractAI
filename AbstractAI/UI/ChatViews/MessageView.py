@@ -49,6 +49,7 @@ class MessageView(BaseMessageView):
 		self._edit_enabled = True
 		
 		self.init_ui()
+		self.expand_btn.setChecked(getattr(getattr(message, "source", None), "generating", False))
 		
 		# Set the message to the one passed in
 		self.message = message

@@ -33,6 +33,7 @@ class ConversationView(QListWidget):
 		super().__init__()
 		
 		self.setAutoScroll(False)
+		self._auto_scroll = True
 		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
 		self.itemSelectionChanged.connect(self.update_selection)
@@ -48,6 +49,7 @@ class ConversationView(QListWidget):
 
 	def wheelEvent(self, event):
 		self.verticalScrollBar().setValue(self.verticalScrollBar().value() - event.pixelDelta().y())
+		self._auto_scroll = self.verticalScrollBar().value() == self.verticalScrollBar().maximum()
 	
 	def keyPressEvent(self, event):
 		item_widget = self.itemWidget(self.currentItem())
@@ -120,5 +122,7 @@ class ConversationView(QListWidget):
 		try:
 			item_widget = self.itemWidget(item)
 			item.setSizeHint(QSize(0, item_widget.sizeHint().height()))
+			if self._auto_scroll:
+				self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
 		except:
 			pass
