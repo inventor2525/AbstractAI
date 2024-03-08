@@ -10,6 +10,7 @@ class Context:
 	model_loader: ModelLoader = None
 	llm_loaded: bool = False
 	
+	conversation_selected:Signal[[],None] = Signal.field()
 	context_changed:Signal[[],None] = Signal.field()
 	
 	@staticmethod
@@ -18,6 +19,16 @@ class Context:
 			Context._singleton = Context()
 		return Context._singleton
 	
+	@property
+	def conversation(self) -> Conversation:
+		return getattr(self, "_conversation", None)
+	@conversation.setter
+	def conversation(self, value:Conversation):
+		old_conversation = self.conversation
+		self._conversation = value
+		if old_conversation != value:
+			self.conversation_selected()
+		
 	def __post_init__(self):
 		Context.singleton = self
 	

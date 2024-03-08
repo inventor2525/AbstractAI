@@ -34,17 +34,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
 Stopwatch("Application", log_statistics=False)
-class Application(QMainWindow):
-	@property
-	def conversation(self) -> Conversation:
-		return self.chatUI.conversation
-	@conversation.setter
-	def conversation(self, value:Conversation):
-		self.name_field.setText(value.name)
-		self.description_field.setText(value.description)
-		self.chatUI.conversation = value
-		self.conversation_list_view.set_selected(value)
-	
+class Application(QMainWindow):	
 	@property
 	def llm(self) -> LLM:
 		return self._llm
@@ -80,7 +70,12 @@ class Application(QMainWindow):
 		self.filter_timmer.start()
 		
 		self.init_ui()
-		self.conversation = self.new_conversation()
+		def conversation_selected():
+			self.name_field.setText(Context.conversation.name)
+			self.description_field.setText(Context.conversation.description)
+			self.chatUI.conversation = Context.conversation
+		Context.conversation_selected.connect(conversation_selected)
+		Context.conversation = self.new_conversation()
 		
 		self.read_settings()
 		
@@ -95,7 +90,12 @@ class Application(QMainWindow):
 		self.sort_controls = QHBoxLayout()
 		self.sort_controls.addWidget(QLabel("Sort By:"))
 		self.sort_selector = QComboBox()
-		self.sort_selector.addItems(["Created", "Modified", "Name"])
+		self.sort_selector.addItems([
+			SortByType.CREATION_TIME.value,
+			SortByType.LAST_MODIFIED.value, 
+			SortByType.NAME.value
+		])
+		self.sort_selector.currentTextChanged.connect(lambda: self.conversation_list_view.sort_by(SortByType(self.sort_selector.currentText())))
 		self.sort_controls.addWidget(self.sort_selector)
 		self.left_panel.addLayout(self.sort_controls)
 		
@@ -112,9 +112,6 @@ class Application(QMainWindow):
 		self.left_panel.addLayout(self.search_area)
 		
 		self.conversation_list_view = ConversationListView(self.conversations)
-		def set_conv(conv):
-			self.conversation = conv
-		self.conversation_list_view.conversation_selected.connect(set_conv)
 		self.left_panel.addWidget(self.conversation_list_view)
 		
 		self.new_conversation_layout = QHBoxLayout()
@@ -172,19 +169,19 @@ class Application(QMainWindow):
 			name = "New Conversation"
 		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 		self.conversations.append(conv)
-		self.conversation = conv
+		Context.conversation = conv
 		return conv
 	
 	def _name_description_confirm(self):
-		if self.conversation is None:
+		if Context.conversation is None:
 			return
 		
-		if self.conversation.name != self.name_field.text() or self.conversation.description != self.description_field.text():
-			self.conversation.name = self.name_field.text()
-			self.conversation.description = self.description_field.text()
-			self.conversation.last_modified = get_local_time()
-			self.conversation_list_view.update_conversation(self.conversation)
-			self.engine.merge(self.conversation)
+		if Context.conversation.name != self.name_field.text() or Context.conversation.description != self.description_field.text():
+			Context.conversation.name = self.name_field.text()
+			Context.conversation.description = self.description_field.text()
+			Context.conversation.last_modified = get_local_time()
+			Context.conversation_list_view._redraw_conversation(Context.conversation)
+			Context.engine.merge(Context.conversation)
 	
 	def search_name_description(self):
 		search = self.search_field.text()
