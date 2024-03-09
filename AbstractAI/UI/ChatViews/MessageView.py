@@ -214,7 +214,11 @@ class MessageView(BaseMessageView):
 		
 		self.expand_btn.setVisible(self.text_edit.document().size().height() > new_height)
 		self.rowHeightChanged.emit()
-		
+	
+	def resizeEvent(self, event):
+		self.update_text_edit_height()
+		super().resizeEvent(event)
+	
 	def toggle_expand(self, checked):
 		self.expand_btn.setArrowType(Qt.DownArrow if checked else Qt.RightArrow)
 		self.update_text_edit_height()
