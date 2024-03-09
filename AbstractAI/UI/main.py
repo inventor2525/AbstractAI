@@ -2,6 +2,8 @@ from AbstractAI.Helpers.Stopwatch import Stopwatch
 Stopwatch.singleton = Stopwatch(True)
 Stopwatch = Stopwatch.singleton
 
+Stopwatch("Startup", log_statistics=False)
+Stopwatch.new_scope()
 Stopwatch("Imports", log_statistics=False)
 Stopwatch.new_scope()
 
@@ -357,4 +359,6 @@ if __name__ == "__main__":
 	Stopwatch("Show window", log_statistics=False)
 	window.show()
 	Stopwatch.stop("Show window", log_statistics=False)
+	Stopwatch.end_scope(log_statistics=False)
+	Stopwatch.end_scope(log_statistics=False)
 	sys.exit(app.exec_())
