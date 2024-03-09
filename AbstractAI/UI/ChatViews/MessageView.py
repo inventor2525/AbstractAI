@@ -88,7 +88,7 @@ class MessageView(BaseMessageView):
 			
 			self.message.conversation.conversation_changed()
 			
-			if self_index is not None:
+			if self_index is not None and self_index < len(self.message.conversation.message_sequence.messages):
 				new_self = self.message.conversation.message_sequence.messages[self_index]
 				if new_self is not None:
 					self.message_selected.emit(new_self)

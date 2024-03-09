@@ -27,14 +27,10 @@ class ConversationListView(QListWidget):
 			self._conversations.conversation_added.disconnect(self._redraw_conversation)
 			
 		self._conversations = value
-		self._redraw_items(self._conversations.conversations)
+		self._sorted_conversations = value.conversations
+		self._redraw_items()
 		self._conversations.conversation_added.connect(self._redraw_conversation)
-		
-		if Context.conversation is not None:
-			if Context.conversation.auto_id in self._conversations.conversation_indicies:
-				Context.conversation._item.setSelected(True)
-				self.scrollToItem(Context.conversation._item)
-			
+	
 	def __init__(self, conversations: ConversationCollection):
 		super().__init__()
 		self._redrawing = False
@@ -61,30 +57,39 @@ class ConversationListView(QListWidget):
 			item.setSelected(is_selected)
 		conversation._item = item
 		
-	def _redraw_items(self, conversations:List[Conversation]):
+	def _redraw_items(self):
 		self._redrawing = True
 		selected_ids = [item.conversation for item in self.selectedItems()]
 		self.items_map = {}
 		self.clear()
 		
-		for conversation in conversations:
-			self._redraw_conversation(conversation, is_selected=conversation.auto_id in selected_ids)
+		for conversation in self._sorted_conversations:
+			if getattr(conversation, "_show", True):
+				self._redraw_conversation(conversation, is_selected=conversation.auto_id in selected_ids)
+		
+		if Context.conversation is not None:
+			if Context.conversation.auto_id in self._conversations.conversation_indicies:
+				try:
+					Context.conversation._item.setSelected(True)
+					self.scrollToItem(Context.conversation._item)
+				except:
+					pass
 		self._redrawing = False
 		
 	def sort_by(self, sort_type:SortByType):
 		'''
 		Sort the conversations by the given type.
 		'''
-		sorted_conversations = []
+		self._sorted_conversations = []
 		print("\n".join([str(conversation.creation_time) for conversation in self.conversations]))
 		if sort_type == SortByType.CREATION_TIME:
-			sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.creation_time)
+			self._sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.creation_time)
 		elif sort_type == SortByType.LAST_MODIFIED:
-			sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.last_modified)
+			self._sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.last_modified)
 		elif sort_type == SortByType.NAME:
-			sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.name)
+			self._sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.name)
 		
-		self._redraw_items(sorted_conversations)
+		self._redraw_items()
 		
 	def update_selection(self):
 		if self._redrawing:

@@ -186,10 +186,13 @@ class Application(QMainWindow):
 	def search_name_description(self):
 		search = self.search_field.text()
 		if search == "":
-			self.conversation_list_view.conversations = self.conversations
+			for conv in self.conversation_list_view.conversations.conversations:
+				conv._show = True
 		else:
-			self.conversation_list_view.conversations = ConversationCollection([conv for conv in self.conversations if search.lower() in conv.name.lower() or search.lower() in conv.description.lower()])
-	
+			for conv in self.conversation_list_view.conversations.conversations:
+				conv._show = search.lower() in conv.name.lower() or search.lower() in conv.description.lower()
+		self.conversation_list_view._redraw_items()
+		
 	def search_contents(self):
 		'''
 		Searches the contents of all messages in all conversations and

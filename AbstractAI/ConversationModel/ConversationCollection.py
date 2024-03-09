@@ -23,6 +23,9 @@ class ConversationCollection():
 			self._register_conversation(conversation)
 	
 	def _register_conversation(self, conversation:Conversation) -> None:
+		if self.engine is None:
+			return
+		
 		def message_changed(message):
 			self.engine.merge(message)
 			
