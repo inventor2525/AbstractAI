@@ -180,8 +180,8 @@ class Application(QMainWindow):
 			Context.conversation.name = self.name_field.text()
 			Context.conversation.description = self.description_field.text()
 			Context.conversation.last_modified = get_local_time()
-			Context.conversation_list_view._redraw_conversation(Context.conversation)
-			Context.engine.merge(Context.conversation)
+			self.conversation_list_view._redraw_conversation(Context.conversation)
+			self.engine.merge(Context.conversation)
 	
 	def search_name_description(self):
 		search = self.search_field.text()

@@ -55,7 +55,6 @@ class ConversationListView(QListWidget):
 		item.setToolTip(f"{conversation.name}\nCreated at {conversation.creation_time.strftime('%Y-%m-%d %H:%M:%S')}\nLast modified at {conversation.last_modified.strftime('%Y-%m-%d %H:%M:%S')}\n\n{conversation.description}")
 		if is_selected is not None:
 			item.setSelected(is_selected)
-		conversation._item = item
 		
 	def _redraw_items(self):
 		self._redrawing = True
@@ -70,8 +69,9 @@ class ConversationListView(QListWidget):
 		if Context.conversation is not None:
 			if Context.conversation.auto_id in self._conversations.conversation_indicies:
 				try:
-					Context.conversation._item.setSelected(True)
-					self.scrollToItem(Context.conversation._item)
+					item = self.items_map[Context.conversation.auto_id]
+					item.setSelected(True)
+					self.scrollToItem(item)
 				except:
 					pass
 		self._redrawing = False
