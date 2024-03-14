@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 from typing import List, Union, Dict
 
 from datetime import datetime
+from dateutil import tz
 import tzlocal
-import pytz
 
 from copy import deepcopy
 @dataclass
@@ -54,11 +54,11 @@ class ConversationCollection():
 			for conversation_fields in all_conversations:
 				auto_id, name, description, creation_time, creation_timezone, last_modified, last_modified_timezone = deepcopy(conversation_fields)
 				if creation_timezone is not None:
-					creation_time = creation_time.replace(tzinfo=pytz.timezone(creation_timezone))
+					creation_time = creation_time.replace(tzinfo=tz.gettz(creation_timezone))
 				else:
 					creation_time = creation_time.replace(tzinfo=local_timezone)
 				if last_modified_timezone is not None:
-					last_modified = last_modified.replace(tzinfo=pytz.timezone(last_modified_timezone))
+					last_modified = last_modified.replace(tzinfo=tz.gettz(last_modified_timezone))
 				else:
 					last_modified = last_modified.replace(tzinfo=local_timezone)
 				conversation = Conversation(name, description, creation_time, last_modified, None)

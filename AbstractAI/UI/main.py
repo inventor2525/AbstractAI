@@ -151,6 +151,29 @@ class Application(QMainWindow):
 		self.name_description_layout.addWidget(self.name_description_confirm_button)
 		self.right_panel.addLayout(self.name_description_layout)
 		
+		self.name_description_layout.addSpacing(10)
+		self.more_conversation_controls = QWidget()
+		self.more_conversation_controls_layout = QHBoxLayout()
+		self.more_conversation_controls.setLayout(self.more_conversation_controls_layout)
+		self.right_panel.addWidget(self.more_conversation_controls)
+		
+		self.more_conversation_controls_toggle = QToolButton()
+		self.name_description_layout.addWidget(self.more_conversation_controls_toggle)
+		self.more_conversation_controls_toggle.setArrowType(Qt.RightArrow)
+		self.more_conversation_controls_toggle.setCheckable(True)
+		self.more_conversation_controls_toggle.setChecked(Context.settings.value("main/ShowMoreConversationControls", False, type=bool))
+		def toggle_more_conversation_controls():
+			self.more_conversation_controls.setVisible(self.more_conversation_controls_toggle.isChecked())
+			if self.more_conversation_controls_toggle.isChecked():
+				self.more_conversation_controls_toggle.setArrowType(Qt.DownArrow)
+			else:
+				self.more_conversation_controls_toggle.setArrowType(Qt.RightArrow)
+			Context.settings.setValue("main/ShowMoreConversationControls", self.more_conversation_controls_toggle.isChecked())
+		self.more_conversation_controls_toggle.clicked.connect(toggle_more_conversation_controls)
+		toggle_more_conversation_controls()
+		
+		self.more_conversation_controls_layout.addWidget(QLabel("More Conversation Controls:"))
+		
 		self.chatUI = ChatUI()
 		self.right_panel.addWidget(self.chatUI)
 		self.chatUI.user_added_message.connect(self.generate_ai_response)
