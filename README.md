@@ -1,3 +1,7 @@
 # AbstractAI
 
-This abstracts away various ML models for other projects of mine. I doubt it's worth much on its own, it's mainly just for me to deploy experiments more easily.
+Abstracts away various LLMs and provides a simple Qt chat interface to interact with them.
+
+Also implements speech to text as a type anywhere input method and several examples on text to speech.
+
+Using ClassyFlaskDB, all interactions with LLMs are logged with detailed source information.
