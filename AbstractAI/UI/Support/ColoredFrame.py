@@ -1,9 +1,9 @@
 from ._CommonImports import *
 
 class ColoredFrame(QFrame):
-	def __init__(self, background_color, *args, **kwargs):
+	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.background_color = background_color
+		self.background_color = QColor(0, 0, 0)
 		self.selected = False
 
 	def paintEvent(self, event):

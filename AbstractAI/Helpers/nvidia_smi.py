@@ -1,6 +1,5 @@
 import subprocess
 
-def nvidia_smi():
-	'''Print nvidia-smi output'''
-	print("nvidia-smi output:")
-	print(subprocess.check_output(["nvidia-smi"]).decode())
+def nvidia_smi() -> str:
+	'''returns nvidia-smi output'''
+	return subprocess.check_output(["nvidia-smi"]).decode()

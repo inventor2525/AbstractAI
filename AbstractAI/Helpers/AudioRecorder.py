@@ -19,11 +19,12 @@ class AudioRecorder:
 		self.stream = sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='float32', device=input_device_index)
 		self.recording_thread = self.RecordingThread(self)
 		self.lock = threading.Lock()
+		self.buffers = []
 		self.recording_thread.start()
 
 	class RecordingThread(threading.Thread):
 		def __init__(self, recorder):
-			super().__init__(daemon=True)  # Make the thread a daemon thread
+			super().__init__(daemon=True)
 			self.record = False
 			self.recorder = recorder
 			self.temporary_buffer = np.array([], dtype='float32')
@@ -35,7 +36,10 @@ class AudioRecorder:
 				while True:
 					data, _ = self.recorder.stream.read(1024)
 					if self.record:
-						self.temporary_buffer = np.append(self.temporary_buffer, data)
+						with self.recorder.lock:
+							if not self.recorder.buffers:
+								self.recorder.buffers.append(self.temporary_buffer)
+							self.recorder.buffers[-1] = np.append(self.recorder.buffers[-1], data)
 					else:
 						self.temporary_buffer = data
 			except KeyboardInterrupt:
@@ -43,27 +47,46 @@ class AudioRecorder:
 				self.recorder.stream.stop()
 				return
 
-	def start_recording(self):
+	def start_recording(self) -> bool:
 		with self.lock:
 			Stopwatch.singleton.start("Recording")
+			if self.recording_thread.record:
+				return False
+			
 			self.recording_thread.record = True
-			self.buffer = np.array([], dtype='float32')
+			return True
 
 	def stop_recording(self):
 		with self.lock:
-			self.recording_thread.record = False
-			self.buffer = self.recording_thread.temporary_buffer
-			self.recording_thread.temporary_buffer = np.array([], dtype='float32')
 			self.last_record_time = Stopwatch.singleton.stop("Recording")["last"]
-			audio_data = np.int16(self.buffer * 32767).tobytes()
+			
+			if self.buffers:
+				self.recording_thread.record = False
+				final_buffer = np.concatenate(self.buffers)
+				self.buffers = []
+				audio_data = np.int16(final_buffer * 32767).tobytes()
+				return AudioSegment(
+					data=audio_data,
+					sample_width=2,
+					frame_rate=int(self.sample_rate),
+					channels=1
+				)
+			return AudioSegment.empty()
 
-			Stopwatch.singleton.start("Saving")
-			audio_segment = AudioSegment(
+	def peak(self):
+		peak_buffer = None
+		with self.lock:
+			if self.buffers:
+				peak_buffer = self.buffers[-1]
+				self.buffers.append(np.array([], dtype='float32'))
+		
+		if peak_buffer is not None:
+			audio_data = np.int16(peak_buffer * 32767).tobytes()
+			return AudioSegment(
 				data=audio_data,
 				sample_width=2,
-				frame_rate=self.sample_rate,
+				frame_rate=int(self.sample_rate),
 				channels=1
 			)
-			Stopwatch.singleton.stop("Saving")
-
-			return audio_segment
+		else:
+			return AudioSegment.empty()

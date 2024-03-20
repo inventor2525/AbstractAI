@@ -4,3 +4,5 @@
 *python-version
 *.egg-info/*
 *.sql
+*.db
+*.backup

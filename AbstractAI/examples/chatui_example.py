@@ -1,14 +1,18 @@
-from AbstractAI.UI.Support.MessageView import *
-from AbstractAI.UI.Support.ConversationView import *
+from AbstractAI.UI.ChatViews.MessageView_extras import *
+from AbstractAI.UI.ChatViews.ConversationView import *
+
+import json
+from AbstractAI.Helpers.JSONEncoder import JSONEncoder
+from ClassyFlaskDB.DATA import DATAEngine
+data_engine = DATAEngine(ConversationDATA)
 
 #create a QT window with a message view in it:
 app = QApplication(sys.argv)
 
-conv = Conversation()
-conv.add_message( Message("You are a helpful assistant", Role.System, UserSource("System")) )
-conv.add_message( Message("Say hello", Role.User, UserSource()) )
-conv.add_message( Message("Hello!", Role.Assistant, ModelSource("LLM","A model")) )
-conv.update_message_graph()
+conv = Conversation("Test Conversation", "A test conversation")
+conv.add_message( Message("You are a helpful assistant", UserSource("System")) )
+conv.add_message( Message("Say hello", UserSource()) )
+conv.add_message( Message("Hello!", ModelSource(ModelInfo("LLM","A model"))) )
 
 #message_view = MessageView(message)
 conversation_view = ConversationView(conv)
@@ -25,19 +29,18 @@ window.setLayout(layout)
 #add the message view to the layout:
 layout.addWidget(conversation_view)
 
+horizontal_layout = QHBoxLayout()
 #button to display the messages in the conversation:
-def print_messages(messages):
-	print("=====================================")
-	for message in messages:
-		print(message.content)
-		print(message.source)
-		print(message.creation_time)
-		print(message.role)
-		print()
-	print("=====================================")
-button = QPushButton("Print Messages")
-button.clicked.connect(lambda: print_messages(conv.message_sequence.messages))
-layout.addWidget(button)
+button = QPushButton("Print Conversation")
+button.clicked.connect(lambda: print_conversation(conv))
+horizontal_layout.addWidget(button)
+
+#button to add a message to the conversation:
+button = QPushButton("Add Message")
+button.clicked.connect(lambda: conv.add_message(Message("Hello WORLD!!", UserSource())))
+horizontal_layout.addWidget(button)
+
+layout.addLayout(horizontal_layout)
 
 #show the window:
 window.show()

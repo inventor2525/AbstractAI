@@ -10,7 +10,15 @@
 			"request": "launch",
 			"program": "${file}",
 			"console": "integratedTerminal",
-			"justMyCode": true
+			"justMyCode": false
+		},
+		{
+			"name": "main.py",
+			"type": "python",
+			"request": "launch",
+			"program": "${workspaceFolder}/AbstractAI/UI/main.py",
+			"console": "integratedTerminal",
+			"justMyCode": false
 		}
 	]
 }

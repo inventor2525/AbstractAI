@@ -20,30 +20,32 @@
 #It will then toggle recording when you press the key, and send the recording
 #to the server for transcription when you release the key, and then paste the
 #transcription into the active window.
-import time
-
 import sys
+import math
+import time
 import argparse
-import requests
+from datetime import datetime
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
 from PyQt5.QtCore import Qt, QTimer, QPoint
 from PyQt5.QtGui import QPainter, QColor, QMouseEvent
-from AbstractAI.Helpers.AudioRecorder import AudioRecorder
-from AbstractAI.SpeechToText.STT_Client import STT_Client
+
+from AbstractAI.Helpers.AudioRecorder import AudioRecorder, AudioSegment
+
 import evdev
-from evdev import InputDevice, categorize, ecodes
+from evdev import categorize, ecodes
+
 import pyperclip
 import pyautogui
-from pydub.exceptions import CouldntDecodeError
 pyautogui.FAILSAFE = False
-import os
-import math
-from datetime import datetime
 
 class Application(QMainWindow):
-    def __init__(self, host, port):
+    def __init__(self):
         super().__init__()
-
+        
+        from AbstractAI.Remote.client import System
+        self.System = System
+        
         self.diam = 60  # Diameter of the dot
         # Window attributes
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
@@ -53,10 +55,7 @@ class Application(QMainWindow):
         self.setWindowFlags(self.windowFlags() | Qt.X11BypassWindowManagerHint)
 
         self.prev_result = None
-        self.host = host
-        self.port = port
         self.recorder = AudioRecorder()
-        self.stt = STT_Client(host, port)
         
         # Initialize multiple devices
         self.devices = []
@@ -124,10 +123,11 @@ class Application(QMainWindow):
                                 self.toggle_recording()
             except BlockingIOError:
                 pass
-    
-    def process_audio(self, file_name):
+
+    def process_audio(self, audio_segment: AudioSegment):
+        # Your code here
         self.is_processing = True
-        result = self.stt.transcribe_str(file_name)
+        result = self.System.transcribe_str(audio_segment)
         
         # remove spaces and new lines at the beginning and end of the string:
         result = result.strip()
@@ -153,12 +153,9 @@ class Application(QMainWindow):
         if self.is_recording:
             audio_segment = self.recorder.stop_recording()
             
-            file_name = 'temp.mp3'
-            audio_segment.export(file_name, format="mp3")
-            
             #Process the audio on another thread. without waiting. eg: self.process_audio(file_name) as a thread:
             from threading import Thread
-            Thread(target=self.process_audio, args=(file_name,)).start()
+            Thread(target=self.process_audio, args=(audio_segment,)).start()
             
         else:
             print("\n\n\n\n\n")
@@ -177,13 +174,8 @@ class Application(QMainWindow):
         distance_to_center = (point - circle_center).manhattanLength()
         return distance_to_center <= self.diam / 2
 
-if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description='Remote Speech-to-Text Client with ThinkPad Button Integration')
-    # parser.add_argument('host', type=str, help='The server\'s IP address or hostname (e.g., \'localhost\' or \'0.0.0.0\').')
-    # parser.add_argument('port', type=int, help='The port number on which the server is running (e.g., 8000).', default=8000)
-    # args = parser.parse_args()
-
+if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = Application("http://209.20.158.138", 8000)# Application(args.host, args.port)
+    window = Application()
     window.show()
     sys.exit(app.exec_())

@@ -1,5 +1,5 @@
 from AbstractAI.Helpers.AudioPlayer import *
-from AbstractAI.TextToSpeech.MicrosoftTTS import *
+from AbstractAI.TextToSpeech.MicrosoftSpeechT5_TTS import *
 
 # ap = AudioPlayer()
 
