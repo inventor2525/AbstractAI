@@ -121,6 +121,7 @@ class MessageView(BaseMessageView):
 		self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
 		self.text_edit.textChanged.connect(self.on_text_changed)
 		self.text_edit.textChanged.connect(self.update_text_edit_height)
+		self.text_edit.selectionChanged.connect(lambda:self.message_selected.emit(self._message))
 		self.layout.addWidget(self.text_edit)
 
 		# Vertical panel (right side of message)

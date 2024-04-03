@@ -96,8 +96,11 @@ class ConversationView(QListWidget):
 		message._item = message_item
 		
 		def message_selected(msg:Message):
+			scroll_val = self.verticalScrollBar().value()
 			self.clearSelection()
 			self.setCurrentItem(msg._item)
+			self.verticalScrollBar().setValue(scroll_val)
+				
 		message_view.message_selected.connect(message_selected)
 		return message_item
 	
