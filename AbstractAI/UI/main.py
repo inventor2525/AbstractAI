@@ -228,12 +228,12 @@ class Application(QMainWindow):
 		if search == "":
 			self.conversation_list_view.conversations = self.conversations
 		else:
-			filtered_conversations = []
 			for conversation in self.conversations:
-				for message in conversation.message_sequence:
+				conversation._show = False
+				for message in (getattr(conversation, "message_sequence",[]) or []):
 					if search.lower() in message.content.lower():
-						filtered_conversations.append(conversation)
-			self.conversation_list_view.conversations = ConversationCollection(filtered_conversations)
+						conversation._show = True
+			self.conversation_list_view._redraw_items()
 	
 	def read_settings(self):
 		self.restoreGeometry(Context.settings.value("geometry", QByteArray()))
