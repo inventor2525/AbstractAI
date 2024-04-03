@@ -26,3 +26,8 @@ class TextEdit(QTextEdit):
     def onTextChanged(self):
         if self.auto_save:
             Context.settings.setValue(f"{self.name}/text", self.toPlainText())
+    
+    def clearSelection(self):
+        c = self.textCursor()
+        c.setPosition(c.position())
+        self.setTextCursor(c)

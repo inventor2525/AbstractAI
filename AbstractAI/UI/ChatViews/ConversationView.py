@@ -29,6 +29,12 @@ class ConversationView(QListWidget):
 				self.setItemWidget(message._item, message._view)
 			self.scrollToBottom()
 	
+	@property
+	def currentMessage(self) -> Message:
+		if self.currentItem() is not None:
+			return self.currentItem().message
+		return None
+	
 	def __init__(self, conversation: Conversation = None):
 		super().__init__()
 		
@@ -37,6 +43,7 @@ class ConversationView(QListWidget):
 		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
 		self.itemSelectionChanged.connect(self.update_selection)
+		self.currentItemChanged.connect(self.update_selection)
 		
 		self.conversation = conversation
 	
@@ -46,7 +53,20 @@ class ConversationView(QListWidget):
 			message_view = self.itemWidget(item)
 			if message_view is not None:
 				message_view.set_selected(item.isSelected())
-
+				if item is not self.currentItem():
+					message_view.text_edit.clearFocus()
+					message_view.text_edit.clearSelection()
+		if len(self.selectedItems()) > 1:
+			self.setFocus()
+	
+	def clearSelection(self) -> None:
+		item = self.currentItem()
+		if item is not None:
+			message_view = self.itemWidget(item)
+			message_view.text_edit.clearFocus()
+			message_view.text_edit.clearSelection()
+		return super().clearSelection()
+	
 	def wheelEvent(self, event):
 		self.verticalScrollBar().setValue(self.verticalScrollBar().value() - event.pixelDelta().y())
 		self._auto_scroll = self.verticalScrollBar().value() == self.verticalScrollBar().maximum()
@@ -96,11 +116,18 @@ class ConversationView(QListWidget):
 		message._item = message_item
 		
 		def message_selected(msg:Message):
+			has_focus = msg._view.text_edit.hasFocus()
 			scroll_val = self.verticalScrollBar().value()
-			self.clearSelection()
+			if msg.auto_id == getattr(self.currentMessage, "auto_id", None):
+				if len(self.selectedItems()) > 1:
+					self.clearSelection()
+			else:
+				self.clearSelection()
 			self.setCurrentItem(msg._item)
+			if has_focus:
+				msg._view.text_edit.setFocus()
 			self.verticalScrollBar().setValue(scroll_val)
-				
+		
 		message_view.message_selected.connect(message_selected)
 		return message_item
 	
@@ -108,6 +135,7 @@ class ConversationView(QListWidget):
 		item = self.item(row)
 		message = item.message
 		self.takeItem(row)
+		message._view.message_selected.disconnect()
 		del message._view
 		del message._item
 		
