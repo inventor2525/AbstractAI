@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name='AbstractAI',
-	version='0.0.1',
+	version='0.1.0',
 	author='Charlie Angela Mehlenbeck',
 	author_email='charlie_inventor2003@yahoo.com',
 	packages=['AbstractAI'],
