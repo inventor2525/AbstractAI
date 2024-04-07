@@ -8,9 +8,9 @@ This also implements speech to text as a type anywhere input method and several 
 
 ## Installation
 
-pip install ClassyFLaskDB from here: https://github.com/inventor2525/ClassyFlaskDB
-pip install AbstractAI from this repo
-
+1. pip install ClassyFLaskDB from here: https://github.com/inventor2525/ClassyFlaskDB
+1. pip install AbstractAI from this repo
+3. Add model definitions to models.json (directions to come)
 ## Usage
 
 ### Linux
