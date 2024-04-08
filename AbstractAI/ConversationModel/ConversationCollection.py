@@ -27,8 +27,8 @@ class ConversationCollection():
 			return
 		
 		def message_changed(message):
-			self.engine.merge(message)
-			
+			self.engine.merge(message, deeply=False)
+			self.engine.merge(message.source, deeply=False)
 		def message_added(message):
 			self.engine.merge(message)
 			message.changed.connect(message_changed, auto_disconnect=True)
