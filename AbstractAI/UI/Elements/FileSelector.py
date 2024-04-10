@@ -9,6 +9,27 @@ from PyQt5.QtCore import Qt
 class ItemModel:
     def __init__(self, path):
         self.path = path
+    
+    @staticmethod
+    def iterate_files(items):
+        def explore_folder(folder_path, file_pattern='', folder_pattern=''):
+            try:
+                for entry in os.listdir(folder_path):
+                    full_path = os.path.join(folder_path, entry)
+                    if os.path.isdir(full_path):
+                        if not folder_pattern or re.match(folder_pattern, entry):
+                            yield from explore_folder(full_path, file_pattern, folder_pattern)
+                    elif os.path.isfile(full_path):
+                        if not file_pattern or re.match(file_pattern, entry):
+                            yield full_path
+            except PermissionError:
+                pass
+
+        for item in items:
+            if isinstance(item, FolderModel):
+                yield from explore_folder(item.path, item.file_pattern, item.folder_pattern)
+            else:
+                yield item.path
 
 class FolderModel(ItemModel):
     def __init__(self, path, file_pattern='', folder_pattern=''):
@@ -160,6 +181,27 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    widget = FileSelectionWidget()
+    widget = QWidget()
+    layout = QVBoxLayout(widget)
+    file_selector = FileSelectionWidget()
+    layout.addWidget(file_selector)
+    
+    def printItems():
+        for item in file_selector.items:
+            print(item.path)
+            if isinstance(item, FolderModel):
+                print(item.file_pattern, item.folder_pattern)
+            print()
+    
+    button = QPushButton("Print Items")
+    button.clicked.connect(printItems)
+    layout.addWidget(button)
+    
+    def print_items_matching_patterns():
+        for path in ItemModel.iterate_files(file_selector.items):
+            print(path)
+    button2 = QPushButton("Print Items Matching Patterns")
+    button2.clicked.connect(print_items_matching_patterns)
+    layout.addWidget(button2)
     widget.show()
     sys.exit(app.exec_())
