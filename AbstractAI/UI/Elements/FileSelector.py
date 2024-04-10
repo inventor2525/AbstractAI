@@ -5,6 +5,12 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTr
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt
 
+class FolderModel:
+    def __init__(self, path, file_pattern='', folder_pattern=''):
+        self.path = path
+        self.file_pattern = file_pattern
+        self.folder_pattern = folder_pattern
+        
 class FileFolderTreeView(QTreeView):
     def __init__(self, parent=None):
         super(FileFolderTreeView, self).__init__(parent)
@@ -12,12 +18,13 @@ class FileFolderTreeView(QTreeView):
         self.setModel(self.model)
         self.model.setHorizontalHeaderLabels(['Name'])
 
-    def addItems(self, paths, isFolder=False):
+    def addItems(self, paths, isFolder=False, folder_model=None):
         for path in paths:
             item = QStandardItem(os.path.basename(path))
             item.setToolTip(path)
             if isFolder:
                 item.setFont(QFont("Arial", weight=QFont.Bold))
+                item.setData(folder_model, Qt.UserRole)
             self.model.appendRow(item)
 
 class FileFilterWidget(QWidget):
@@ -72,42 +79,53 @@ class FileSelectionWidget(QWidget):
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
-        if folder:
-            self.tree_view.addItems([folder], isFolder=True)
+        if folder:  # Check if a folder was selected
+            folder_model = FolderModel(folder)
+            self.tree_view.addItems([folder], isFolder=True, folder_model=folder_model)
 
     def itemSelected(self, index):
         item = self.tree_view.model.itemFromIndex(index)
-        if item.font().weight() == QFont.Bold:
+        if item.font().weight() == QFont.Bold:  # Check if the item is a folder
             self.file_filter_widget.show()
+            folder_model = item.data(Qt.UserRole)
+            if folder_model:
+                self.file_filter_widget.pattern_line_edit.setText(folder_model.file_pattern)
+                self.file_filter_widget.folder_pattern_line_edit.setText(folder_model.folder_pattern)
         else:
             self.file_filter_widget.hide()
 
     def refreshFolder(self):
-        pattern = self.file_filter_widget.pattern_line_edit.text()
-        folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
         selected_indexes = self.tree_view.selectedIndexes()
         if selected_indexes:
             selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
-            folder_path = selected_item.toolTip()
-            if os.path.isdir(folder_path):
+            folder_model = selected_item.data(Qt.UserRole)
+            if folder_model and os.path.isdir(folder_model.path):
                 selected_item.removeRows(0, selected_item.rowCount())  # Clear existing items
-                self.exploreFolder(folder_path, selected_item, pattern, folder_pattern)
+                folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
+                folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
+                found = self.exploreFolder(folder_model.path, selected_item, folder_model.file_pattern, folder_model.folder_pattern)
+                if not found:
+                    parent = selected_item.parent()
+                    if parent:
+                        parent.removeRow(selected_item.row())
 
     def exploreFolder(self, folder_path, parent_item, file_pattern, folder_pattern):
+        found = False
         for entry in os.listdir(folder_path):
             full_path = os.path.join(folder_path, entry)
-            if os.path.isdir(full_path):
-                if re.match(folder_pattern, entry):
-                    folder_item = QStandardItem(entry)
-                    folder_item.setToolTip(full_path)
-                    folder_item.setFont(QFont("Arial", weight=QFont.Bold))
+            if os.path.isdir(full_path) and re.match(folder_pattern, entry):
+                folder_item = QStandardItem(entry)
+                folder_item.setToolTip(full_path)
+                folder_item.setFont(QFont("Arial", weight=QFont.Bold))
+                if self.exploreFolder(full_path, folder_item, file_pattern, folder_pattern):
                     parent_item.appendRow(folder_item)
-                    self.exploreFolder(full_path, folder_item, file_pattern, folder_pattern)  # Recursive call
-            elif os.path.isfile(full_path):
-                if re.match(file_pattern, entry):
-                    file_item = QStandardItem(entry)
-                    file_item.setToolTip(full_path)
-                    parent_item.appendRow(file_item)
+                    found = True
+            elif os.path.isfile(full_path) and re.match(file_pattern, entry):
+                file_item = QStandardItem(entry)
+                file_item.setToolTip(full_path)
+                parent_item.appendRow(file_item)
+                found = True
+        return found
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
