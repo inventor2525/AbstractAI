@@ -65,12 +65,12 @@ class FileSelectionWidget(QWidget):
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
-        if folder:  # Check if a folder was selected
+        if folder:
             self.tree_view.addItems([folder], isFolder=True)
 
     def itemSelected(self, index):
         item = self.tree_view.model.itemFromIndex(index)
-        if item.font().weight() == QFont.Bold:  # Check if the item is a folder
+        if item.font().weight() == QFont.Bold:
             self.file_filter_widget.show()
         else:
             self.file_filter_widget.hide()
@@ -82,7 +82,7 @@ class FileSelectionWidget(QWidget):
             selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
             folder_path = selected_item.toolTip()
             if os.path.isdir(folder_path):
-                selected_item.removeRows(0, selected_item.rowCount())  # Clear existing items
+                selected_item.removeRows(0, selected_item.rowCount())
                 for entry in os.listdir(folder_path):
                     full_path = os.path.join(folder_path, entry)
                     if os.path.isfile(full_path) and re.match(pattern, entry):
