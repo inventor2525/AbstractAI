@@ -26,9 +26,13 @@ class FileFilterWidget(QWidget):
         self.layout = QVBoxLayout()
         self.pattern_label = QLabel("Regex Pattern:")
         self.pattern_line_edit = QLineEdit()
+        self.folder_pattern_label = QLabel("Folder Pattern:")  # New folder pattern label
+        self.folder_pattern_line_edit = QLineEdit()  # New folder pattern line edit
         self.refresh_button = QPushButton("Refresh")
         self.layout.addWidget(self.pattern_label)
         self.layout.addWidget(self.pattern_line_edit)
+        self.layout.addWidget(self.folder_pattern_label)  # Add folder pattern label to layout
+        self.layout.addWidget(self.folder_pattern_line_edit)  # Add folder pattern line edit to layout
         self.layout.addWidget(self.refresh_button)
         self.setLayout(self.layout)
 
@@ -53,7 +57,10 @@ class FileSelectionWidget(QWidget):
         self.file_filter_widget = FileFilterWidget()
         self.layout.addWidget(self.file_filter_widget, 1)
         self.file_filter_widget.hide()
-
+        
+        self.file_filter_widget.layout.setContentsMargins(0, 0, 0, 0)
+        self.file_filter_widget.setFixedWidth(200)
+        
         self.add_file_button.clicked.connect(self.addFiles)
         self.add_folder_button.clicked.connect(self.addFolders)
         self.tree_view.clicked.connect(self.itemSelected)
@@ -82,12 +89,19 @@ class FileSelectionWidget(QWidget):
             selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
             folder_path = selected_item.toolTip()
             if os.path.isdir(folder_path):
-                selected_item.removeRows(0, selected_item.rowCount())
-                for entry in os.listdir(folder_path):
-                    full_path = os.path.join(folder_path, entry)
-                    if os.path.isfile(full_path) and re.match(pattern, entry):
-                        child_item = QStandardItem(entry)
-                        selected_item.appendRow(child_item)
+                selected_item.removeRows(0, selected_item.rowCount())  # Clear existing items
+                for root, dirs, files in os.walk(folder_path):
+                    for folder_name in dirs:
+                        if re.match(self.file_filter_widget.folder_pattern_line_edit.text(), folder_name):
+                            folder_item = QStandardItem(folder_name)
+                            folder_item.setToolTip(os.path.join(root, folder_name))
+                            folder_item.setFont(QFont("Arial", weight=QFont.Bold))
+                            selected_item.appendRow(folder_item)
+                    for file_name in files:
+                        if re.match(pattern, file_name):
+                            file_item = QStandardItem(file_name)
+                            file_item.setToolTip(os.path.join(root, file_name))
+                            selected_item.appendRow(file_item)
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
