@@ -84,24 +84,30 @@ class FileSelectionWidget(QWidget):
 
     def refreshFolder(self):
         pattern = self.file_filter_widget.pattern_line_edit.text()
+        folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
         selected_indexes = self.tree_view.selectedIndexes()
         if selected_indexes:
             selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
             folder_path = selected_item.toolTip()
             if os.path.isdir(folder_path):
                 selected_item.removeRows(0, selected_item.rowCount())  # Clear existing items
-                for root, dirs, files in os.walk(folder_path):
-                    for folder_name in dirs:
-                        if re.match(self.file_filter_widget.folder_pattern_line_edit.text(), folder_name):
-                            folder_item = QStandardItem(folder_name)
-                            folder_item.setToolTip(os.path.join(root, folder_name))
-                            folder_item.setFont(QFont("Arial", weight=QFont.Bold))
-                            selected_item.appendRow(folder_item)
-                    for file_name in files:
-                        if re.match(pattern, file_name):
-                            file_item = QStandardItem(file_name)
-                            file_item.setToolTip(os.path.join(root, file_name))
-                            selected_item.appendRow(file_item)
+                self.exploreFolder(folder_path, selected_item, pattern, folder_pattern)
+
+    def exploreFolder(self, folder_path, parent_item, file_pattern, folder_pattern):
+        for entry in os.listdir(folder_path):
+            full_path = os.path.join(folder_path, entry)
+            if os.path.isdir(full_path):
+                if re.match(folder_pattern, entry):
+                    folder_item = QStandardItem(entry)
+                    folder_item.setToolTip(full_path)
+                    folder_item.setFont(QFont("Arial", weight=QFont.Bold))
+                    parent_item.appendRow(folder_item)
+                    self.exploreFolder(full_path, folder_item, file_pattern, folder_pattern)  # Recursive call
+            elif os.path.isfile(full_path):
+                if re.match(file_pattern, entry):
+                    file_item = QStandardItem(entry)
+                    file_item.setToolTip(full_path)
+                    parent_item.appendRow(file_item)
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
