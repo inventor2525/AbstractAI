@@ -1,9 +1,8 @@
 import os
 import re
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QPushButton, QTreeView, QFileDialog, QLabel,
-                             QLineEdit, QMessageBox)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTreeView,
+                             QFileDialog, QLabel, QLineEdit, QStandardItemModel, QStandardItem)
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
 class FileFolderTreeView(QTreeView):
@@ -33,33 +32,30 @@ class FileFilterWidget(QWidget):
         self.layout.addWidget(self.refresh_button)
         self.setLayout(self.layout)
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-        self.setWindowTitle("File and Folder Selection")
-        self.resize(800, 600)
+class FileSelectionWidget(QWidget):
+    def __init__(self, parent=None):
+        super(FileSelectionWidget, self).__init__(parent)
+        self.layout = QHBoxLayout(self)
 
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        self.main_layout = QVBoxLayout(self.central_widget)
-
+        self.tree_view_layout = QVBoxLayout()
         self.tree_view = FileFolderTreeView()
-        self.main_layout.addWidget(self.tree_view)
+        self.tree_view_layout.addWidget(self.tree_view)
 
         self.buttons_layout = QHBoxLayout()
         self.add_file_button = QPushButton("Add Files")
         self.add_folder_button = QPushButton("Add Folders")
         self.buttons_layout.addWidget(self.add_file_button)
         self.buttons_layout.addWidget(self.add_folder_button)
-        self.main_layout.addLayout(self.buttons_layout)
+        self.tree_view_layout.addLayout(self.buttons_layout)
+
+        self.layout.addLayout(self.tree_view_layout, 2)
+
+        self.file_filter_widget = FileFilterWidget()
+        self.layout.addWidget(self.file_filter_widget, 1)
+        self.file_filter_widget.hide()
 
         self.add_file_button.clicked.connect(self.addFiles)
         self.add_folder_button.clicked.connect(self.addFolders)
-
-        self.file_filter_widget = FileFilterWidget()
-        self.main_layout.addWidget(self.file_filter_widget)
-        self.file_filter_widget.hide()
-
         self.tree_view.clicked.connect(self.itemSelected)
         self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
 
@@ -94,8 +90,9 @@ class MainWindow(QMainWindow):
                         selected_item.appendRow(child_item)
 
 if __name__ == "__main__":
+    from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
+    widget = FileSelectionWidget()
+    widget.show()
     sys.exit(app.exec_())
