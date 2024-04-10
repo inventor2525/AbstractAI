@@ -1,7 +1,8 @@
 import os
 import re
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTreeView,
-                             QFileDialog, QLabel, QLineEdit, QApplication)
+                             QFileDialog, QLabel, QLineEdit, QApplication, QSpacerItem,
+                             QSizePolicy)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt
 
@@ -33,13 +34,15 @@ class FileFilterWidget(QWidget):
         self.layout = QVBoxLayout()
         self.pattern_label = QLabel("Regex Pattern:")
         self.pattern_line_edit = QLineEdit()
-        self.folder_pattern_label = QLabel("Folder Pattern:")  # New folder pattern label
-        self.folder_pattern_line_edit = QLineEdit()  # New folder pattern line edit
+        self.folder_pattern_label = QLabel("Folder Pattern:")
+        self.folder_pattern_line_edit = QLineEdit()
         self.refresh_button = QPushButton("Refresh")
+        
+        self.layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.layout.addWidget(self.pattern_label)
         self.layout.addWidget(self.pattern_line_edit)
-        self.layout.addWidget(self.folder_pattern_label)  # Add folder pattern label to layout
-        self.layout.addWidget(self.folder_pattern_line_edit)  # Add folder pattern line edit to layout
+        self.layout.addWidget(self.folder_pattern_label)
+        self.layout.addWidget(self.folder_pattern_line_edit)
         self.layout.addWidget(self.refresh_button)
         self.setLayout(self.layout)
 
@@ -79,13 +82,13 @@ class FileSelectionWidget(QWidget):
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
-        if folder:  # Check if a folder was selected
+        if folder:
             folder_model = FolderModel(folder)
             self.tree_view.addItems([folder], isFolder=True, folder_model=folder_model)
 
     def itemSelected(self, index):
         item = self.tree_view.model.itemFromIndex(index)
-        if item.font().weight() == QFont.Bold:  # Check if the item is a folder
+        if item.font().weight() == QFont.Bold:
             self.file_filter_widget.show()
             folder_model = item.data(Qt.UserRole)
             if folder_model:
@@ -100,7 +103,7 @@ class FileSelectionWidget(QWidget):
             selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
             folder_model = selected_item.data(Qt.UserRole)
             if folder_model and os.path.isdir(folder_model.path):
-                selected_item.removeRows(0, selected_item.rowCount())  # Clear existing items
+                selected_item.removeRows(0, selected_item.rowCount())
                 folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
                 folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
                 found = self.exploreFolder(folder_model.path, selected_item, folder_model.file_pattern, folder_model.folder_pattern)
