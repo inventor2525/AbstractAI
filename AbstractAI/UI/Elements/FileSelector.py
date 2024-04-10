@@ -6,9 +6,13 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTr
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt
 
-class FolderModel:
-    def __init__(self, path, file_pattern='', folder_pattern=''):
+class ItemModel:
+    def __init__(self, path):
         self.path = path
+
+class FolderModel(ItemModel):
+    def __init__(self, path, file_pattern='', folder_pattern=''):
+        super().__init__(path)
         self.file_pattern = file_pattern
         self.folder_pattern = folder_pattern
         
@@ -32,7 +36,7 @@ class FileFilterWidget(QWidget):
     def __init__(self, parent=None):
         super(FileFilterWidget, self).__init__(parent)
         self.layout = QVBoxLayout()
-        self.pattern_label = QLabel("Regex Pattern:")
+        self.pattern_label = QLabel("File Pattern:")
         self.pattern_line_edit = QLineEdit()
         self.folder_pattern_label = QLabel("Folder Pattern:")
         self.folder_pattern_line_edit = QLineEdit()
@@ -75,15 +79,34 @@ class FileSelectionWidget(QWidget):
         self.add_folder_button.clicked.connect(self.addFolders)
         self.tree_view.clicked.connect(self.itemSelected)
         self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
+        self._items = []
+
+    @property
+    def items(self):
+        return self._items
+
+    @items.setter
+    def items(self, items):
+        self._items = items
+        self.tree_view.model.clear()
+        self.tree_view.model.setHorizontalHeaderLabels(['Name'])
+        for item in self._items:
+            if isinstance(item, FolderModel):
+                self.tree_view.addItems([item.path], isFolder=True, folder_model=item)
+            else:
+                self.tree_view.addItems([item.path])
 
     def addFiles(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", "All Files (*)")
+        for file in files:
+            self._items.append(ItemModel(file))
         self.tree_view.addItems(files)
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
             folder_model = FolderModel(folder)
+            self._items.append(folder_model)
             self.tree_view.addItems([folder], isFolder=True, folder_model=folder_model)
 
     def itemSelected(self, index):
