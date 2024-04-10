@@ -1,8 +1,9 @@
 import os
 import re
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QPushButton, QTreeView, QFileSystemModel, QFileDialog, QLabel,
-                             QLineEdit, QStandardItemModel, QStandardItem)
+                             QPushButton, QTreeView, QFileDialog, QLabel,
+                             QLineEdit)
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt
 
 class FileFolderTreeView(QTreeView):
