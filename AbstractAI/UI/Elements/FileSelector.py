@@ -116,13 +116,16 @@ class FileSelectionWidget(QWidget):
             if os.path.isdir(full_path) and re.match(folder_pattern, entry):
                 folder_item = QStandardItem(entry)
                 folder_item.setToolTip(full_path)
-                folder_item.setFont(QFont("Arial", weight=QFont.Bold))
+                folder_item.setFont(QFont("Arial", italic=True))
+                folder_item.setForeground(Qt.darkBlue)
                 if self.exploreFolder(full_path, folder_item, file_pattern, folder_pattern):
                     parent_item.appendRow(folder_item)
                     found = True
             elif os.path.isfile(full_path) and re.match(file_pattern, entry):
                 file_item = QStandardItem(entry)
                 file_item.setToolTip(full_path)
+                file_item.setFont(QFont("Arial", italic=True))
+                file_item.setForeground(Qt.darkBlue)
                 parent_item.appendRow(file_item)
                 found = True
         return found
