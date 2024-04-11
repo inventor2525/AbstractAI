@@ -32,10 +32,17 @@ class ItemModel:
                 yield item.path
 
 class FolderModel(ItemModel):
-    def __init__(self, path, file_pattern='', folder_pattern=''):
+    def __init__(self, path, file_pattern='', folder_pattern='', extension_pattern):
         super().__init__(path)
         self.file_pattern = file_pattern
         self.folder_pattern = folder_pattern
+        self.extension_pattern = extension_pattern
+
+    @property
+    def allowed_extensions(self):
+        if self.extension_pattern:
+            return set(self.extension_pattern.replace(',', ' ').split())
+        return set()
         
 class FileFolderTreeView(QTreeView):
     def __init__(self, parent=None):
@@ -61,6 +68,8 @@ class FileFilterWidget(QWidget):
         self.pattern_line_edit = QLineEdit()
         self.folder_pattern_label = QLabel("Folder Pattern:")
         self.folder_pattern_line_edit = QLineEdit()
+        self.extension_label = QLabel("File Extensions:")
+        self.extension_line_edit = QLineEdit()
         self.refresh_button = QPushButton("Refresh")
         
         self.layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -68,6 +77,8 @@ class FileFilterWidget(QWidget):
         self.layout.addWidget(self.pattern_line_edit)
         self.layout.addWidget(self.folder_pattern_label)
         self.layout.addWidget(self.folder_pattern_line_edit)
+        self.layout.addWidget(self.extension_label)
+        self.layout.addWidget(self.extension_line_edit)
         self.layout.addWidget(self.refresh_button)
         self.setLayout(self.layout)
 
@@ -100,7 +111,8 @@ class FileSelectionWidget(QWidget):
         self.add_folder_button.clicked.connect(self.addFolders)
         self.file_filter_widget.pattern_line_edit.textEdited.connect(self.updateFolderPattern)
         self.file_filter_widget.folder_pattern_line_edit.textEdited.connect(self.updateFolderPattern)
-
+        self.file_filter_widget.extension_line_edit.textEdited.connect(self.updateFolderPattern)
+        
         self.tree_view.clicked.connect(self.itemSelected)
         self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
         self._items = []
@@ -121,7 +133,15 @@ class FileSelectionWidget(QWidget):
                 self.tree_view.addItems([item.path])
 
     def addFiles(self):
-        files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", "All Files (*)")
+        selected_indexes = self.tree_view.selectedIndexes()
+        filter_extensions = "All Files (*)"
+        if selected_indexes:
+            selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
+            folder_model = selected_item.data(Qt.UserRole)
+            if folder_model and folder_model.allowed_extensions:
+                extensions = " ".join(f"*.{ext}" for ext in folder_model.allowed_extensions)
+                filter_extensions = f"Files ({extensions});;All Files (*)"
+        files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", filter_extensions)
         for file in files:
             self._items.append(ItemModel(file))
         self.tree_view.addItems(files)
@@ -150,6 +170,7 @@ class FileSelectionWidget(QWidget):
             if folder_model:
                 self.file_filter_widget.pattern_line_edit.setText(folder_model.file_pattern)
                 self.file_filter_widget.folder_pattern_line_edit.setText(folder_model.folder_pattern)
+                self.file_filter_widget.extension_line_edit.setText(folder_model.extension_pattern)
         else:
             self.file_filter_widget.hide()
 
@@ -162,13 +183,14 @@ class FileSelectionWidget(QWidget):
                 selected_item.removeRows(0, selected_item.rowCount())
                 folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
                 folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
+                folder_model.extension_pattern = self.file_filter_widget.extension_line_edit.text()
                 found = self.exploreFolder(folder_model.path, selected_item, folder_model.file_pattern, folder_model.folder_pattern)
                 if not found:
                     parent = selected_item.parent()
                     if parent:
                         parent.removeRow(selected_item.row())
 
-    def exploreFolder(self, folder_path, parent_item, file_pattern, folder_pattern):
+    def exploreFolder(self, folder_path, parent_item, file_pattern, folder_pattern, allowed_extensions):
         found = False
         for entry in os.listdir(folder_path):
             full_path = os.path.join(folder_path, entry)
@@ -177,10 +199,12 @@ class FileSelectionWidget(QWidget):
                 folder_item.setToolTip(full_path)
                 folder_item.setFont(QFont("Arial", italic=True))
                 folder_item.setForeground(Qt.darkBlue)
-                if self.exploreFolder(full_path, folder_item, file_pattern, folder_pattern):
+                if self.exploreFolder(full_path, folder_item, file_pattern, folder_pattern, allowed_extensions):
                     parent_item.appendRow(folder_item)
                     found = True
             elif os.path.isfile(full_path) and re.match(file_pattern, entry):
+                if allowed_extensions and not any(full_path.endswith(f".{ext}") for ext in allowed_extensions):
+                    continue
                 file_item = QStandardItem(entry)
                 file_item.setToolTip(full_path)
                 file_item.setFont(QFont("Arial", italic=True))
