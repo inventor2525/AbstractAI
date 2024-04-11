@@ -12,27 +12,30 @@ class ItemModel:
     
     @staticmethod
     def iterate_files(items):
-        def explore_folder(folder_path, file_pattern='', folder_pattern=''):
+        def explore_folder(folder_path, file_pattern='', folder_pattern='', allowed_extensions=set()):
             try:
                 for entry in os.listdir(folder_path):
                     full_path = os.path.join(folder_path, entry)
                     if os.path.isdir(full_path):
                         if not folder_pattern or re.match(folder_pattern, entry):
-                            yield from explore_folder(full_path, file_pattern, folder_pattern)
+                            yield from explore_folder(full_path, file_pattern, folder_pattern, allowed_extensions)
                     elif os.path.isfile(full_path):
                         if not file_pattern or re.match(file_pattern, entry):
+                            extension = os.path.splitext(full_path)[1][1:]
+                            if allowed_extensions and extension not in allowed_extensions:
+                                continue
                             yield full_path
             except PermissionError:
                 pass
 
         for item in items:
             if isinstance(item, FolderModel):
-                yield from explore_folder(item.path, item.file_pattern, item.folder_pattern)
+                yield from explore_folder(item.path, item.file_pattern, item.folder_pattern, item.allowed_extensions)
             else:
                 yield item.path
 
 class FolderModel(ItemModel):
-    def __init__(self, path, file_pattern='', folder_pattern='', extension_pattern):
+    def __init__(self, path, file_pattern='', folder_pattern='', extension_pattern=''):
         super().__init__(path)
         self.file_pattern = file_pattern
         self.folder_pattern = folder_pattern
@@ -133,15 +136,7 @@ class FileSelectionWidget(QWidget):
                 self.tree_view.addItems([item.path])
 
     def addFiles(self):
-        selected_indexes = self.tree_view.selectedIndexes()
-        filter_extensions = "All Files (*)"
-        if selected_indexes:
-            selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
-            folder_model = selected_item.data(Qt.UserRole)
-            if folder_model and folder_model.allowed_extensions:
-                extensions = " ".join(f"*.{ext}" for ext in folder_model.allowed_extensions)
-                filter_extensions = f"Files ({extensions});;All Files (*)"
-        files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", filter_extensions)
+        files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", "All Files (*)")
         for file in files:
             self._items.append(ItemModel(file))
         self.tree_view.addItems(files)
@@ -161,6 +156,7 @@ class FileSelectionWidget(QWidget):
             if folder_model:
                 folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
                 folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
+                folder_model.extension_pattern = self.file_filter_widget.extension_line_edit.text()
                 
     def itemSelected(self, index):
         item = self.tree_view.model.itemFromIndex(index)
@@ -183,8 +179,7 @@ class FileSelectionWidget(QWidget):
                 selected_item.removeRows(0, selected_item.rowCount())
                 folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
                 folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
-                folder_model.extension_pattern = self.file_filter_widget.extension_line_edit.text()
-                found = self.exploreFolder(folder_model.path, selected_item, folder_model.file_pattern, folder_model.folder_pattern)
+                found = self.exploreFolder(folder_model.path, selected_item, folder_model.file_pattern, folder_model.folder_pattern, folder_model.allowed_extensions)
                 if not found:
                     parent = selected_item.parent()
                     if parent:
@@ -203,7 +198,8 @@ class FileSelectionWidget(QWidget):
                     parent_item.appendRow(folder_item)
                     found = True
             elif os.path.isfile(full_path) and re.match(file_pattern, entry):
-                if allowed_extensions and not any(full_path.endswith(f".{ext}") for ext in allowed_extensions):
+                extension = os.path.splitext(full_path)[1][1:]
+                if allowed_extensions and extension not in allowed_extensions:
                     continue
                 file_item = QStandardItem(entry)
                 file_item.setToolTip(full_path)
@@ -226,7 +222,9 @@ if __name__ == "__main__":
         for item in file_selector.items:
             print(item.path)
             if isinstance(item, FolderModel):
-                print(item.file_pattern, item.folder_pattern)
+                print(f"file_pattern: '{item.file_pattern}'")
+                print(f"folder_pattern: '{item.folder_pattern}'")
+                print(f"extension_pattern: '{item.extension_pattern}'")
             print()
     
     button = QPushButton("Print Items")
