@@ -98,6 +98,9 @@ class FileSelectionWidget(QWidget):
         
         self.add_file_button.clicked.connect(self.addFiles)
         self.add_folder_button.clicked.connect(self.addFolders)
+        self.file_filter_widget.pattern_line_edit.textEdited.connect(self.updateFolderPattern)
+        self.file_filter_widget.folder_pattern_line_edit.textEdited.connect(self.updateFolderPattern)
+
         self.tree_view.clicked.connect(self.itemSelected)
         self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
         self._items = []
@@ -129,7 +132,16 @@ class FileSelectionWidget(QWidget):
             folder_model = FolderModel(folder)
             self._items.append(folder_model)
             self.tree_view.addItems([folder], isFolder=True, folder_model=folder_model)
-
+    
+    def updateFolderPattern(self):
+        selected_indexes = self.tree_view.selectedIndexes()
+        if selected_indexes:
+            selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
+            folder_model = selected_item.data(Qt.UserRole)
+            if folder_model:
+                folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
+                folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
+                
     def itemSelected(self, index):
         item = self.tree_view.model.itemFromIndex(index)
         if item.font().weight() == QFont.Bold:
