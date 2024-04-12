@@ -4,24 +4,31 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTr
                              QFileDialog, QLabel, QLineEdit, QApplication, QSpacerItem,
                              QSizePolicy)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEvent, pyqtSignal
 from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemModel, FolderModel
 
 class FileFolderTreeView(QTreeView):
+    onSelectionChanged = pyqtSignal()
+    
     def __init__(self, parent=None):
         super(FileFolderTreeView, self).__init__(parent)
         self.model = QStandardItemModel()
         self.setModel(self.model)
         self.model.setHorizontalHeaderLabels(['Name'])
+        self.setSelectionMode(QTreeView.ExtendedSelection)
 
-    def addItems(self, paths, isFolder=False, folder_model=None):
+    def addItems(self, paths, isFolder=False, model=None):
         for path in paths:
             item = QStandardItem(os.path.basename(path))
             item.setToolTip(path)
             if isFolder:
                 item.setFont(QFont("Arial", weight=QFont.Bold))
-                item.setData(folder_model, Qt.UserRole)
+            item.setData(model, Qt.UserRole)
             self.model.appendRow(item)
+    
+    def selectionChanged(self, selected, deselected):
+        super(FileFolderTreeView, self).selectionChanged(selected, deselected)
+        self.onSelectionChanged.emit()
 
 class FileFilterWidget(QWidget):
     def __init__(self, parent=None):
@@ -76,9 +83,24 @@ class FileSelectionWidget(QWidget):
         self.file_filter_widget.folder_pattern_line_edit.textEdited.connect(self.updateFolderPattern)
         self.file_filter_widget.extension_line_edit.textEdited.connect(self.updateFolderPattern)
         
-        self.tree_view.clicked.connect(self.itemSelected)
+        self.tree_view.onSelectionChanged.connect(self.itemSelected)
         self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
         self._items = []
+        
+        self.tree_view.installEventFilter(self)
+
+    def eventFilter(self, source, event):
+        if (event.type() == QEvent.KeyPress and event.key() == Qt.Key_Delete
+                and source is self.tree_view):
+            # Delete Selected Items:
+            selected_indexes = self.tree_view.selectedIndexes()
+            for index in sorted(selected_indexes, key=lambda index: index.row(), reverse=True):
+                item = index.data(Qt.UserRole)
+                if item is not None:
+                    self._items = [i for i in self._items if i is not item]
+                    self.tree_view.model.removeRow(index.row())
+            return True
+        return super(FileSelectionWidget, self).eventFilter(source, event)
 
     @property
     def items(self):
@@ -91,22 +113,23 @@ class FileSelectionWidget(QWidget):
         self.tree_view.model.setHorizontalHeaderLabels(['Name'])
         for item in self._items:
             if isinstance(item, FolderModel):
-                self.tree_view.addItems([item.path], isFolder=True, folder_model=item)
+                self.tree_view.addItems([item.path], isFolder=True, model=item)
             else:
-                self.tree_view.addItems([item.path])
+                self.tree_view.addItems([item.path], model=item)
 
     def addFiles(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", "All Files (*)")
         for file in files:
-            self._items.append(ItemModel(file))
-        self.tree_view.addItems(files)
+            item = ItemModel(file)
+            self._items.append(item)
+            self.tree_view.addItems([file], model=item)
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
             folder_model = FolderModel(folder)
             self._items.append(folder_model)
-            self.tree_view.addItems([folder], isFolder=True, folder_model=folder_model)
+            self.tree_view.addItems([folder], isFolder=True, model=folder_model)
     
     def updateFolderPattern(self):
         selected_indexes = self.tree_view.selectedIndexes()
@@ -118,15 +141,22 @@ class FileSelectionWidget(QWidget):
                 folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
                 folder_model.extension_pattern = self.file_filter_widget.extension_line_edit.text()
                 
-    def itemSelected(self, index):
-        item = self.tree_view.model.itemFromIndex(index)
-        if item.font().weight() == QFont.Bold:
+    def itemSelected(self):
+        if len(self.tree_view.selectedIndexes()) != 1:
+            self.file_filter_widget.hide()
+            return
+        
+        index = self.tree_view.selectedIndexes()[0]
+        item = index.data(Qt.UserRole)
+        if item is None:
+            self.file_filter_widget.hide()
+            return
+        
+        if type(item) == FolderModel:
             self.file_filter_widget.show()
-            folder_model = item.data(Qt.UserRole)
-            if folder_model:
-                self.file_filter_widget.pattern_line_edit.setText(folder_model.file_pattern)
-                self.file_filter_widget.folder_pattern_line_edit.setText(folder_model.folder_pattern)
-                self.file_filter_widget.extension_line_edit.setText(folder_model.extension_pattern)
+            self.file_filter_widget.pattern_line_edit.setText(item.file_pattern)
+            self.file_filter_widget.folder_pattern_line_edit.setText(item.folder_pattern)
+            self.file_filter_widget.extension_line_edit.setText(item.extension_pattern)
         else:
             self.file_filter_widget.hide()
 
@@ -168,6 +198,11 @@ class FileSelectionWidget(QWidget):
                 parent_item.appendRow(file_item)
                 found = True
         return found
+    
+    def clear(self):
+        self.tree_view.model.clear()
+        self._items.clear()
+        self.tree_view.model.setHorizontalHeaderLabels(['Name'])
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
