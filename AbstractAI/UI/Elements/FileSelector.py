@@ -5,48 +5,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTr
                              QSizePolicy)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt
+from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemModel, FolderModel
 
-class ItemModel:
-    def __init__(self, path):
-        self.path = path
-    
-    @staticmethod
-    def iterate_files(items):
-        def explore_folder(folder_path, file_pattern='', folder_pattern='', allowed_extensions=set()):
-            try:
-                for entry in os.listdir(folder_path):
-                    full_path = os.path.join(folder_path, entry)
-                    if os.path.isdir(full_path):
-                        if not folder_pattern or re.match(folder_pattern, entry):
-                            yield from explore_folder(full_path, file_pattern, folder_pattern, allowed_extensions)
-                    elif os.path.isfile(full_path):
-                        if not file_pattern or re.match(file_pattern, entry):
-                            extension = os.path.splitext(full_path)[1][1:]
-                            if allowed_extensions and extension not in allowed_extensions:
-                                continue
-                            yield full_path
-            except PermissionError:
-                pass
-
-        for item in items:
-            if isinstance(item, FolderModel):
-                yield from explore_folder(item.path, item.file_pattern, item.folder_pattern, item.allowed_extensions)
-            else:
-                yield item.path
-
-class FolderModel(ItemModel):
-    def __init__(self, path, file_pattern='', folder_pattern='', extension_pattern=''):
-        super().__init__(path)
-        self.file_pattern = file_pattern
-        self.folder_pattern = folder_pattern
-        self.extension_pattern = extension_pattern
-
-    @property
-    def allowed_extensions(self):
-        if self.extension_pattern:
-            return set(self.extension_pattern.replace(',', ' ').split())
-        return set()
-        
 class FileFolderTreeView(QTreeView):
     def __init__(self, parent=None):
         super(FileFolderTreeView, self).__init__(parent)
