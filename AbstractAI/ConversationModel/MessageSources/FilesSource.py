@@ -5,8 +5,7 @@ import re
 
 @ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path"])
 class ItemModel:
-	def __init__(self, path):
-		self.path = path
+	path:str = field(default=None, kw_only=True)
 	
 	@staticmethod
 	def iterate_files(items:List['ItemModel']) -> Iterable[str]:
@@ -34,11 +33,9 @@ class ItemModel:
 
 @ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path", "file_pattern", "folder_pattern", "extension_pattern"])
 class FolderModel(ItemModel):
-	def __init__(self, path, file_pattern='', folder_pattern='', extension_pattern=''):
-		super().__init__(path)
-		self.file_pattern = file_pattern
-		self.folder_pattern = folder_pattern
-		self.extension_pattern = extension_pattern
+	file_pattern:str = field(default='', kw_only=True)
+	folder_pattern:str = field(default='', kw_only=True)
+	extension_pattern:str = field(default='', kw_only=True)
 
 	@property
 	def allowed_extensions(self):
