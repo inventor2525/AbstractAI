@@ -56,8 +56,14 @@ class FileSelectionWidget(QWidget):
     def __init__(self, parent=None):
         super(FileSelectionWidget, self).__init__(parent)
         self.layout = QHBoxLayout(self)
-
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.tree_view_and_buttons_widget = QWidget()
         self.tree_view_layout = QVBoxLayout()
+        self.tree_view_layout.setContentsMargins(0, 0, 0, 0)
+        self.tree_view_and_buttons_widget.setLayout(self.tree_view_layout)
+        self.layout.addWidget(self.tree_view_and_buttons_widget, 2)
+        
         self.tree_view = FileFolderTreeView()
         self.tree_view_layout.addWidget(self.tree_view)
 
@@ -67,8 +73,6 @@ class FileSelectionWidget(QWidget):
         self.buttons_layout.addWidget(self.add_file_button)
         self.buttons_layout.addWidget(self.add_folder_button)
         self.tree_view_layout.addLayout(self.buttons_layout)
-
-        self.layout.addLayout(self.tree_view_layout, 2)
 
         self.file_filter_widget = FileFilterWidget()
         self.layout.addWidget(self.file_filter_widget, 1)
@@ -87,6 +91,7 @@ class FileSelectionWidget(QWidget):
         self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
         self._items = []
         
+        self.tree_view_and_buttons_widget.setFixedHeight(self.file_filter_widget.sizeHint().height())
         self.tree_view.installEventFilter(self)
 
     def eventFilter(self, source, event):
@@ -120,14 +125,14 @@ class FileSelectionWidget(QWidget):
     def addFiles(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Select Files", "", "All Files (*)")
         for file in files:
-            item = ItemModel(file)
+            item = ItemModel(path=file)
             self._items.append(item)
             self.tree_view.addItems([file], model=item)
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
-            folder_model = FolderModel(folder)
+            folder_model = FolderModel(path=folder)
             self._items.append(folder_model)
             self.tree_view.addItems([folder], isFolder=True, model=folder_model)
     
