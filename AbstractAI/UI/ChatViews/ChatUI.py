@@ -4,9 +4,11 @@ from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.ConversationModel import *
+from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemsModel
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from PyQt5.QtCore import QTimer
+from copy import deepcopy
 
 class ChatUI(QWidget):
 	user_added_message = pyqtSignal(Conversation)
@@ -159,13 +161,18 @@ class ChatUI(QWidget):
 		if selected_role == "Assistant":
 			new_message.source = ModelSource(self.role_source_map[selected_role], self.conversation.message_sequence)
 		elif selected_role == "Files":
-			new_message.source = FilesSource()
+			items = ItemsModel(items=deepcopy(self.file_selector.items))
+			items.new_id()
+			new_message.source = FilesSource(items=items)
+			new_message.content = new_message.source.load()
 		else:
 			new_message.source = self.role_source_map[selected_role]
 		
 		self.conversation.add_message(new_message)
 		
-		self.input_field.clear()
+		if selected_role is not "Files":
+			self.input_field.clear()
+		
 		if self.respond_on_send_toggle.isChecked():
 			self.change_to_stop()
 			self.user_added_message.emit(self.conversation)

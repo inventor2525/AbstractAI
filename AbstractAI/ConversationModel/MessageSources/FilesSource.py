@@ -77,7 +77,7 @@ class FilesSource(UserSource):
 			"sh": "bash",
 			"bat": "batch",
 		}
-		for path in ItemModel.iterate_files(self.items):
+		for path in ItemModel.iterate_files(self.items.items):
 			new_content.append(path)
 			extension = os.path.splitext(path)[1][1:]
 			markdown = extension_md_map.get(extension, 'text')
