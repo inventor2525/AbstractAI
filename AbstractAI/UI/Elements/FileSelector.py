@@ -93,6 +93,7 @@ class FileSelectionWidget(QWidget):
         
         self.tree_view_and_buttons_widget.setFixedHeight(self.file_filter_widget.sizeHint().height())
         self.tree_view.installEventFilter(self)
+        self.setFixedHeight(self.file_filter_widget.sizeHint().height())
 
     def eventFilter(self, source, event):
         if (event.type() == QEvent.KeyPress and event.key() == Qt.Key_Delete
