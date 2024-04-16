@@ -95,3 +95,15 @@ class Conversation:
 				self._all_message_sequences = [self.message_sequence]
 			else:
 				self._all_message_sequences = []
+	
+	def __iter__(self):
+		return iter(self.message_sequence)
+	
+	def __getitem__(self, index):
+		return self.message_sequence[index]
+	
+	def __len__(self):
+		return len(self.message_sequence)
+	
+	def __contains__(self, message):
+		return message in self.message_sequence

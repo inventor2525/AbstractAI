@@ -1,5 +1,5 @@
 from AbstractAI.UI.Support._CommonImports import *
-from AbstractAI.UI.Context import Context
+from AbstractAI.UI.Context import Context, UserSource, Conversation, Message, ModelSource
 from enum import Enum
 
 class ConversationAction(Enum):
@@ -96,16 +96,6 @@ class ConversationActionControl(QWidget):
 		btn.action = action
 	
 	def _update_mode(self):
-		class ConversationAction(Enum):
-			Add = "Add" # Adds the message in the text edit to the conversation (saving it to the db) and clears the text edit
-			Send = "Send" # Same as Add but also sends the conversation to the AI
-			Continue = "Continue" # Continues the AI's response from it's last message
-			Reply = "Reply" # Replies to the last message in the conversation (this is useful when you manually build out a conversation and want the AI to respond to the last message you added)
-			Insert = "Insert" # Inserts the message in the text edit above the selected message in the conversation view
-			DoIt = "DoIt" # Sends the conversation to an instruction following agent
-			Demo = "Demo" # Allows the user to demonstrate to the instruction following agent how to perform the instructions in the conversation
-			Stop = "Stop" # Stops the AI from generating a response
-		
 		if self.model_generating:
 			self.set_btn_mode(self.left_button, None)
 			self.set_btn_mode(self.right_button, ConversationAction.Stop)
@@ -113,7 +103,7 @@ class ConversationActionControl(QWidget):
 		
 		def get_demo_do_it() -> Tuple[ConversationAction, bool]:
 			if self.should_auto_respond:
-				conversation_empty = Context.conversation is None or len(Context.conversation.message_sequence.messages) == 0
+				conversation_empty = Context.conversation is None or len(Context.conversation) == 0
 				return ConversationAction.DoIt, self.has_instruction_agent and not conversation_empty
 			else:
 				return ConversationAction.Demo, True
@@ -124,7 +114,13 @@ class ConversationActionControl(QWidget):
 		else:
 			if self.should_auto_respond and self.has_model:
 				self.set_btn_mode(self.left_button, *get_demo_do_it())
-				self.set_btn_mode(self.right_button, ConversationAction.Send)
+				if self.text_edit_has_text:
+					self.set_btn_mode(self.right_button, ConversationAction.Send)
+				else:
+					if isinstance(Context.conversation[-1].source, ModelSource):
+						self.set_btn_mode(self.right_button, ConversationAction.Continue)
+					else:
+						self.set_btn_mode(self.right_button, ConversationAction.Reply)
 			else:
 				self.set_btn_mode(self.left_button, *get_demo_do_it())
 				self.set_btn_mode(self.right_button, ConversationAction.Add)
