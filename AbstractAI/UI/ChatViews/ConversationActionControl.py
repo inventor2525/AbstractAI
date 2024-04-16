@@ -124,3 +124,9 @@ class ConversationActionControl(QWidget):
 			else:
 				self.set_btn_mode(self.left_button, *get_demo_do_it())
 				self.set_btn_mode(self.right_button, ConversationAction.Add)
+	
+	def onLeftButtonClicked(self):
+		self.perform_action.emit(self.left_button.action)
+	
+	def onRightButtonClicked(self):
+		self.perform_action.emit(self.right_button.action)
