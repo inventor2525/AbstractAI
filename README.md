@@ -53,9 +53,9 @@ It will be more!
 
 This was grown with the intent to do LLM control of a terminal, including the ability of an AI to code a whole project 'given a single prompt' like we now see projects springing up for seemingly every day (even if that is kinda a pipe dream at first).
 
-I started working on this in early 2023 shortly after ChatGPT came out after experimenting with it's understanding of bash scripts, all other languages, and it's ability to write patch files. I wanted to provide an interface for it to do those things on it's own to avoid the back and forth copy paste that ChatGPT turned development into.
+I started working on this in early 2023 under the name [ModelProgrammer](https://github.com/inventor2525/ModelProgrammer) shortly after ChatGPT came out after experimenting with it's understanding of bash scripts, all other languages, and it's ability to write patch files. I wanted to provide an interface for it to do those things on it's own to avoid the back and forth copy paste that ChatGPT turned development into. Shortly after I moved to AbstractAI to encompass multi modality and work more with open models.
 
-During that initial exploration I came to the conclusion that no such coding assistant or general personal assistant was going to work well unless task performing training data could be collected directly from the person interested in the task.
+During that initial exploration though (GPT3.5 days) I came to the conclusion that no such coding assistant or general personal assistant was going to work well unless task performing training data could be collected directly from the person interested in the task.
 
 Current models are NOT trained to work through a development process, or add and remove code. They see diffs online, but they do not see the character stream that made those diffs.
 
