@@ -2,9 +2,10 @@ from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView import *
 from PyQt5.QtGui import QWheelEvent
-
+from typing import Iterator
 class ConversationView(QListWidget):
 	message_changed = pyqtSignal(Message)
+	selection_changed = pyqtSignal()
 	
 	regenerate_message = pyqtSignal(ModelSource)
 	
@@ -46,18 +47,23 @@ class ConversationView(QListWidget):
 		self.currentItemChanged.connect(self.update_selection)
 		
 		self.conversation = conversation
+		self.selected_messages:List[int] = []
 	
 	def update_selection(self):
+		self.selected_messages = []
 		for index in range(self.count()):
 			item = self.item(index)
 			message_view = self.itemWidget(item)
 			if message_view is not None:
+				if item.isSelected():
+					self.selected_messages.append(index)
 				message_view.set_selected(item.isSelected())
 				if item is not self.currentItem():
 					message_view.text_edit.clearFocus()
 					message_view.text_edit.clearSelection()
 		if len(self.selectedItems()) > 1:
 			self.setFocus()
+		self.selection_changed.emit()
 	
 	def clearSelection(self) -> None:
 		item = self.currentItem()
@@ -65,6 +71,9 @@ class ConversationView(QListWidget):
 			message_view = self.itemWidget(item)
 			message_view.text_edit.clearFocus()
 			message_view.text_edit.clearSelection()
+			
+		self.selected_messages = []
+		self.selection_changed.emit()
 		return super().clearSelection()
 	
 	def wheelEvent(self, event):

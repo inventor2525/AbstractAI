@@ -14,12 +14,24 @@ class MessageSequence:
 		if self.conversation is not None:
 			self.conversation.message_added(message)
 			self.conversation.conversation_changed()
+	
+	def insert_message(self, message: Message, index:int):
+		message.conversation = self.conversation
 		
-	def remove_message(self, message: Message):
-		self.messages.remove(message)
+		if index > 0:
+			message.prev_message = self.messages[index-1]
+		self.messages.insert(index, message)
 		self.new_id()
 		
 		if self.conversation is not None:
+			self.conversation.message_added(message)
+			self.conversation.conversation_changed()
+	
+	def remove_message(self, message: Message, silent:bool=False):
+		self.messages.remove(message)
+		self.new_id()
+		
+		if not silent and self.conversation is not None:
 			self.conversation.message_removed(message)
 			self.conversation.conversation_changed()
 	
