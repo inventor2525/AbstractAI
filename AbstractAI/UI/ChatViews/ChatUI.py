@@ -1,6 +1,7 @@
 from AbstractAI.UI.Elements.TextEdit import TextEdit
 from AbstractAI.UI.ChatViews.ConversationView import ConversationView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
+from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationActionControl, ConversationAction
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.ConversationModel import *
@@ -8,7 +9,7 @@ from AbstractAI.Helpers.log_caller_info import log_caller_info
 from PyQt5.QtCore import QTimer
 
 class ChatUI(QWidget):
-	user_added_message = pyqtSignal(Conversation)
+	respond_to_conversation = pyqtSignal(Conversation)
 	stop_generating = pyqtSignal()
 	
 	@property
@@ -19,7 +20,7 @@ class ChatUI(QWidget):
 		self.conversation_view.conversation = value
 	
 	@property
-	def message_prefix(self) -> str:
+	def start_str(self) -> str:
 		return self.message_prefix_field.toPlainText()
 	
 	@property
@@ -96,20 +97,15 @@ class ChatUI(QWidget):
 		# Create a text box to type the message:
 		self.input_field = TextEdit("New Message Input Field", auto_save=True)
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
-		self.input_field.textChanged.connect(lambda: self.adjust_text_field_size(self.input_field))
+		def input_field_changed():
+			self.adjust_text_field_size(self.input_field)
+			Context.new_message_has_text = bool(self.input_field.toPlainText())
+			Context.context_changed()
+		self.input_field.textChanged.connect(input_field_changed)
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_field.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 		self.input_field.setFocus()
-		
-		# Create a button to toggle whether the chat should be processed by the model on send:
-		self.respond_on_send_toggle = QToolButton()
-		self.respond_on_send_toggle.setCheckable(True)
-		self.respond_on_send_toggle.setChecked(True)
-		self.respond_on_send_toggle.setText("Auto Respond")
-		self.respond_on_send_toggle.setToolTip("Automatically respond to this message")
-		self.respond_on_send_toggle.clicked.connect(lambda: self.update_send_button_text())
-		self.input_layout.addWidget(self.respond_on_send_toggle, alignment=Qt.AlignBottom)
 		
 		# Create a button to toggle the advanced controls:
 		self.advanced_controls_toggle = QToolButton()
@@ -125,21 +121,17 @@ class ChatUI(QWidget):
 		self.input_layout.addWidget(self.advanced_controls_toggle, alignment=Qt.AlignBottom)
 		toggle_advanced_controls()
 		
-		# Create a button to send the message:
-		# This is a multi-use button that can be used to send a message, 
-		# add it, or stop the generation of a message:
-		self.send_button = QPushButton('Send Msg')
-		self.send_button.clicked.connect(self.send_message)
-		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
+		self.action_control = ConversationActionControl()
+		self.action_control.perform_action.connect(self.on_action)
+		self.input_layout.addWidget(self.action_control, alignment=Qt.AlignBottom)
 		
 		# Adjust the size of the bottom row to fit the input field:
 		self.adjust_text_field_size(self.input_field)
 		self.advanced_controls_toggle.setFixedHeight(self.input_field.height())
-		self.respond_on_send_toggle.setFixedHeight(self.input_field.height())
-		self.send_button.setFixedHeight(self.input_field.height())
+		self.action_control.setFixedHeight(self.input_field.height())
 		self.role_combobox.setFixedHeight(self.input_field.height())
-		
-	def send_message(self):
+	
+	def _create_message(self) -> Message:
 		selected_role = self.role_combobox.currentText()
 		
 		new_message = Message(self.input_field.toPlainText())
@@ -147,40 +139,41 @@ class ChatUI(QWidget):
 			new_message.source = ModelSource(self.role_source_map[selected_role], self.conversation.message_sequence)
 		else:
 			new_message.source = self.role_source_map[selected_role]
-		
-		self.conversation.add_message(new_message)
-		
-		self.input_field.clear()
-		if self.respond_on_send_toggle.isChecked():
-			self.change_to_stop()
-			self.user_added_message.emit(self.conversation)
+		return new_message
 	
-	def update_send_button_text(self):
-		if self.respond_on_send_toggle.isChecked():
-			self.send_button.setText("Send Msg")
-		else:
-			self.send_button.setText("Add Msg")
+	def _add_message(self):
+		new_message = self._create_message()
+		self.conversation.add_message(new_message)
+		self.input_field.clear()
+	
+	def on_action(self, action:ConversationAction):
+		if action == ConversationAction.Add:
+			self._add_message()
+		elif action == ConversationAction.Insert:
+			new_message = self._create_message()
+			self.conversation.insert_message(new_message)
+			self.input_field.clear()
 			
-	def change_to_stop(self):
-		try:
-			self.send_button.clicked.disconnect(self.send_message)
-			self.send_button.clicked.connect(self._stop_generating)
-		except:
-			pass
-		self.send_button.setText("Stop!")
-		
-	def change_to_send(self):
-		try:
-			self.send_button.clicked.disconnect(self._stop_generating)
-			self.send_button.clicked.connect(self.send_message)
-		except:
-			pass
-		self.update_send_button_text()
-		
-	def _stop_generating(self):
-		self.stop_generating.emit()
-		self.change_to_send()
-		
+		elif action == ConversationAction.Send:
+			Context.start_str = self.start_str
+			self._add_message()
+			self.respond_to_conversation.emit(self.conversation)
+		elif action == ConversationAction.Reply:
+			Context.start_str = self.start_str
+			self.respond_to_conversation.emit(self.conversation)
+		elif action == ConversationAction.Continue:
+			Context.start_str = self.conversation[-1].content
+			self.conversation.remove_message(self.conversation[-1], silent=True)
+			self.respond_to_conversation.emit(self.conversation)
+			
+		elif action == ConversationAction.Stop:
+			self.stop_generating.emit()
+			
+		elif action == ConversationAction.Demo:
+			raise NotImplementedError("Demo not implemented")
+		elif action == ConversationAction.DoIt:
+			raise NotImplementedError("DoIt not implemented")
+	
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:
 			self.send_button.click()

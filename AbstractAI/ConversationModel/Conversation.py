@@ -42,9 +42,13 @@ class Conversation:
 		self.new_message_sequence()
 		self.message_sequence.add_message(message)
 	
-	def remove_message(self, message:Message):
+	def insert_message(self, message:Message, index:int):
 		self.new_message_sequence()
-		self.message_sequence.remove_message(message)
+		self.message_sequence.insert_message(message, index)
+		
+	def remove_message(self, message:Message, silent=False):
+		self.new_message_sequence()
+		self.message_sequence.remove_message(message, silent)
 	
 	def remove_messages(self, messages:List[Message]):
 		self.new_message_sequence()

@@ -34,7 +34,7 @@ class ConversationListView(QListWidget):
 	def __init__(self, conversations: ConversationCollection):
 		super().__init__()
 		self._redrawing = False
-		def conversation_selected():
+		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
 			if self._redrawing:
 				return
 			self.set_selected(Context.conversation)
@@ -98,6 +98,7 @@ class ConversationListView(QListWidget):
 		self._redrawing = True
 		for item in self.selectedItems():
 			Context.conversation = self.conversations.load_completely(item.conversation)
+			Context.context_changed()
 			break
 		self._redrawing = False
 	
