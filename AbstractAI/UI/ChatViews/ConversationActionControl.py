@@ -53,16 +53,17 @@ class ConversationActionControl(QWidget):
 		
 		#Context Views:
 		self.has_instruction_agent = False
-		self.messages_selected = []
+		self.selected_messages = []
 		
 		def conversation_changed():
-			self._update_mode()
+			self.update_mode()
 		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
 			if prev_conversation is not None:
 				prev_conversation.conversation_changed.disconnect(conversation_changed)
 			new_conversation.conversation_changed.connect(conversation_changed)
+			self.selected_messages = []
 		Context.conversation_selected.connect(conversation_selected)
-		Context.context_changed.connect(self._update_mode)
+		Context.context_changed.connect(self.update_mode)
 		
 		self._init_ui()
 		
@@ -91,7 +92,7 @@ class ConversationActionControl(QWidget):
 		self.layout.addWidget(self.right_button, alignment=Qt.AlignBottom)
 	
 	def _on_auto_respond_toggle(self):
-		self._update_mode()
+		self.update_mode()
 	
 	def set_btn_mode(self, btn:QPushButton, action:ConversationAction, enabled:bool=True):
 		if action is None:
@@ -115,7 +116,7 @@ class ConversationActionControl(QWidget):
 		btn.action = action
 	
 	@run_in_main_thread
-	def _update_mode(self):
+	def update_mode(self):
 		if Context.llm_generating:
 			self.set_btn_mode(self.left_button, None)
 			self.set_btn_mode(self.right_button, ConversationAction.Stop)
@@ -128,7 +129,7 @@ class ConversationActionControl(QWidget):
 			else:
 				return ConversationAction.Demo, False#True
 		
-		if len(self.messages_selected) == 1:
+		if len(self.selected_messages) == 1:
 			self.set_btn_mode(self.left_button, *get_demo_do_it())
 			self.set_btn_mode(self.right_button, ConversationAction.Insert)
 		else:

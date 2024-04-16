@@ -123,6 +123,10 @@ class ChatUI(QWidget):
 		
 		self.action_control = ConversationActionControl()
 		self.action_control.perform_action.connect(self.on_action)
+		def selection_changed():
+			self.action_control.selected_messages = self.conversation_view.selected_messages
+			self.action_control.update_mode()
+		self.conversation_view.selection_changed.connect(selection_changed)
 		self.input_layout.addWidget(self.action_control, alignment=Qt.AlignBottom)
 		
 		# Adjust the size of the bottom row to fit the input field:
@@ -151,7 +155,7 @@ class ChatUI(QWidget):
 			self._add_message()
 		elif action == ConversationAction.Insert:
 			new_message = self._create_message()
-			self.conversation.insert_message(new_message)
+			self.conversation.insert_message(new_message, self.conversation_view.selected_messages[0])
 			self.input_field.clear()
 			
 		elif action == ConversationAction.Send:
