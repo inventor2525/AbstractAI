@@ -37,13 +37,13 @@ class ConversationActionControl(QWidget):
 		ConversationAction.Reply: "Replies to the last message in the conversation (this is useful when you manually build out a conversation and want the AI to respond to the last message you added).",
 		ConversationAction.Insert: "Inserts the message in the text edit above the selected message in the conversation view.",
 		ConversationAction.DoIt: "Sends the conversation to an instruction following agent.",
-		ConversationAction.Demo: "Allows the user to demonstrate to the instruction following agent how to perform the instructions in the conversation.",
+		ConversationAction.Demo: "Allows you to demonstrate to the instruction following agent how to perform the instructions in the conversation.",
 		ConversationAction.Stop: "Stops the AI from generating a response."
 	},
 	instruction_tooltips:Dict[ConversationAction, str] = {
 		ConversationAction.DoIt: "You need to load an instruction following agent and make sure there is some conversation (presumably containing instructions) loaded to use this feature which is currently not implemented.",
 		ConversationAction.Send: "You need to load a model and type something in the new message text box to use this feature. You can load a model by selecting one from the dropdown in the top left of the chat view.",
-		ConversationAction.Continue: "You need to load a model and make sure there is a message with a model source at the end of the conversation to use this feature. You can load a model by selecting one from the dropdown in the top left of the chat view.",
+		ConversationAction.Continue: "You need to load a model capable of accepting a start of message (usually, this is only open weight models run locally) and make sure there is a message with a model source at the end of the conversation to use this feature. You can load a model by selecting one from the dropdown in the top left of the chat view.",
 		ConversationAction.Reply: "You need to load a model and make sure there is a message with a user source at the end of the conversation to use this feature. You can load a model by selecting one from the dropdown in the top left of the chat view."
 	}):
 		super().__init__()
