@@ -46,3 +46,9 @@ Transcribes incrementally as the user speaks, using a small local model to provi
 cd <path to AbstractAI>
 python AbstractAI/examples/record_keys2.py
 ```
+
+
+# Why another chat app?
+It will be more!
+
+See [why?](Why.md)

@@ -8,9 +8,13 @@ from AbstractAI.Helpers.Signal import Signal
 class Context:
 	settings: QSettings = None
 	model_loader: ModelLoader = None
-	llm_loaded: bool = False
+	start_str: str = ""
 	
-	conversation_selected:Signal[[],None] = Signal.field()
+	llm_loaded: bool = False
+	llm_generating: bool = False
+	new_message_has_text: bool = False
+	
+	conversation_selected:Signal[[Conversation, Conversation],None] = Signal.field()
 	context_changed:Signal[[],None] = Signal.field()
 	
 	@staticmethod
@@ -24,10 +28,10 @@ class Context:
 		return getattr(self, "_conversation", None)
 	@conversation.setter
 	def conversation(self, value:Conversation):
-		old_conversation = self.conversation
-		self._conversation = value
-		if old_conversation != value:
-			self.conversation_selected()
+		if self.conversation != value:
+			prev_conversation = self.conversation
+			self._conversation = value
+			self.conversation_selected(prev_conversation, value)
 		
 	def __post_init__(self):
 		Context.singleton = self

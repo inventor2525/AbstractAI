@@ -43,8 +43,6 @@ class Application(QMainWindow):
 	@llm.setter
 	def llm(self, value:LLM):
 		self._llm = value
-		self.chatUI.send_button.setEnabled(value is not None)
-		
 		Context.llm_loaded = value is not None
 		Context.context_changed()
 		
@@ -72,12 +70,13 @@ class Application(QMainWindow):
 		self.filter_timmer.start()
 		
 		self.init_ui()
-		def conversation_selected():
-			self.name_field.setText(Context.conversation.name)
-			self.description_field.setText(Context.conversation.description)
-			self.chatUI.conversation = Context.conversation
+		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
+			self.name_field.setText(new_conversation.name)
+			self.description_field.setText(new_conversation.description)
+			self.chatUI.conversation = new_conversation
 		Context.conversation_selected.connect(conversation_selected)
 		Context.conversation = self.new_conversation()
+		Context.context_changed()
 		
 		self.read_settings()
 		
@@ -176,7 +175,8 @@ class Application(QMainWindow):
 		
 		self.chatUI = ChatUI()
 		self.right_panel.addWidget(self.chatUI)
-		self.chatUI.user_added_message.connect(self.generate_ai_response)
+		self.chatUI.respond_to_conversation.connect(self.generate_ai_response)
+		self.chatUI.stop_generating.connect(self.stop_generating)
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
 		
 		w = QWidget()
@@ -195,6 +195,7 @@ class Application(QMainWindow):
 		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 		self.conversations.append(conv)
 		Context.conversation = conv
+		Context.context_changed()
 		return conv
 	
 	def _name_description_confirm(self):
@@ -245,12 +246,16 @@ class Application(QMainWindow):
 		self.write_settings()
 		super().closeEvent(event)
 	
-	def generate_ai_response(self, conversation:Conversation):		
+	def stop_generating(self):
+		self._should_generate = False
+		
+	def generate_ai_response(self, conversation:Conversation):
+		Context.llm_generating = True
+		Context.context_changed()
+		
 		self._should_generate = True
-		start_str = self.chatUI.message_prefix
+		start_str = Context.start_str
 		max_tokens = self.chatUI.max_tokens
-		def stop_generating():
-			self._should_generate = False
 			
 		def chat():
 			print(f"chat:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
@@ -266,23 +271,20 @@ class Application(QMainWindow):
 			print(f"generate more DONE:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			print(f"AI said: {response.message.content}")
 			return response.message
-			
+		
 		self.task = BackgroundTask(chat)
 		
 		def finished():
-			self.chatUI.change_to_send()
-			self.chatUI.stop_generating.disconnect(stop_generating)
-			
-		self.task.started.connect(lambda:self.chatUI.stop_generating.connect(stop_generating))
+			Context.llm_generating = False
+			Context.context_changed()
+		
 		self.task.finished.connect(finished)
 		self.task.start()
-		
-		self.chatUI.conversation_view.scrollToBottom()
 	
 	def regenerate(self, message_source:ModelSource):
 		if self.llm is None:
 			return
-		self.chatUI.change_to_stop()
+				
 		conv = self.chatUI.conversation_view.conversation
 		self.chatUI.conversation_view.conversation = None
 		
