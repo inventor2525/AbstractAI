@@ -5,10 +5,13 @@ from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView_extras.MessageSourceView import MessageSourceView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet
+from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 from AbstractAI.UI.Context import Context
 from datetime import datetime
+from copy import deepcopy
+
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
 	def __init__(self, parent, message: Message):
@@ -123,7 +126,11 @@ class MessageView(BaseMessageView):
 		self.text_edit.textChanged.connect(self.update_text_edit_height)
 		self.text_edit.selectionChanged.connect(lambda:self.message_selected.emit(self._message))
 		self.layout.addWidget(self.text_edit)
-
+		
+		# File selector (A replacement to the message text box when the message is a group of files)
+		self.file_selector = FileSelectionWidget()
+		self.layout.addWidget(self.file_selector)
+		
 		# Vertical panel (right side of message)
 		self.panel_layout = QVBoxLayout()
 		self.panel_layout.setAlignment(Qt.AlignTop)
@@ -276,7 +283,14 @@ class MessageView(BaseMessageView):
 		
 		self.message_source_view.message_source = value.source
 		
-		self.text_edit.setPlainText(value.content)
+		if isinstance(value.source, FilesSource):
+			self.text_edit.setVisible(False)
+			self.file_selector.setVisible(True)
+			self.file_selector.items = deepcopy(value.source.items.items)
+		else:
+			self.text_edit.setVisible(True)
+			self.file_selector.setVisible(False)
+			self.text_edit.setPlainText(value.content)
 		self._update_can_edit()
 
 		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
