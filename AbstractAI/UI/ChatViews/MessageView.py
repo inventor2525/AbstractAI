@@ -287,6 +287,7 @@ class MessageView(BaseMessageView):
 			self.text_edit.setVisible(False)
 			self.file_selector.setVisible(True)
 			self.file_selector.items = deepcopy(value.source.items.items)
+			self.file_selector.refresh()
 		else:
 			self.text_edit.setVisible(True)
 			self.file_selector.setVisible(False)

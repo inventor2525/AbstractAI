@@ -88,7 +88,7 @@ class FileSelectionWidget(QWidget):
         self.file_filter_widget.extension_line_edit.textEdited.connect(self.updateFolderPattern)
         
         self.tree_view.onSelectionChanged.connect(self.itemSelected)
-        self.file_filter_widget.refresh_button.clicked.connect(self.refreshFolder)
+        self.file_filter_widget.refresh_button.clicked.connect(self.refresh)
         self._items = []
         
         self.tree_view_and_buttons_widget.setFixedHeight(self.file_filter_widget.sizeHint().height())
@@ -166,10 +166,9 @@ class FileSelectionWidget(QWidget):
         else:
             self.file_filter_widget.hide()
 
-    def refreshFolder(self):
-        selected_indexes = self.tree_view.selectedIndexes()
-        if selected_indexes:
-            selected_item = self.tree_view.model.itemFromIndex(selected_indexes[0])
+    def refresh(self):
+        for index in range(self.tree_view.model.rowCount()):
+            selected_item = self.tree_view.model.item(index)
             folder_model = selected_item.data(Qt.UserRole)
             if folder_model and os.path.isdir(folder_model.path):
                 selected_item.removeRows(0, selected_item.rowCount())
