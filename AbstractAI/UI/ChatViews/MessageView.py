@@ -147,6 +147,12 @@ class MessageView(BaseMessageView):
 		self.confirm_btn.clicked.connect(self.confirm_changes)
 		self.confirm_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.confirm_btn, alignment=Qt.AlignTop)
+		
+		# Confirm button (checkmark -- top right of message)
+		self.reload_btn = QPushButton(QIcon.fromTheme("view-refresh"), "")
+		self.reload_btn.clicked.connect(self.reload_files_message)
+		self.reload_btn.setFixedWidth(25)
+		self.panel_layout.addWidget(self.reload_btn, alignment=Qt.AlignTop)
 
 		# Expand message view button (rotating arrow -- top right of message)
 		self.expand_btn = QToolButton()
@@ -258,6 +264,20 @@ class MessageView(BaseMessageView):
 			self.message = self.message.create_edited(self.text_edit.toPlainText())
 			self.message_changed.emit(self.message)
 	
+	def reload_files_message(self):
+		source = self.message.source
+		if isinstance(source, EditSource):
+			source = EditSource.most_original(self.message.source).source
+		if not isinstance(source, FilesSource):
+			return
+		
+		items = ItemsModel(items=deepcopy(self.file_selector.items))
+		items.new_id()
+		new_source = FilesSource(items=items)
+		new_content = new_source.load()
+		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
+		self.message_changed.emit(self.message)
+		
 	def _origional_source(self, source:MessageSource):
 		if isinstance(source, EditSource):
 			source = EditSource.most_original(source).source
@@ -283,10 +303,17 @@ class MessageView(BaseMessageView):
 		
 		self.message_source_view.message_source = value.source
 		
-		if isinstance(value.source, FilesSource):
+		most_original = value.source
+		edit_sources_source = value.source
+		if value.source is not None:
+			if isinstance(most_original, EditSource):
+				most_original = EditSource.most_original(most_original).source
+				edit_sources_source = value.source.source_of_edit
+				
+		if isinstance(most_original, FilesSource):
 			self.text_edit.setVisible(False)
 			self.file_selector.setVisible(True)
-			self.file_selector.items = deepcopy(value.source.items.items)
+			self.file_selector.items = deepcopy(edit_sources_source.items.items)
 			self.file_selector.refresh()
 		else:
 			self.text_edit.setVisible(True)
@@ -298,11 +325,8 @@ class MessageView(BaseMessageView):
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		
-		if self.message.source is not None:
-			most_origional = self.message.source
-			if isinstance(most_origional, EditSource):
-				most_origional = EditSource.most_original(most_origional).source
-			self.regenerate_button.setVisible(isinstance(most_origional, ModelSource))
+		self.regenerate_button.setVisible(isinstance(most_original, ModelSource))
+		self.reload_btn.setVisible(isinstance(most_original, FilesSource))
 		
 		self._compute_alternates()
 		self.update_text_edit_height()
