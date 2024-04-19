@@ -24,12 +24,10 @@ class SettingsWindow(QWidget):
 		self.treeView.setModel(self.treeModel)
 		mainLayout.addWidget(self.treeView, 1)
 
-		self.settingsArea = QWidget()
-		settingsLayout = QVBoxLayout()
 		self.formLayout = QFormLayout()
-		settingsLayout.addLayout(self.formLayout)
-		self.settingsArea.setLayout(settingsLayout)
-		mainLayout.addWidget(self.settingsArea, 2)
+		self.formWidget = QWidget()
+		self.formWidget.setLayout(self.formLayout)
+		mainLayout.addWidget(self.formWidget, 2)
 
 		self.saveButton = QPushButton("Save")
 		self.saveButton.clicked.connect(self.saveSettings)
@@ -62,8 +60,10 @@ class SettingsWindow(QWidget):
 		return item
 
 	def displayModel(self, selected, deselected):
-		self.formLayout.setParent(None)
-		self.formLayout = QFormLayout()
+		while self.formLayout.count():
+			child = self.formLayout.takeAt(0)
+			if child.widget():
+				child.widget().deleteLater()
 		index = self.treeView.selectionModel().selectedIndexes()[0]
 		item = self.treeModel.itemFromIndex(index)
 		model = item.model
@@ -82,6 +82,7 @@ class SettingsWindow(QWidget):
 				self.formLayout.addRow(QLabel(field[0]), widget)
 		else:
 			self.formLayout = QFormLayout()
+			self.formWidget.setLayout(self.formLayout)
 
 	def saveSettings(self):
 		self.settingsSaved.emit()
