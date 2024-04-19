@@ -78,13 +78,24 @@ class FilesSource(UserSource):
 			"bat": "batch",
 		}
 		for path in ItemModel.iterate_files(self.items.items):
-			new_content.append(path)
 			extension = os.path.splitext(path)[1][1:]
 			markdown = extension_md_map.get(extension, 'text')
-			new_content.append(f"```{markdown}")
+			
+			file_contents = None
+			error = None
 			with open(path, 'r') as file:
-				new_content.append(file.read())
-			new_content.append("```\n")
+				try:
+					file_contents = file.read()
+				except Exception as e:
+					pass
+			
+			new_content.append(path)
+			if file_contents is not None:
+				new_content.append(f"```{markdown}")
+				new_content.append(file_contents)
+				new_content.append("```\n")
+			else:
+				new_content.append(f"File {path} could not be read because '{error}'\n")
 		new_source = FilesSource(items=self.items)
 		self.loaded = get_local_time()
 		return '\n'.join(new_content)
