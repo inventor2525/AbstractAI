@@ -87,7 +87,7 @@ class FilesSource(UserSource):
 				try:
 					file_contents = file.read()
 				except Exception as e:
-					pass
+					error = e
 			
 			new_content.append(path)
 			if file_contents is not None:
