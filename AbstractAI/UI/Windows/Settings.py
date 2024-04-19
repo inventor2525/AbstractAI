@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from dataclasses import dataclass
 
 class SettingsWindow(QWidget):
 	settingsSaved = pyqtSignal()
@@ -16,16 +17,13 @@ class SettingsWindow(QWidget):
 		self.setWindowTitle("Settings")
 		self.setGeometry(300, 300, 800, 600)
 
-		# Main layout
 		mainLayout = QHBoxLayout()
 
-		# Tree view setup
 		self.treeView = QTreeView()
 		self.treeModel = QStandardItemModel()
 		self.treeView.setModel(self.treeModel)
 		mainLayout.addWidget(self.treeView, 1)
 
-		# Placeholder for settings area
 		self.settingsArea = QWidget()
 		settingsLayout = QVBoxLayout()
 		self.formLayout = QFormLayout()
@@ -33,7 +31,6 @@ class SettingsWindow(QWidget):
 		self.settingsArea.setLayout(settingsLayout)
 		mainLayout.addWidget(self.settingsArea, 2)
 
-		# Save button setup
 		self.saveButton = QPushButton("Save")
 		self.saveButton.clicked.connect(self.saveSettings)
 		buttonLayout = QVBoxLayout()
@@ -52,8 +49,7 @@ class SettingsWindow(QWidget):
 			parent = self.treeModel.invisibleRootItem()
 			for part in path.split("/"):
 				parent = self.findOrAddChild(parent, part)
-			item = QStandardItem(model.__name__)
-			parent.appendRow([item])
+			item = parent
 			item.model = model
 			item.path = path
 
@@ -69,29 +65,23 @@ class SettingsWindow(QWidget):
 		self.formLayout.setParent(None)
 		self.formLayout = QFormLayout()
 		index = self.treeView.selectionModel().selectedIndexes()[0]
-		index = self.treeView.selectionModel().selectedIndexes()[0]
 		item = self.treeModel.itemFromIndex(index)
 		model = item.model
 		if model is not None:
-			if hasattr(model, '__dict__'):
-				for field in vars(model).items():
-					if isinstance(field[1], int):
-						widget = QLineEdit()
-					elif isinstance(field[1], bool):
-						widget = QCheckBox()
-					elif isinstance(field[1], str):
-						widget = QLineEdit()
-					elif isinstance(field[1], list):
-						widget = QComboBox()
-					else:
-						raise NotImplementedError(f"Unsupported type {field[1].__class__.__name__} {field}")
-					self.formLayout.addRow(QLabel(field[0]), widget)
-			else:
-				self.formLayout = QFormLayout()
+			for field in vars(model).items():
+				if isinstance(field[1], int):
+					widget = QLineEdit()
+				elif isinstance(field[1], bool):
+					widget = QCheckBox()
+				elif isinstance(field[1], str):
+					widget = QLineEdit()
+				elif isinstance(field[1], list):
+					widget = QComboBox()
+				else:
+					raise NotImplementedError(f"Unsupported type {field[1].__class__.__name__} {field}")
+				self.formLayout.addRow(QLabel(field[0]), widget)
 		else:
 			self.formLayout = QFormLayout()
-			
-			
 
 	def saveSettings(self):
 		self.settingsSaved.emit()
@@ -99,18 +89,20 @@ class SettingsWindow(QWidget):
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	app.setStyle("Fusion")
-	# Example model classes
+
+	@dataclass
 	class Model1:
 		a: int
 		b: str
 		c: bool
 
+	@dataclass
 	class Model2:
 		d: list
 		e: int
 
-	models = [Model1, Model2]
-	paths = ["Path/To/Model1", "Path/To/Model2"]
+	models = [Model1(42,"hello world", True), Model2([1,2,3], 42)]
+	paths = ["Items/Model1", "Items/Model2"]
 
 	window = SettingsWindow(models, paths)
 	window.show()
