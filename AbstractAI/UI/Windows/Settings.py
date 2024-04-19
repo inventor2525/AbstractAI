@@ -67,23 +67,26 @@ class SettingsWindow(QWidget):
 		index = self.treeView.selectionModel().selectedIndexes()[0]
 		item = self.treeModel.itemFromIndex(index)
 		model = item.model
-		if model is not None:
-			for field in vars(model).items():
-				if isinstance(field[1], int):
+		if model is not None and hasattr(model, "__annotations__"):
+			for field_name, field_type in model.__annotations__.items():
+				if field_type == int:
 					widget = QLineEdit()
-				elif isinstance(field[1], bool):
+				elif field_type == bool:
 					widget = QCheckBox()
-				elif isinstance(field[1], str):
+				elif field_type == str:
 					widget = QLineEdit()
-				elif isinstance(field[1], list):
+				elif field_type == list:
 					widget = QComboBox()
 				else:
-					raise NotImplementedError(f"Unsupported type {field[1].__class__.__name__} {field}")
-				self.formLayout.addRow(QLabel(field[0]), widget)
+					raise NotImplementedError(f"Unsupported type {field_type.__name__} {field_name}")
+				self.formLayout.addRow(QLabel(field_name), widget)
 		else:
-			self.formLayout = QFormLayout()
-			self.formWidget.setLayout(self.formLayout)
-
+			while self.formLayout.count():
+				child = self.formLayout.takeAt(0)
+				if child.widget():
+					child.widget().deleteLater()
+			self.formLayout.addRow(QLabel(""))
+			
 	def saveSettings(self):
 		self.settingsSaved.emit()
 
