@@ -69,14 +69,17 @@ class SettingsWindow(QWidget):
 		model = item.model
 		if model is not None and hasattr(model, "__annotations__"):
 			for field_name, field_type in model.__annotations__.items():
+				field_value = getattr(model, field_name)
 				if field_type == int:
-					widget = QLineEdit()
+					widget = QLineEdit(str(field_value))
 				elif field_type == bool:
 					widget = QCheckBox()
+					widget.setChecked(field_value)
 				elif field_type == str:
-					widget = QLineEdit()
+					widget = QLineEdit(field_value)
 				elif field_type == list:
 					widget = QComboBox()
+					widget.addItems([str(x) for x in field_value])
 				else:
 					raise NotImplementedError(f"Unsupported type {field_type.__name__} {field_name}")
 				self.formLayout.addRow(QLabel(field_name), widget)
@@ -86,7 +89,7 @@ class SettingsWindow(QWidget):
 				if child.widget():
 					child.widget().deleteLater()
 			self.formLayout.addRow(QLabel(""))
-			
+
 	def saveSettings(self):
 		self.settingsSaved.emit()
 
