@@ -4,13 +4,18 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
 
+class SettingItem:
+	def __init__(self, model, path, view=None):
+		self.model = model
+		self.path = path
+		self.view = view
+
 class SettingsWindow(QWidget):
 	settingsSaved = pyqtSignal()
 
-	def __init__(self, models, paths):
+	def __init__(self, setting_items):
 		super().__init__()
-		self.models = models
-		self.paths = paths
+		self.setting_items = setting_items
 		self.initUI()
 
 	def initUI(self):
@@ -43,13 +48,13 @@ class SettingsWindow(QWidget):
 		self.buildTreeModel()
 
 	def buildTreeModel(self):
-		for i, (model, path) in enumerate(zip(self.models, self.paths)):
+		for setting_item in self.setting_items:
 			parent = self.treeModel.invisibleRootItem()
-			for part in path.split("/"):
+			for part in setting_item.path.split("/"):
 				parent = self.findOrAddChild(parent, part)
 			item = parent
-			item.model = model
-			item.path = path
+			item.model = setting_item.model
+			item.path = setting_item.path
 
 	def findOrAddChild(self, parent, name):
 		for row in range(parent.rowCount()):
@@ -108,10 +113,12 @@ if __name__ == "__main__":
 		d: list
 		e: int
 
-	models = [Model1(42,"hello world", True), Model2([1,2,3], 42)]
-	paths = ["Items/Model1", "Items/Model2"]
+	model1 = Model1(42, "hello world", True)
+	model2 = Model2([1,2,3], 42)
 
-	window = SettingsWindow(models, paths)
+	setting_items = [SettingItem(model1, "Items/Model1"), SettingItem(model2, "Items/Model2")]
+
+	window = SettingsWindow(setting_items)
 	window.show()
 
 	sys.exit(app.exec_())
