@@ -5,7 +5,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
 
 from abc import ABC, abstractmethod
-from typing import Any, Type, TypeVar, Dict, Generic
+from typing import Any, Type, TypeVar, Dict, Generic, List
 
 T = TypeVar('T')
 
@@ -85,16 +85,16 @@ class StrControl(QLineEdit, TypedControl[str]):
 		self.setText(value)
 
 @TypedControls(list)
-class ListControl(QLineEdit, TypedControl[list]):
+class StrListControl(QLineEdit, TypedControl[List[str]]):
 	def __init__(self):
 		super().__init__()
 		self.textChanged.connect(self.valueChanged.emit)
 
-	def _get_value(self) -> list:
+	def _get_value(self) -> List[str]:
 		return self.text().split(",")
 	
-	def _set_value(self, value: list) -> None:
-		self.setText(",".join(str(value)))
+	def _set_value(self, value: List[str]) -> None:
+		self.setText(",".join([str(item) for item in value]))
 
 class SettingItem:
 	def __init__(self, model, path, view=None):
