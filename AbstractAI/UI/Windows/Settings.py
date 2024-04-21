@@ -4,6 +4,98 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
 
+from abc import ABC, abstractmethod
+from typing import Any, Type, TypeVar, Dict, Generic
+
+T = TypeVar('T')
+
+class TypedControl(Generic[T]):
+	valueChanged = pyqtSignal()
+	
+	@property
+	def value(self) -> T:
+		return self._get_value()
+
+	@value.setter
+	def value(self, value: T) -> None:
+		self._set_value(value)
+		self.valueChanged.emit()
+	
+	@abstractmethod
+	def _get_value(self) -> T:
+		pass
+	
+	@abstractmethod
+	def _set_value(self, value: T) -> None:
+		pass
+
+class TypedControls:
+	_registry: Dict[Type, Type[TypedControl]] = {}
+
+	@classmethod
+	def register(cls, type_: Type, control_type: Type[TypedControl]) -> None:
+		cls._registry[type_] = control_type
+
+	@classmethod
+	def get_control(cls, type_: Type) -> Type[TypedControl]:
+		return cls._registry.get(type_)
+	
+	def __call__(self, type):
+		def decorator(control_type):
+			self.register(type, control_type)
+			return control_type
+		return decorator
+
+TypedControls = TypedControls()
+
+@TypedControls(int)
+class IntControl(QLineEdit, TypedControl[int]):
+	def __init__(self):
+		super().__init__()
+		self.textChanged.connect(self.valueChanged.emit)
+
+	def _get_value(self) -> int:
+		return int(self.text())
+	
+	def _set_value(self, value: int) -> None:
+		self.setText(str(value))
+
+@TypedControls(bool)
+class BoolControl(QCheckBox, TypedControl[bool]):
+	def __init__(self):
+		super().__init__()
+		self.stateChanged.connect(self.valueChanged.emit)
+
+	def _get_value(self) -> bool:
+		return self.isChecked()
+	
+	def _set_value(self, value: bool) -> None:
+		self.setChecked(value)
+		
+@TypedControls(str)
+class StrControl(QLineEdit, TypedControl[str]):
+	def __init__(self):
+		super().__init__()
+		self.textChanged.connect(self.valueChanged.emit)
+		
+	def _get_value(self) -> str:
+		return self.text()
+	
+	def _set_value(self, value: str) -> None:
+		self.setText(value)
+
+@TypedControls(list)
+class ListControl(QLineEdit, TypedControl[list]):
+	def __init__(self):
+		super().__init__()
+		self.textChanged.connect(self.valueChanged.emit)
+
+	def _get_value(self) -> list:
+		return self.text().split(",")
+	
+	def _set_value(self, value: list) -> None:
+		self.setText(",".join(str(value)))
+
 class SettingItem:
 	def __init__(self, model, path, view=None):
 		self.model = model
@@ -75,19 +167,13 @@ class SettingsWindow(QWidget):
 		if model is not None and hasattr(model, "__annotations__"):
 			for field_name, field_type in model.__annotations__.items():
 				field_value = getattr(model, field_name)
-				if field_type == int:
-					widget = QLineEdit(str(field_value))
-				elif field_type == bool:
-					widget = QCheckBox()
-					widget.setChecked(field_value)
-				elif field_type == str:
-					widget = QLineEdit(field_value)
-				elif field_type == list:
-					widget = QComboBox()
-					widget.addItems([str(x) for x in field_value])
-				else:
-					raise NotImplementedError(f"Unsupported type {field_type.__name__} {field_name}")
-				self.formLayout.addRow(QLabel(field_name), widget)
+				control_type = TypedControls.get_control(field_type)
+				if control_type is None:
+					raise ValueError(f"Unsupported type {field_type.__name__} for field {field_name}")
+				control = control_type()
+				control.value = field_value
+				control.valueChanged.connect(lambda: setattr(model, field_name, control.value))
+				self.formLayout.addRow(QLabel(field_name), control)
 		else:
 			while self.formLayout.count():
 				child = self.formLayout.takeAt(0)
