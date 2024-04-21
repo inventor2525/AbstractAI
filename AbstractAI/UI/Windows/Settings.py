@@ -156,7 +156,7 @@ class SettingsWindow(QWidget):
 		parent.appendRow([item])
 		return item
 
-	def displayModel(self, selected, deselected):
+	def displayModel(self):
 		while self.formLayout.count():
 			child = self.formLayout.takeAt(0)
 			if child.widget():
@@ -172,7 +172,9 @@ class SettingsWindow(QWidget):
 					raise ValueError(f"Unsupported type {field_type.__name__} for field {field_name}")
 				control = control_type()
 				control.value = field_value
-				control.valueChanged.connect(lambda: setattr(model, field_name, control.value))
+				def change_value(control=control, model=model, field_name=field_name):
+					setattr(model, field_name, control.value)
+				control.valueChanged.connect(change_value)
 				self.formLayout.addRow(QLabel(field_name), control)
 		else:
 			while self.formLayout.count():
