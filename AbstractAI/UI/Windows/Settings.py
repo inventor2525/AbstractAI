@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from abc import ABC, abstractmethod
 from typing import Any, Type, TypeVar, Dict, Generic, List
-
+import re
 T = TypeVar('T')
 
 class TypedControl(Generic[T]):
@@ -18,8 +18,11 @@ class TypedControl(Generic[T]):
 
 	@value.setter
 	def value(self, value: T) -> None:
+		old_value = self._get_value()
 		self._set_value(value)
-		self.valueChanged.emit()
+		
+		if old_value != value:
+			self.valueChanged.emit()
 	
 	@abstractmethod
 	def _get_value(self) -> T:
@@ -48,17 +51,51 @@ class TypedControls:
 
 TypedControls = TypedControls()
 
-@TypedControls(int)
-class IntControl(QLineEdit, TypedControl[int]):
+class NumberControl(TypedControl[T], QLineEdit):
 	def __init__(self):
 		super().__init__()
-		self.textChanged.connect(self.valueChanged.emit)
-
-	def _get_value(self) -> int:
-		return int(self.text())
+		self._number_value:T = 0
+		self.editingFinished.connect(self._validate_and_set)
 	
-	def _set_value(self, value: int) -> None:
+	@abstractmethod
+	def _validate(self, text: str) -> bool:
+		pass
+	
+	def _validate_and_set(self):
+		try:
+			text = self.text()
+			if not self._validate(text):
+				return
+			self.value = self._parse_value(text)
+		except Exception as e:
+			pass
+			
+	def _get_value(self) -> T:
+		return self._number_value
+	
+	def _set_value(self, value: T) -> None:
+		self._number_value = value
 		self.setText(str(value))
+		
+	@abstractmethod
+	def _parse_value(self, text: str) -> T:
+		pass
+
+@TypedControls(int)
+class IntControl(NumberControl[int]):
+	def _validate(self, text: str) -> bool:
+		return re.match(r"^-?\d*$", text) is not None
+	
+	def _parse_value(self, text: str) -> int:
+		return int(text)
+
+@TypedControls(float)
+class FloatControl(NumberControl[float]):
+	def _validate(self, text: str) -> bool:
+		return re.match(r"^-?\d*(\.\d*)?$", text) is not None
+	
+	def _parse_value(self, text: str) -> float:
+		return float(text)
 
 @TypedControls(bool)
 class BoolControl(QCheckBox, TypedControl[bool]):
