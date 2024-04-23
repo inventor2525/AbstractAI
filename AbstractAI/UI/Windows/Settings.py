@@ -178,7 +178,33 @@ class SettingItem:
 		self.model = model
 		self.path = path
 		self.view = view
-
+		
+class TreeViewItem(QStandardItem):
+	def __init__(self, *args, **kwargs):
+		super(TreeViewItem, self).__init__(*args, **kwargs)
+		self.isAlwaysExpanded = False
+		
+class TreeView(QTreeView):
+	def __init__(self, *args, **kwargs):
+		super(TreeView, self).__init__(*args, **kwargs)
+		self.collapsed.connect(self.preventCollapse)
+		
+	def drawBranches(self, painter, rect, index):
+		'''
+		Override the drawBranches method to prevent disclosure 
+		triangles from being drawn on items that are always expanded.
+		'''
+		item = self.model().itemFromIndex(index)
+		if hasattr(item, 'isAlwaysExpanded') and item.isAlwaysExpanded:
+			pass
+		else:
+			super(TreeView, self).drawBranches(painter, rect, index)
+	
+	def preventCollapse(self, index):
+		item = self.model().itemFromIndex(index)
+		if getattr(item, 'isAlwaysExpanded', False):
+			self.expand(index)
+			
 class SettingsWindow(QWidget):
 	settingsSaved = pyqtSignal()
 
@@ -193,7 +219,7 @@ class SettingsWindow(QWidget):
 
 		mainLayout = QHBoxLayout()
 
-		self.treeView = QTreeView()
+		self.treeView = TreeView()
 		self.treeView.setHeaderHidden(True)
 		self.treeModel = QStandardItemModel()
 		self.treeView.setModel(self.treeModel)
@@ -225,6 +251,12 @@ class SettingsWindow(QWidget):
 			item = parent
 			item.model = setting_item.model
 			item.path = setting_item.path
+		
+		for item in [self.treeModel.item(i) for i in range(self.treeModel.rowCount())]:
+			if getattr(item, 'model', None) is not None:
+				item.isAlwaysExpanded = True
+				index = self.treeModel.indexFromItem(item)
+				self.treeView.expand(index)
 
 	def findOrAddChild(self, parent, name):
 		for row in range(parent.rowCount()):
@@ -288,8 +320,9 @@ if __name__ == "__main__":
 
 	model1 = Model1(42, "hello world", True)
 	model2 = Model2([1,2,3], 42, myEnum.two)
+	model3 = Model2([1,2,3], 42, myEnum.two)
 
-	setting_items = [SettingItem(model1, "Items/Model1"), SettingItem(model2, "Items/Model2")]
+	setting_items = [SettingItem(model1, "Items/Model1"), SettingItem(model2, "Items/Model2"), SettingItem(model3, "Items/Model2/Model3")]
 
 	window = SettingsWindow(setting_items)
 	window.show()
