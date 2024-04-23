@@ -317,12 +317,37 @@ if __name__ == "__main__":
 		d: list
 		e: int
 		f: myEnum
-
+		
+	@dataclass
+	class NestedModel:
+		name:str
+		description:str
+		model1: Model1
+		model2: Model2
+		
 	model1 = Model1(42, "hello world", True)
 	model2 = Model2([1,2,3], 42, myEnum.two)
 	model3 = Model2([1,2,3], 42, myEnum.two)
-
-	setting_items = [SettingItem(model1, "Items/Model1"), SettingItem(model2, "Items/Model2"), SettingItem(model3, "Items/Model2/Model3")]
+	nested_model = NestedModel(
+		"linked test", "This is tied to the 2 models above, changing this will change those",
+		model1, model2
+	)
+	nested_model_2 = NestedModel(
+		"unlinked test", "This is not tied to the 2 models above, changing this will not change anything else",
+		Model1(42, "hello world", True),
+		Model2([1,2,3], 42, myEnum.two)
+	)
+	setting_items = [
+		SettingItem(model1, "Items/Model1"),
+		SettingItem(model2, "Items/Model2"),
+		SettingItem(model3, "Items/Model2/Model3"),
+		SettingItem(nested_model, "Items/NestedModel"),
+		SettingItem(nested_model.model1, "Items/NestedModel/Model1 (linked)"),
+		SettingItem(nested_model.model2, "Items/NestedModel/Model2 (linked)"),
+		SettingItem(nested_model_2, "Items/NestedModel2"),
+		SettingItem(nested_model_2.model1, "Items/NestedModel2/Model1 (unlinked)"),
+		SettingItem(nested_model_2.model2, "Items/NestedModel2/Model2 (unlinked)"),
+	]
 
 	window = SettingsWindow(setting_items)
 	window.show()
