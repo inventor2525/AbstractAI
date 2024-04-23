@@ -194,6 +194,7 @@ class SettingsWindow(QWidget):
 		mainLayout = QHBoxLayout()
 
 		self.treeView = QTreeView()
+		self.treeView.setHeaderHidden(True)
 		self.treeModel = QStandardItemModel()
 		self.treeView.setModel(self.treeModel)
 		mainLayout.addWidget(self.treeView, 1)
