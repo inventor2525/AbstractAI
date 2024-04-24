@@ -406,7 +406,8 @@ if __name__ == "__main__":
 		description:str
 		child: NestedChild
 		model2: Model2
-		
+	
+	#Demo starting a settings window with some items:
 	model1 = Model1(42, "hello world", True)
 	model2 = Model2([1,2,3], 42, myEnum.two)
 	model3 = Model2([1,2,3], 42, myEnum.two)
@@ -419,20 +420,18 @@ if __name__ == "__main__":
 		NestedChild("child 2", Model1(1, "Hi", False)),
 		Model2([4,5,6], 1, myEnum.three)
 	)
-	def make_demo_button():
-		return QPushButton("my button")
 	setting_items = [
 		SettingItem(model1, "Items/Model1"),
 		SettingItem(model2, "Items/Model2"),
 		SettingItem(model3, "Items/Model2/Model3"),
 		SettingItem(nested_model, "Items/Nested/Linked Model"),
-		SettingItem(nested_model_2, "Items/Nested/UnLinked Model", views=[
-			("This is a custom view",make_demo_button)
-		]),
+		SettingItem(nested_model_2, "Items/Nested/UnLinked Model"),
 	]
 	window = SettingsWindow(setting_items)
 	window.show()
 	
+	#Demo adding more items after the fact with a 
+	#control in the auto generated setting view:
 	num = 0
 	def add_more_models_demo():
 		global num
@@ -459,6 +458,7 @@ if __name__ == "__main__":
 		b = QPushButton("Add More")
 		b.clicked.connect(add_more_models_demo)
 		return b
+	
 	window.addSettingItem(SettingItem(
 		Model1(1, "hi", True),
 		"Add More Demo", 
