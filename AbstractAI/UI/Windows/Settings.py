@@ -341,9 +341,8 @@ class SettingsWindow(QWidget):
 			return
 		index = selection[0]
 		item = self.treeModel.itemFromIndex(index)
-		setting_item = getattr(item, 'setting_item', None)
-		if setting_item is not None and hasattr(setting_item.model, "__annotations__"):
-			setting_model = setting_item.model
+		setting_model = getattr(item, 'setting_model', None)
+		if setting_model is not None and hasattr(setting_model, "__annotations__"):
 			for field_name, field_type in setting_model.__annotations__.items():
 				field_value = getattr(setting_model, field_name)
 				control_type = TypedControls.get_control(field_type)
@@ -355,9 +354,12 @@ class SettingsWindow(QWidget):
 					setattr(model, field_name, control.value)
 				control.valueChanged.connect(change_value)
 				self.formLayout.addRow(QLabel(field_name), control)
-			if setting_item.views is not None:
-				for user_control in setting_item.views:
-					self.formLayout.addRow(QLabel(user_control[0]), user_control[1]())
+				
+			setting_item = getattr(item, 'setting_item', None)
+			if setting_item is not None:
+				if setting_item.views is not None:
+					for user_control in setting_item.views:
+						self.formLayout.addRow(QLabel(user_control[0]), user_control[1]())
 		else:
 			while self.formLayout.count():
 				child = self.formLayout.takeAt(0)
@@ -424,8 +426,41 @@ if __name__ == "__main__":
 			("This is a custom view",make_demo_button)
 		]),
 	]
-
 	window = SettingsWindow(setting_items)
 	window.show()
+	
+	num = 0
+	def add_more_models_demo():
+		global num
+		@dataclass
+		class bla:
+			a: int
+			b: str
+			c: bool
+			d: list
+			e: int
+		@dataclass
+		class Dummy:
+			int_field: int
+			float_field: float
+			str_field: str
+			bool_field: bool
+			list_field: list
+			nest: bla
+		
+		dummy = Dummy(0, 0.0, "", False, [], bla(0, "", False, [], 0))
+		window.addSettingItem(SettingItem(dummy, f"Things/More Things/Even More Things/Stuff/Things/Dummy{num}"))
+		num += 1
+	def add_more_button_maker():
+		b = QPushButton("Add More")
+		b.clicked.connect(add_more_models_demo)
+		return b
+	window.addSettingItem(SettingItem(
+		Model1(1, "hi", True),
+		"Add More Demo", 
+		views=[("Add More Models", add_more_button_maker)]
+		)
+	)
+	
 
 	sys.exit(app.exec_())
