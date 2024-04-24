@@ -330,12 +330,17 @@ if __name__ == "__main__":
 		d: list
 		e: int
 		f: myEnum
+	
+	@dataclass
+	class NestedChild:
+		name:str
+		model1: Model1
 		
 	@dataclass
 	class NestedModel:
 		name:str
 		description:str
-		model1: Model1
+		child: NestedChild
 		model2: Model2
 		
 	model1 = Model1(42, "hello world", True)
@@ -343,19 +348,19 @@ if __name__ == "__main__":
 	model3 = Model2([1,2,3], 42, myEnum.two)
 	nested_model = NestedModel(
 		"linked test", "This is tied to the 2 models above, changing this will change those",
-		model1, model2
+		NestedChild("child 1", model1), model2
 	)
 	nested_model_2 = NestedModel(
 		"unlinked test", "This is not tied to the 2 models above, changing this will not change anything else",
-		Model1(42, "hello world", True),
-		Model2([1,2,3], 42, myEnum.two)
+		NestedChild("child 2", Model1(1, "Hi", False)),
+		Model2([4,5,6], 1, myEnum.three)
 	)
 	setting_items = [
 		SettingItem(model1, "Items/Model1"),
 		SettingItem(model2, "Items/Model2"),
 		SettingItem(model3, "Items/Model2/Model3"),
-		SettingItem(nested_model, "Items/NestedModel"),
-		SettingItem(nested_model_2, "Items/NestedModel2"),
+		SettingItem(nested_model, "Items/Nested/Linked Model"),
+		SettingItem(nested_model_2, "Items/Nested/UnLinked Model"),
 	]
 
 	window = SettingsWindow(setting_items)
