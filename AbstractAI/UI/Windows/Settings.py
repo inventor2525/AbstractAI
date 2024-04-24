@@ -52,7 +52,7 @@ class TypedControls:
 		for value_type, control_type in self._registry.items():
 			if issubclass(type_, value_type):
 				return control_type
-		raise ValueError(f"Unsupported type {type_.__name__}")
+		return None
 	
 	def __call__(self, type):
 		def decorator(control_type):
@@ -251,13 +251,27 @@ class SettingsWindow(QWidget):
 			item = parent
 			item.model = setting_item.model
 			item.path = setting_item.path
+			self._addChildren(item, setting_item.model)
 		
 		for item in [self.treeModel.item(i) for i in range(self.treeModel.rowCount())]:
 			if getattr(item, 'model', None) is not None:
 				item.isAlwaysExpanded = True
 				index = self.treeModel.indexFromItem(item)
 				self.treeView.expand(index)
-
+				
+	def _addChildren(self, parent, model_instance):
+		if hasattr(model_instance, '__annotations__'):
+			for field_name, field_type in model_instance.__annotations__.items():
+				field_value = getattr(model_instance, field_name)
+				if TypedControls.get_control(field_type) is not None:
+					continue
+				elif hasattr(field_value, '__annotations__'):
+					child = self.findOrAddChild(parent, field_name)
+					self._addChildren(child, field_value)
+					child.model = field_value
+				else:
+					pass
+				
 	def findOrAddChild(self, parent, name):
 		for row in range(parent.rowCount()):
 			if parent.child(row).text() == name:
@@ -277,9 +291,8 @@ class SettingsWindow(QWidget):
 		if model is not None and hasattr(model, "__annotations__"):
 			for field_name, field_type in model.__annotations__.items():
 				field_value = getattr(model, field_name)
-				try:
-					control_type = TypedControls.get_control(field_type)
-				except ValueError:
+				control_type = TypedControls.get_control(field_type)
+				if control_type is None:
 					continue
 				control = control_type(field_type)
 				control.value = field_value
@@ -342,11 +355,7 @@ if __name__ == "__main__":
 		SettingItem(model2, "Items/Model2"),
 		SettingItem(model3, "Items/Model2/Model3"),
 		SettingItem(nested_model, "Items/NestedModel"),
-		SettingItem(nested_model.model1, "Items/NestedModel/Model1 (linked)"),
-		SettingItem(nested_model.model2, "Items/NestedModel/Model2 (linked)"),
 		SettingItem(nested_model_2, "Items/NestedModel2"),
-		SettingItem(nested_model_2.model1, "Items/NestedModel2/Model1 (unlinked)"),
-		SettingItem(nested_model_2.model2, "Items/NestedModel2/Model2 (unlinked)"),
 	]
 
 	window = SettingsWindow(setting_items)
