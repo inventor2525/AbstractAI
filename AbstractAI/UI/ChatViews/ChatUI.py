@@ -102,6 +102,7 @@ class ChatUI(QWidget):
 			Context.new_message_has_text = bool(self.input_field.toPlainText())
 			Context.context_changed()
 		self.input_field.textChanged.connect(input_field_changed)
+		self.input_field.textChanged.connect(self.clear_selection)
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_field.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
@@ -135,6 +136,9 @@ class ChatUI(QWidget):
 		self.action_control.setFixedHeight(self.input_field.height())
 		self.role_combobox.setFixedHeight(self.input_field.height())
 	
+	def clear_selection(self):
+		self.conversation_view.clearSelection()
+		
 	def _create_message(self) -> Message:
 		selected_role = self.role_combobox.currentText()
 		
