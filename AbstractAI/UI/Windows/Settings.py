@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox
+from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
@@ -220,29 +220,35 @@ class SettingsWindow(QWidget):
 		self.setGeometry(300, 300, 800, 600)
 
 		mainLayout = QHBoxLayout()
-
+		self.setLayout(mainLayout)
+		
+		left_layout = QVBoxLayout()
+		mainLayout.addLayout(left_layout, 1)
+		
+		# "Path" Tree view setup:
 		self.treeView = TreeView()
 		self.treeView.setHeaderHidden(True)
 		self.treeModel = QStandardItemModel()
 		self.treeView.setModel(self.treeModel)
-		mainLayout.addWidget(self.treeView, 1)
-
+		self.treeView.selectionModel().selectionChanged.connect(self._displayModel)
+		left_layout.addWidget(self.treeView)
+		
+		# Save button setup:
+		self.saveButton = QPushButton("Save")
+		self.saveButton.clicked.connect(self.saveSettings)
+		left_layout.addWidget(self.saveButton)
+		
+		# Settings area setup:
+		scroll_area = QScrollArea()
+		scroll_area.setWidgetResizable(True)
+		
 		self.formLayout = QFormLayout()
 		self.formWidget = QWidget()
 		self.formWidget.setLayout(self.formLayout)
-		mainLayout.addWidget(self.formWidget, 2)
-
-		self.saveButton = QPushButton("Save")
-		self.saveButton.clicked.connect(self.saveSettings)
-		buttonLayout = QVBoxLayout()
-		buttonLayout.addStretch()
-		buttonLayout.addWidget(self.saveButton)
-		mainLayout.addLayout(buttonLayout)
-
-		self.setLayout(mainLayout)
-
-		self.treeView.selectionModel().selectionChanged.connect(self._displayModel)
-	
+		
+		scroll_area.setWidget(self.formWidget)
+		mainLayout.addWidget(scroll_area, 2)
+		
 	def _clearItems(self):
 		while self.treeModel.rowCount():
 			self.treeModel.removeRow(0)
@@ -493,3 +499,8 @@ if __name__ == "__main__":
 	)
 
 	sys.exit(app.exec_())
+	
+	
+	
+	
+#Add tabs and scroll bar.... use chat bot to modify
