@@ -5,7 +5,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
 
 from abc import ABC, abstractmethod
-from typing import Any, Type, TypeVar, Dict, Generic, List
+from typing import Any, Type, TypeVar, Dict, Generic, List, Tuple, Callable
 from enum import Enum
 import re
 T = TypeVar('T')
@@ -174,10 +174,11 @@ class EnumControl(QComboBox, TypedControl[Enum]):
 			self.addItem(enum_value.name)
 			
 class SettingItem:
-	def __init__(self, model, path, view=None):
+	def __init__(self, model, path, view=None, views=None):
 		self.model = model
 		self.path = path
 		self.view = view
+		self.views:List[Tuple[str,Callable[[],QWidget]]] = views
 		
 class TreeViewItem(QStandardItem):
 	def __init__(self, *args, **kwargs):
@@ -256,8 +257,8 @@ class SettingsWindow(QWidget):
 			self.all_items.append(parent)
 			indent_level += 1
 		item = parent
+		item.setting_item = setting_item
 		item.setting_model = setting_item.model
-		item.path = setting_item.path
 		item.isTopLevelItem = True
 		self._addChildren(item, setting_item.model)
 	
@@ -340,19 +341,23 @@ class SettingsWindow(QWidget):
 			return
 		index = selection[0]
 		item = self.treeModel.itemFromIndex(index)
-		model = getattr(item, 'setting_model', None)
-		if model is not None and hasattr(model, "__annotations__"):
-			for field_name, field_type in model.__annotations__.items():
-				field_value = getattr(model, field_name)
+		setting_item = getattr(item, 'setting_item', None)
+		if setting_item is not None and hasattr(setting_item.model, "__annotations__"):
+			setting_model = setting_item.model
+			for field_name, field_type in setting_model.__annotations__.items():
+				field_value = getattr(setting_model, field_name)
 				control_type = TypedControls.get_control(field_type)
 				if control_type is None:
 					continue
 				control = control_type(field_type)
 				control.value = field_value
-				def change_value(control=control, model=model, field_name=field_name):
+				def change_value(control=control, model=setting_model, field_name=field_name):
 					setattr(model, field_name, control.value)
 				control.valueChanged.connect(change_value)
 				self.formLayout.addRow(QLabel(field_name), control)
+			if setting_item.views is not None:
+				for user_control in setting_item.views:
+					self.formLayout.addRow(QLabel(user_control[0]), user_control[1]())
 		else:
 			while self.formLayout.count():
 				child = self.formLayout.takeAt(0)
@@ -408,12 +413,16 @@ if __name__ == "__main__":
 		NestedChild("child 2", Model1(1, "Hi", False)),
 		Model2([4,5,6], 1, myEnum.three)
 	)
+	def make_demo_button():
+		return QPushButton("my button")
 	setting_items = [
 		SettingItem(model1, "Items/Model1"),
 		SettingItem(model2, "Items/Model2"),
 		SettingItem(model3, "Items/Model2/Model3"),
 		SettingItem(nested_model, "Items/Nested/Linked Model"),
-		SettingItem(nested_model_2, "Items/Nested/UnLinked Model"),
+		SettingItem(nested_model_2, "Items/Nested/UnLinked Model", views=[
+			("This is a custom view",make_demo_button)
+		]),
 	]
 
 	window = SettingsWindow(setting_items)
