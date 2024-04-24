@@ -241,7 +241,7 @@ class SettingsWindow(QWidget):
 
 		self.setLayout(mainLayout)
 
-		self.treeView.selectionModel().selectionChanged.connect(self.displayModel)
+		self.treeView.selectionModel().selectionChanged.connect(self._displayModel)
 	
 	def _clearItems(self):
 		while self.treeModel.rowCount():
@@ -331,11 +331,14 @@ class SettingsWindow(QWidget):
 		parent.appendRow([item])
 		return item
 
-	def displayModel(self):
-		while self.formLayout.count():
-			child = self.formLayout.takeAt(0)
-			if child.widget():
-				child.widget().deleteLater()
+	def _displayModel(self):
+		def clear_forum_layout():
+			while self.formLayout.count():
+				child = self.formLayout.takeAt(0)
+				if child.widget():
+					child.widget().deleteLater()
+		clear_forum_layout()
+		
 		selection = self.treeView.selectionModel().selectedIndexes()
 		if len(selection) == 0:
 			return
@@ -361,10 +364,7 @@ class SettingsWindow(QWidget):
 					for user_control in setting_item.views:
 						self.formLayout.addRow(QLabel(user_control[0]), user_control[1]())
 		else:
-			while self.formLayout.count():
-				child = self.formLayout.takeAt(0)
-				if child.widget():
-					child.widget().deleteLater()
+			clear_forum_layout()
 			self.formLayout.addRow(QLabel(""))
 
 	def saveSettings(self):
