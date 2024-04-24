@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea
+from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea, QSplitter
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
@@ -218,25 +218,49 @@ class SettingsWindow(QWidget):
 	def initUI(self):
 		self.setWindowTitle("Settings")
 		self.setGeometry(300, 300, 800, 600)
+		
+		#Create the root layout of the window:
+		self.rootLayout = QHBoxLayout()
+		self.setLayout(self.rootLayout)
+		
+		#Create the split view:
+		split_view = QSplitter()
+		split_view.setOrientation(Qt.Horizontal)
+		split_view.setChildrenCollapsible(False)
+		split_view.setHandleWidth(3)
+		self.rootLayout.addWidget(split_view)
+		
+		#Create left layout:
+		self.left_layout = QVBoxLayout()
+		self.left_layout.setContentsMargins(0, 0, 0, 0)
+		left_container = QWidget()
+		left_container.setLayout(self.left_layout)
+		split_view.addWidget(left_container)
+		
+		#Create the main layout:
+		self.main_layout = QVBoxLayout()
+		self.main_layout.setContentsMargins(0, 0, 0, 0)
+		main_container = QWidget()
+		main_container.setLayout(self.main_layout)
+		split_view.addWidget(main_container)
+		
+		# Configure the split view:
+		split_view.setSizes([200, 600])
+		split_view.setStretchFactor(0, 0)
+		split_view.setStretchFactor(1, 1)
 
-		mainLayout = QHBoxLayout()
-		self.setLayout(mainLayout)
-		
-		left_layout = QVBoxLayout()
-		mainLayout.addLayout(left_layout, 1)
-		
 		# "Path" Tree view setup:
 		self.treeView = TreeView()
 		self.treeView.setHeaderHidden(True)
 		self.treeModel = QStandardItemModel()
 		self.treeView.setModel(self.treeModel)
 		self.treeView.selectionModel().selectionChanged.connect(self._displayModel)
-		left_layout.addWidget(self.treeView)
+		self.left_layout.addWidget(self.treeView)
 		
 		# Save button setup:
 		self.saveButton = QPushButton("Save")
 		self.saveButton.clicked.connect(self.saveSettings)
-		left_layout.addWidget(self.saveButton)
+		self.left_layout.addWidget(self.saveButton)
 		
 		# Settings area setup:
 		scroll_area = QScrollArea()
@@ -247,7 +271,7 @@ class SettingsWindow(QWidget):
 		self.formWidget.setLayout(self.formLayout)
 		
 		scroll_area.setWidget(self.formWidget)
-		mainLayout.addWidget(scroll_area, 2)
+		self.main_layout.addWidget(scroll_area, 2)
 		
 	def _clearItems(self):
 		while self.treeModel.rowCount():
