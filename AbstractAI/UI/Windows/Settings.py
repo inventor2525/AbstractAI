@@ -342,10 +342,15 @@ class SettingsWindow(QWidget):
 		selection = self.treeView.selectionModel().selectedIndexes()
 		if len(selection) == 0:
 			return
+		
 		index = selection[0]
 		item = self.treeModel.itemFromIndex(index)
+		setting_item = getattr(item, 'setting_item', None)
 		setting_model = getattr(item, 'setting_model', None)
-		if setting_model is not None and hasattr(setting_model, "__annotations__"):
+		
+		if setting_item is not None and setting_item.view is not None:
+			self.formLayout.addRow(setting_item.view)
+		elif setting_model is not None and hasattr(setting_model, "__annotations__"):
 			for field_name, field_type in setting_model.__annotations__.items():
 				field_value = getattr(setting_model, field_name)
 				control_type = TypedControls.get_control(field_type)
@@ -358,7 +363,6 @@ class SettingsWindow(QWidget):
 				control.valueChanged.connect(change_value)
 				self.formLayout.addRow(QLabel(field_name), control)
 				
-			setting_item = getattr(item, 'setting_item', None)
 			if setting_item is not None:
 				if setting_item.views is not None:
 					for user_control in setting_item.views:
