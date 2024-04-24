@@ -247,10 +247,12 @@ class SettingsWindow(QWidget):
 		all_items = []
 		for setting_item in self.setting_items:
 			parent = self.treeModel.invisibleRootItem()
-			all_items.append(parent)
+			indent_level = 0
 			for part in setting_item.path.split("/"):
 				parent = self.findOrAddChild(parent, part)
+				parent.indent_level = indent_level
 				all_items.append(parent)
+				indent_level += 1
 			item = parent
 			item.setting_model = setting_item.model
 			item.path = setting_item.path
@@ -259,8 +261,27 @@ class SettingsWindow(QWidget):
 		for item in all_items:
 			if getattr(item, 'setting_model', None) is None:
 				item.isAlwaysExpanded = True
+				item.setSelectable(False)
 				index = self.treeModel.indexFromItem(item)
 				self.treeView.expand(index)
+				
+				indent_level = getattr(item, 'indent_level', -1)
+				
+				if indent_level == 0:
+					font = item.font()
+					font.setPointSize(20)
+					font.setBold(True)
+					item.setFont(font)
+				elif indent_level == 1:
+					font = item.font()
+					font.setPointSize(15)
+					font.setBold(True)
+					item.setFont(font)
+				elif indent_level == 2:
+					font = item.font()
+					font.setItalic(True)
+					font.setBold(True)
+					item.setFont(font)
 				
 	def _addChildren(self, parent, model_instance):
 		if hasattr(model_instance, '__annotations__'):
@@ -288,7 +309,10 @@ class SettingsWindow(QWidget):
 			child = self.formLayout.takeAt(0)
 			if child.widget():
 				child.widget().deleteLater()
-		index = self.treeView.selectionModel().selectedIndexes()[0]
+		selection = self.treeView.selectionModel().selectedIndexes()
+		if len(selection) == 0:
+			return
+		index = selection[0]
 		item = self.treeModel.itemFromIndex(index)
 		model = getattr(item, 'setting_model', None)
 		if model is not None and hasattr(model, "__annotations__"):
