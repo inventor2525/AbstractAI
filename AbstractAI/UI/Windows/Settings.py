@@ -212,6 +212,7 @@ class SettingsWindow(QWidget):
 		super().__init__()
 		self.setting_items = setting_items
 		self.initUI()
+		self.redrawItems()
 
 	def initUI(self):
 		self.setWindowTitle("Settings")
@@ -240,55 +241,73 @@ class SettingsWindow(QWidget):
 		self.setLayout(mainLayout)
 
 		self.treeView.selectionModel().selectionChanged.connect(self.displayModel)
-
-		self.buildTreeModel()
-
-	def buildTreeModel(self):
+	
+	def _clearItems(self):
+		while self.treeModel.rowCount():
+			self.treeModel.removeRow(0)
 		self.all_items = []
+		
+	def _add_item(self, setting_item: SettingItem) -> None:
+		parent = self.treeModel.invisibleRootItem()
+		indent_level = 0
+		for part in setting_item.path.split("/"):
+			parent = self.findOrAddChild(parent, part)
+			parent.indent_level = indent_level
+			self.all_items.append(parent)
+			indent_level += 1
+		item = parent
+		item.setting_model = setting_item.model
+		item.path = setting_item.path
+		item.isTopLevelItem = True
+		self._addChildren(item, setting_item.model)
+	
+	def _refresh_item_font(self, item: QStandardItem) -> None:
+		if getattr(item, 'setting_model', None) is not None:
+			if getattr(item, 'isTopLevelItem', False):
+				item.setForeground(Qt.blue)
+			else:
+				item.setForeground(Qt.darkBlue)
+		else:
+			item.isAlwaysExpanded = True
+			item.setSelectable(False)
+			index = self.treeModel.indexFromItem(item)
+			self.treeView.expand(index)
+			
+			indent_level = getattr(item, 'indent_level', -1)
+			
+			if indent_level == 0:
+				font = item.font()
+				font.setPointSize(20)
+				font.setBold(True)
+				item.setFont(font)
+			elif indent_level == 1:
+				font = item.font()
+				font.setPointSize(15)
+				font.setBold(True)
+				item.setFont(font)
+			elif indent_level == 2:
+				font = item.font()
+				font.setItalic(True)
+				font.setBold(True)
+				item.setFont(font)
+				
+	def redrawItems(self):
+		self._clearItems()
 		for setting_item in self.setting_items:
-			parent = self.treeModel.invisibleRootItem()
-			indent_level = 0
-			for part in setting_item.path.split("/"):
-				parent = self.findOrAddChild(parent, part)
-				parent.indent_level = indent_level
-				self.all_items.append(parent)
-				indent_level += 1
-			item = parent
-			item.setting_model = setting_item.model
-			item.path = setting_item.path
-			item.isTopLevelItem = True
-			self._addChildren(item, setting_item.model)
+			self._add_item(setting_item)
 		
 		for item in self.all_items:
-			if getattr(item, 'setting_model', None) is not None:
-				if getattr(item, 'isTopLevelItem', False):
-					item.setForeground(Qt.blue)
-				else:
-					item.setForeground(Qt.darkBlue)
-			else:
-				item.isAlwaysExpanded = True
-				item.setSelectable(False)
-				index = self.treeModel.indexFromItem(item)
-				self.treeView.expand(index)
-				
-				indent_level = getattr(item, 'indent_level', -1)
-				
-				if indent_level == 0:
-					font = item.font()
-					font.setPointSize(20)
-					font.setBold(True)
-					item.setFont(font)
-				elif indent_level == 1:
-					font = item.font()
-					font.setPointSize(15)
-					font.setBold(True)
-					item.setFont(font)
-				elif indent_level == 2:
-					font = item.font()
-					font.setItalic(True)
-					font.setBold(True)
-					item.setFont(font)
-				
+			self._refresh_item_font(item)
+	
+	def addSettingItem(self, setting_item: SettingItem) -> None:
+		self.setting_items.append(setting_item)
+		old_all_items = self.all_items
+		self.all_items = []
+		self._add_item(setting_item)
+		for item in self.all_items:
+			self._refresh_item_font(item)
+		self.all_items = old_all_items + self.all_items
+		
 	def _addChildren(self, parent, model_instance):
 		if hasattr(model_instance, '__annotations__'):
 			for field_name, field_type in model_instance.__annotations__.items():
