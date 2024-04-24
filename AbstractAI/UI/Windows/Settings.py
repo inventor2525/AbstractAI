@@ -244,22 +244,28 @@ class SettingsWindow(QWidget):
 		self.buildTreeModel()
 
 	def buildTreeModel(self):
-		all_items = []
+		self.all_items = []
 		for setting_item in self.setting_items:
 			parent = self.treeModel.invisibleRootItem()
 			indent_level = 0
 			for part in setting_item.path.split("/"):
 				parent = self.findOrAddChild(parent, part)
 				parent.indent_level = indent_level
-				all_items.append(parent)
+				self.all_items.append(parent)
 				indent_level += 1
 			item = parent
 			item.setting_model = setting_item.model
 			item.path = setting_item.path
+			item.isTopLevelItem = True
 			self._addChildren(item, setting_item.model)
 		
-		for item in all_items:
-			if getattr(item, 'setting_model', None) is None:
+		for item in self.all_items:
+			if getattr(item, 'setting_model', None) is not None:
+				if getattr(item, 'isTopLevelItem', False):
+					item.setForeground(Qt.blue)
+				else:
+					item.setForeground(Qt.darkBlue)
+			else:
 				item.isAlwaysExpanded = True
 				item.setSelectable(False)
 				index = self.treeModel.indexFromItem(item)
@@ -290,9 +296,10 @@ class SettingsWindow(QWidget):
 				if TypedControls.get_control(field_type) is not None:
 					continue
 				elif hasattr(field_value, '__annotations__'):
-					child = self.findOrAddChild(parent, field_name)
-					self._addChildren(child, field_value)
-					child.setting_model = field_value
+					item = self.findOrAddChild(parent, field_name)
+					self.all_items.append(item)
+					self._addChildren(item, field_value)
+					item.setting_model = field_value
 				else:
 					pass
 				
