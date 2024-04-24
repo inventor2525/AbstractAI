@@ -174,11 +174,11 @@ class EnumControl(QComboBox, TypedControl[Enum]):
 			self.addItem(enum_value.name)
 			
 class SettingItem:
-	def __init__(self, model, path, view=None, views=None):
+	def __init__(self, model, path, view_factory=None, view_factories=None):
 		self.model = model
 		self.path = path
-		self.view = view
-		self.views:List[Tuple[str,Callable[[],QWidget]]] = views
+		self.view_factory = view_factory
+		self.view_factories:List[Tuple[str,Callable[[],QWidget]]] = view_factories
 		
 class TreeViewItem(QStandardItem):
 	def __init__(self, *args, **kwargs):
@@ -348,8 +348,8 @@ class SettingsWindow(QWidget):
 		setting_item = getattr(item, 'setting_item', None)
 		setting_model = getattr(item, 'setting_model', None)
 		
-		if setting_item is not None and setting_item.view is not None:
-			self.formLayout.addRow(setting_item.view)
+		if setting_item is not None and setting_item.view_factory is not None:
+			self.formLayout.addRow(setting_item.view_factory())
 		elif setting_model is not None and hasattr(setting_model, "__annotations__"):
 			for field_name, field_type in setting_model.__annotations__.items():
 				field_value = getattr(setting_model, field_name)
@@ -364,9 +364,9 @@ class SettingsWindow(QWidget):
 				self.formLayout.addRow(QLabel(field_name), control)
 				
 			if setting_item is not None:
-				if setting_item.views is not None:
-					for user_control in setting_item.views:
-						self.formLayout.addRow(QLabel(user_control[0]), user_control[1]())
+				if setting_item.view_factories is not None:
+					for view_factory in setting_item.view_factories:
+						self.formLayout.addRow(QLabel(view_factory[0]), view_factory[1]())
 		else:
 			clear_forum_layout()
 			self.formLayout.addRow(QLabel(""))
@@ -462,9 +462,34 @@ if __name__ == "__main__":
 	window.addSettingItem(SettingItem(
 		Model1(1, "hi", True),
 		"Add More Demo", 
-		views=[("Add More Models", add_more_button_maker)]
+		view_factories=[("Add More Models", add_more_button_maker)]
 		)
 	)
 	
+	#Demo adding a totally custom view to settings:
+	def custom_view_factory() -> QWidget:
+		custom_view = QWidget()
+		layout = QVBoxLayout()
+		label = QLabel("Custom View")
+		layout.addWidget(label)
+		layout.addWidget(QLabel("It's custom, totally custom!!!"))
+		layout.addSpacing(200)
+		layout.addWidget(QLabel("Isn't it cool?"))
+		h_layout = QHBoxLayout()
+		h_layout.addWidget(QLabel("Hello"))
+		h_layout.addWidget(QLineEdit())
+		h_layout.addWidget(QLabel("World"))
+		h_layout.addWidget(QComboBox())
+		layout.addLayout(h_layout)
+		layout.addSpacing(100)
+		layout.addWidget(QLabel("SO COOL!"))
+		custom_view.setLayout(layout)
+		return custom_view
+	
+	window.addSettingItem(SettingItem(
+		Model1(0, "", False), 
+		"Custom View", view_factory=custom_view_factory
+		)
+	)
 
 	sys.exit(app.exec_())
