@@ -244,17 +244,20 @@ class SettingsWindow(QWidget):
 		self.buildTreeModel()
 
 	def buildTreeModel(self):
+		all_items = []
 		for setting_item in self.setting_items:
 			parent = self.treeModel.invisibleRootItem()
+			all_items.append(parent)
 			for part in setting_item.path.split("/"):
 				parent = self.findOrAddChild(parent, part)
+				all_items.append(parent)
 			item = parent
-			item.model = setting_item.model
+			item.setting_model = setting_item.model
 			item.path = setting_item.path
 			self._addChildren(item, setting_item.model)
 		
-		for item in [self.treeModel.item(i) for i in range(self.treeModel.rowCount())]:
-			if getattr(item, 'model', None) is not None:
+		for item in all_items:
+			if getattr(item, 'setting_model', None) is None:
 				item.isAlwaysExpanded = True
 				index = self.treeModel.indexFromItem(item)
 				self.treeView.expand(index)
@@ -268,7 +271,7 @@ class SettingsWindow(QWidget):
 				elif hasattr(field_value, '__annotations__'):
 					child = self.findOrAddChild(parent, field_name)
 					self._addChildren(child, field_value)
-					child.model = field_value
+					child.setting_model = field_value
 				else:
 					pass
 				
@@ -287,7 +290,7 @@ class SettingsWindow(QWidget):
 				child.widget().deleteLater()
 		index = self.treeView.selectionModel().selectedIndexes()[0]
 		item = self.treeModel.itemFromIndex(index)
-		model = item.model
+		model = getattr(item, 'setting_model', None)
 		if model is not None and hasattr(model, "__annotations__"):
 			for field_name, field_type in model.__annotations__.items():
 				field_value = getattr(model, field_name)
