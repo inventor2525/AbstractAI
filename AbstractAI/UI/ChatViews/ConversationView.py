@@ -82,6 +82,10 @@ class ConversationView(QListWidget):
 	
 	def keyPressEvent(self, event):
 		item_widget = self.itemWidget(self.currentItem())
+		if item_widget is None:
+			super().keyPressEvent(event)
+			return
+		
 		if event.key() == Qt.Key_Escape:
 			self.clearSelection()
 		elif not item_widget.text_edit.hasFocus():
