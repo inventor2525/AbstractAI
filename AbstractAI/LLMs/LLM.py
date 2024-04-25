@@ -82,6 +82,7 @@ class LLM(ABC):
 	def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
 		chat = []
 		prev_role = None
+		prev_user_name = None
 		role_mapping = self.model_info.parameters["roles"]["mapping"]
 		must_alternate = self.model_info.parameters["roles"]["must_alternate"]
 		
@@ -106,12 +107,16 @@ class LLM(ABC):
 						"role":role,
 						"content":message.content
 					}, user_name)
-				prev_role = role
 			else:
-				append({
-					"role":role,
-					"content":message.content
-				}, user_name)
+				if role == prev_role and user_name == prev_user_name:
+					chat[-1]["content"] += "\n\n" + message.content
+				else:
+					append({
+						"role":role,
+						"content":message.content
+					}, user_name)
+			prev_role = role
+			prev_user_name = user_name
 		return chat
 	
 	def _serialize_raw_response(self, response:object) -> Dict[str,Any]:

@@ -1,14 +1,18 @@
 from AbstractAI.UI.Support.ColoredFrame import *
 from AbstractAI.UI.Elements.TextEdit import TextEdit
+from AbstractAI.UI.Elements.FlashingButton import FlashingButton
 from AbstractAI.ConversationModel import Message, MessageSequence
 from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView_extras.MessageSourceView import MessageSourceView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet
+from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 from AbstractAI.UI.Context import Context
 from datetime import datetime
+from copy import deepcopy
+
 message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
 	def __init__(self, parent, message: Message):
@@ -123,7 +127,11 @@ class MessageView(BaseMessageView):
 		self.text_edit.textChanged.connect(self.update_text_edit_height)
 		self.text_edit.selectionChanged.connect(lambda:self.message_selected.emit(self._message))
 		self.layout.addWidget(self.text_edit)
-
+		
+		# File selector (A replacement to the message text box when the message is a group of files)
+		self.file_selector = FileSelectionWidget()
+		self.layout.addWidget(self.file_selector)
+		
 		# Vertical panel (right side of message)
 		self.panel_layout = QVBoxLayout()
 		self.panel_layout.setAlignment(Qt.AlignTop)
@@ -140,7 +148,16 @@ class MessageView(BaseMessageView):
 		self.confirm_btn.clicked.connect(self.confirm_changes)
 		self.confirm_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.confirm_btn, alignment=Qt.AlignTop)
-
+		
+		# Confirm button (checkmark -- top right of message)
+		self.reload_btn = FlashingButton(QIcon.fromTheme("view-refresh"), "", min_color=QColor.fromRgb(190,0,0), max_color=QColor.fromRgb(255,50,50), interval=.3)
+		self.reload_btn.clicked.connect(self.reload_files_message)
+		self.reload_btn.setFixedWidth(25)
+		self.panel_layout.addWidget(self.reload_btn, alignment=Qt.AlignTop)
+		def file_selection_changed():
+			self.reload_btn.flashing = True
+		self.file_selector.file_selection_changed.connect(file_selection_changed)
+			
 		# Expand message view button (rotating arrow -- top right of message)
 		self.expand_btn = QToolButton()
 		self.expand_btn.setCheckable(True)
@@ -209,11 +226,11 @@ class MessageView(BaseMessageView):
 			self.text_edit.setFixedHeight(new_height + margins.top() + margins.bottom())
 			
 		if self.expand_btn.arrowType() == Qt.DownArrow:
-			set_height(max(new_height, int(self.text_edit.document().size().height())))
+			set_height(max(new_height, self.text_edit.doc_height()))
 		else:
 			set_height(new_height)
 		
-		self.expand_btn.setVisible(self.text_edit.document().size().height() > new_height)
+		self.expand_btn.setVisible(self.text_edit.doc_height() > new_height)
 		self.rowHeightChanged.emit()
 	
 	def resizeEvent(self, event):
@@ -251,6 +268,20 @@ class MessageView(BaseMessageView):
 			self.message = self.message.create_edited(self.text_edit.toPlainText())
 			self.message_changed.emit(self.message)
 	
+	def reload_files_message(self):
+		source = self.message.source
+		if isinstance(source, EditSource):
+			source = EditSource.most_original(self.message.source).source
+		if not isinstance(source, FilesSource):
+			return
+		
+		items = ItemsModel(items=deepcopy(self.file_selector.items))
+		items.new_id()
+		new_source = FilesSource(items=items)
+		new_content = new_source.load()
+		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
+		self.message_changed.emit(self.message)
+		
 	def _origional_source(self, source:MessageSource):
 		if isinstance(source, EditSource):
 			source = EditSource.most_original(source).source
@@ -276,18 +307,30 @@ class MessageView(BaseMessageView):
 		
 		self.message_source_view.message_source = value.source
 		
-		self.text_edit.setPlainText(value.content)
+		most_original = value.source
+		edit_sources_source = value.source
+		if value.source is not None:
+			if isinstance(most_original, EditSource):
+				most_original = EditSource.most_original(most_original).source
+				edit_sources_source = value.source.source_of_edit
+				
+		if isinstance(most_original, FilesSource):
+			self.text_edit.setVisible(False)
+			self.file_selector.setVisible(True)
+			self.file_selector.items = deepcopy(edit_sources_source.items.items)
+			self.file_selector.refresh()
+		else:
+			self.text_edit.setVisible(True)
+			self.file_selector.setVisible(False)
+			self.text_edit.setPlainText(value.content)
 		self._update_can_edit()
 
 		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		
-		if self.message.source is not None:
-			most_origional = self.message.source
-			if isinstance(most_origional, EditSource):
-				most_origional = EditSource.most_original(most_origional).source
-			self.regenerate_button.setVisible(isinstance(most_origional, ModelSource))
+		self.regenerate_button.setVisible(isinstance(most_original, ModelSource))
+		self.reload_btn.setVisible(isinstance(most_original, FilesSource))
 		
 		self._compute_alternates()
 		self.update_text_edit_height()
