@@ -5,8 +5,11 @@ from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationAction
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.ConversationModel import *
+from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemsModel
 from AbstractAI.Helpers.log_caller_info import log_caller_info
+from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from PyQt5.QtCore import QTimer
+from copy import deepcopy
 
 class ChatUI(QWidget):
 	respond_to_conversation = pyqtSignal(Conversation)
@@ -31,14 +34,14 @@ class ChatUI(QWidget):
 			self.max_tokens_field.setText("")
 			None
 	
-	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System"], max_new_message_lines=10):
+	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System", "Files"], max_new_message_lines=10):
 		super().__init__()		
 		self.roles = roles
 		
 		self.role_source_map = {
 			"Human": UserSource(),
 			"Assistant": ModelInfo("ChatUI", "Impersonation", log_caller_info(except_keys=['instance_id'])),
-			"System": SystemSource(),
+			"System": SystemSource()
 		}
 		
 		self.max_new_message_lines = max_new_message_lines
@@ -108,6 +111,18 @@ class ChatUI(QWidget):
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 		self.input_field.setFocus()
 		
+		self.file_selector = FileSelectionWidget()
+		self.input_layout.addWidget(self.file_selector)
+		def role_changed():
+			if self.role_combobox.currentText() == "Files":
+				self.input_field.setHidden(True)
+				self.file_selector.setHidden(False)
+			else:
+				self.input_field.setHidden(False)
+				self.file_selector.setHidden(True)
+		self.role_combobox.currentTextChanged.connect(role_changed)
+		role_changed()
+		
 		# Create a button to toggle the advanced controls:
 		self.advanced_controls_toggle = QToolButton()
 		self.advanced_controls_toggle.setCheckable(True)
@@ -145,6 +160,11 @@ class ChatUI(QWidget):
 		new_message = Message(self.input_field.toPlainText())
 		if selected_role == "Assistant":
 			new_message.source = ModelSource(self.role_source_map[selected_role], self.conversation.message_sequence)
+		elif selected_role == "Files":
+			items = ItemsModel(items=deepcopy(self.file_selector.items))
+			items.new_id()
+			new_message.source = FilesSource(items=items)
+			new_message.content = new_message.source.load()
 		else:
 			new_message.source = self.role_source_map[selected_role]
 		return new_message
@@ -152,7 +172,11 @@ class ChatUI(QWidget):
 	def _add_message(self):
 		new_message = self._create_message()
 		self.conversation.add_message(new_message)
-		self.input_field.clear()
+		
+		selected_role = self.role_combobox.currentText()
+		if selected_role is not "Files":
+			self.input_field.clear()
+		
 	
 	def on_action(self, action:ConversationAction):
 		if action == ConversationAction.Add:

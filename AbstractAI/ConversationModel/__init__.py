@@ -1,4 +1,4 @@
-from .MessageSources import MessageSource, UserSource, ModelSource, EditSource, TerminalSource, HardCodedSource, SystemSource
+from .MessageSources import MessageSource, UserSource, ModelSource, EditSource, TerminalSource, HardCodedSource, SystemSource, FilesSource
 from .Message import Message
 from .Conversation import Conversation, MessageSequence
 from .ConversationCollection import ConversationCollection

@@ -20,6 +20,7 @@ class RoleColorPallet:
 			ModelSource:"#FFC4B0",
 			TerminalSource:"#FFEBE4",
 			EditSource:"#9DFFA6",
+			FilesSource:"#7DDF86"
 		}
 		self._rolling_pallet = RollingColorPallet()
 	
