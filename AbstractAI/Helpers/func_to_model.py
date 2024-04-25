@@ -1,5 +1,5 @@
 import inspect
-from dataclasses import field
+from dataclasses import field, dataclass
 from typing import Any
 
 def function_to_model(func):
@@ -46,14 +46,20 @@ def function_to_model(func):
 			namespace[field_name] = field(default_factory=default, init=False)
 		else:
 			namespace[field_name] = field(default=default, init=False)
-	return type(f"{func.__name__}_AutoSettingModel", (object,), namespace)
+	return type(f"{func.__name__}__AutoSettingModel", (object,), namespace)
 
 if __name__ == "__main__":
 	def test_func1(a:int, b:str, c:bool, d:list=[1,2,3], e:float=3.14, f:dict={"a":1,"b":2}):
-		pass
+		print(a,b,c,d,e,f)
 	def test_func2(a,b,c:int,d,e,hello_str="hello",pi:float=3.14, sqrt2=1.4142):
-		pass
-	model1 = function_to_model(test_func1)
-	model2 = function_to_model(test_func2)
+		print(a,b,c,d,e,hello_str,pi,sqrt2)
+	model1_stub = function_to_model(test_func1)
+	model2_stub = function_to_model(test_func2)
 	
-	print("look at these in the debugger")
+	Model1 = dataclass(model1_stub)
+	Model2 = dataclass(model2_stub)
+	
+	print("Model instances created with defaults from the function definitions:")
+	print(Model1())
+	print(Model2())
+	print("\n")
