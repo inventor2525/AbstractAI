@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import field, dataclass
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 def function_to_model(func):
 	argspec = inspect.getfullargspec(func)
@@ -13,6 +13,8 @@ def function_to_model(func):
 	# usable_fields = dict(**{type(k):v for k,v in default_values.items()})
 	# usable_fields.update(**argspec.annotations.items())
 	for field_name, field_type in argspec.annotations.items():
+		if field_name == 'return':
+			continue
 		namespace['__annotations__'][field_name] = field_type
 		if field_name in default_values:
 			default = default_values[field_name]
@@ -48,11 +50,35 @@ def function_to_model(func):
 			namespace[field_name] = field(default=default, init=False)
 	return type(f"{func.__name__}__AutoSettingModel", (object,), namespace)
 
+T = TypeVar('T')
+def call_with_class(func:Callable[[Any], T], instance:Any) -> T:
+    """
+    Calls the given function with the attributes of a class instance as keyword arguments.
+    
+    Args:
+        func: The function to be called with the dataclass instance's fields as keyword arguments.
+        instance: A class instance whose fields are to be used as keyword arguments.
+    
+    Returns:
+        The result of the function call.
+    """
+	
+    # Extracting the function's parameter names
+    func_params = inspect.signature(func).parameters
+    
+    # Building a dictionary of arguments that are both in the instance and the function's parameters
+    kwargs = {param: getattr(instance, param) for param in func_params if hasattr(instance, param)}
+    
+    # Calling the function with the constructed keyword arguments
+    return func(**kwargs)
+
 if __name__ == "__main__":
-	def test_func1(a:int, b:str, c:bool, d:list=[1,2,3], e:float=3.14, f:dict={"a":1,"b":2}):
-		print(a,b,c,d,e,f)
-	def test_func2(a,b,c:int,d,e,hello_str="hello",pi:float=3.14, sqrt2=1.4142):
-		print(a,b,c,d,e,hello_str,pi,sqrt2)
+	def test_func1(a:int, b:str, c:bool, d:list=[1,2,3], e:float=3.14, f:dict={"a":1,"b":2}) -> int:
+		print("test_func1 ", a,b,c,d,e,f)
+		return 42
+	def test_func2(a,b,c:int,d,e,hello_str="hello",pi:float=3.14, sqrt2=1.4142) -> str:
+		print("test_func2 ", a,b,c,d,e,hello_str,pi,sqrt2)
+		return "Hello, World!"
 	model1_stub = function_to_model(test_func1)
 	model2_stub = function_to_model(test_func2)
 	
@@ -63,3 +89,10 @@ if __name__ == "__main__":
 	print(Model1())
 	print(Model2())
 	print("\n")
+	
+	print("Function calls with those models passed as arguments:")
+	return_val = call_with_class(test_func1, Model1())
+	try:
+		return_val = call_with_class(test_func2, Model2())
+	except Exception as e:
+		print("test_func2 can't be called, which is good cause our func to model only captures things with type hints or that have default values. test_func2 has neither for some of its arguments.")
