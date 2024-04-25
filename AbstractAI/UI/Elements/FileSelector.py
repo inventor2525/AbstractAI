@@ -40,7 +40,6 @@ class FileFilterWidget(QWidget):
         self.folder_pattern_line_edit = QLineEdit()
         self.extension_label = QLabel("File Extensions:")
         self.extension_line_edit = QLineEdit()
-        self.refresh_button = QPushButton("Refresh")
         
         self.layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.layout.addWidget(self.pattern_label)
@@ -49,10 +48,11 @@ class FileFilterWidget(QWidget):
         self.layout.addWidget(self.folder_pattern_line_edit)
         self.layout.addWidget(self.extension_label)
         self.layout.addWidget(self.extension_line_edit)
-        self.layout.addWidget(self.refresh_button)
         self.setLayout(self.layout)
 
 class FileSelectionWidget(QWidget):
+    file_selection_changed = pyqtSignal()
+    
     def __init__(self, parent=None):
         super(FileSelectionWidget, self).__init__(parent)
         self.layout = QHBoxLayout(self)
@@ -88,7 +88,6 @@ class FileSelectionWidget(QWidget):
         self.file_filter_widget.extension_line_edit.textEdited.connect(self.updateFolderPattern)
         
         self.tree_view.onSelectionChanged.connect(self.itemSelected)
-        self.file_filter_widget.refresh_button.clicked.connect(self.refresh)
         self._items = []
         
         self.tree_view_and_buttons_widget.setFixedHeight(self.file_filter_widget.sizeHint().height())
@@ -100,12 +99,16 @@ class FileSelectionWidget(QWidget):
                 and source is self.tree_view):
             # Delete Selected Items:
             selected_indexes = self.tree_view.selectedIndexes()
-            for index in sorted(selected_indexes, key=lambda index: index.row(), reverse=True):
-                item = index.data(Qt.UserRole)
-                if item is not None:
-                    self._items = [i for i in self._items if i is not item]
-                    self.tree_view.model.removeRow(index.row())
-            return True
+            if len(selected_indexes) > 0:
+                for index in sorted(selected_indexes, key=lambda index: index.row(), reverse=True):
+                    item = index.data(Qt.UserRole)
+                    if item is not None:
+                        self._items = [i for i in self._items if i is not item]
+                        self.tree_view.model.removeRow(index.row())
+                        
+                self.refresh()
+                self.file_selection_changed.emit()
+                return True
         return super(FileSelectionWidget, self).eventFilter(source, event)
 
     @property
@@ -129,6 +132,8 @@ class FileSelectionWidget(QWidget):
             item = ItemModel(path=file)
             self._items.append(item)
             self.tree_view.addItems([file], model=item)
+        if len(files)>0:
+            self.file_selection_changed.emit()
 
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
@@ -136,6 +141,9 @@ class FileSelectionWidget(QWidget):
             folder_model = FolderModel(path=folder)
             self._items.append(folder_model)
             self.tree_view.addItems([folder], isFolder=True, model=folder_model)
+            self.refresh()
+            
+            self.file_selection_changed.emit()
     
     def updateFolderPattern(self):
         selected_indexes = self.tree_view.selectedIndexes()

@@ -1,5 +1,6 @@
 from AbstractAI.UI.Support.ColoredFrame import *
 from AbstractAI.UI.Elements.TextEdit import TextEdit
+from AbstractAI.UI.Elements.FlashingButton import FlashingButton
 from AbstractAI.ConversationModel import Message, MessageSequence
 from AbstractAI.ConversationModel.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
@@ -149,11 +150,14 @@ class MessageView(BaseMessageView):
 		self.panel_layout.addWidget(self.confirm_btn, alignment=Qt.AlignTop)
 		
 		# Confirm button (checkmark -- top right of message)
-		self.reload_btn = QPushButton(QIcon.fromTheme("view-refresh"), "")
+		self.reload_btn = FlashingButton(QIcon.fromTheme("view-refresh"), "", min_color=QColor.fromRgb(190,0,0), max_color=QColor.fromRgb(255,50,50), interval=.3)
 		self.reload_btn.clicked.connect(self.reload_files_message)
 		self.reload_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.reload_btn, alignment=Qt.AlignTop)
-
+		def file_selection_changed():
+			self.reload_btn.flashing = True
+		self.file_selector.file_selection_changed.connect(file_selection_changed)
+			
 		# Expand message view button (rotating arrow -- top right of message)
 		self.expand_btn = QToolButton()
 		self.expand_btn.setCheckable(True)
