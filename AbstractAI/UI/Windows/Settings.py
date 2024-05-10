@@ -2,10 +2,10 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea, QSplitter, QDialog
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from abc import ABC, abstractmethod
-from typing import Any, Type, TypeVar, Dict, Generic, List, Tuple, Callable
+from typing import Any, Type, TypeVar, Dict, Generic, List, Tuple, Callable, Set
 from enum import Enum
 import re
 T = TypeVar('T')
@@ -176,11 +176,12 @@ class EnumControl(QComboBox, TypedControl[Enum]):
 			self.addItem(enum_value.name)
 			
 class SettingItem:
-	def __init__(self, model, path, view_factory=None, view_factories=None):
+	def __init__(self, model, path, view_factory=None, view_factories=None, excluded_fields:Set[str]=set()):
 		self.model = model
 		self.path = path
 		self.view_factory = view_factory
 		self.view_factories:List[Tuple[str,Callable[[],QWidget]]] = view_factories
+		self.excluded_fields:Set[str] = excluded_fields
 		
 class TreeViewItem(QStandardItem):
 	def __init__(self, *args, **kwargs):
@@ -207,7 +208,19 @@ class TreeView(QTreeView):
 		item = self.model().itemFromIndex(index)
 		if getattr(item, 'isAlwaysExpanded', False):
 			self.expand(index)
-			
+
+def all_annotations(cls):
+	'''
+	Returns all annotations of a class and it's parents.
+	'''
+	annotations = {}
+	for base in cls.__bases__:
+		if base == object:
+			continue
+		annotations.update(getattr(base, '__annotations__', {}))
+	annotations.update(getattr(cls, '__annotations__', {}))
+	return annotations
+		
 class SettingsWindow(QDialog):
 	settingsSaved = pyqtSignal()
 	closed = pyqtSignal()
@@ -247,7 +260,7 @@ class SettingsWindow(QDialog):
 		split_view.addWidget(main_container)
 		
 		# Configure the split view:
-		split_view.setSizes([200, 600])
+		split_view.setSizes([350, 600])
 		split_view.setStretchFactor(0, 0)
 		split_view.setStretchFactor(1, 1)
 
@@ -293,7 +306,7 @@ class SettingsWindow(QDialog):
 		item.setting_item = setting_item
 		item.setting_model = setting_item.model
 		item.isTopLevelItem = True
-		self._addChildren(item, setting_item.model)
+		self._addChildren(item, setting_item.model, setting_item)
 	
 	def _refresh_item_font(self, item: QStandardItem) -> None:
 		if getattr(item, 'setting_model', None) is not None:
@@ -342,17 +355,18 @@ class SettingsWindow(QDialog):
 			self._refresh_item_font(item)
 		self.all_items = old_all_items + self.all_items
 		
-	def _addChildren(self, parent, model_instance):
+	def _addChildren(self, parent, model_instance, setting_item):
 		if hasattr(model_instance, '__annotations__'):
-			for field_name, field_type in model_instance.__annotations__.items():
+			for field_name, field_type in all_annotations(model_instance.__class__).items():
 				field_value = getattr(model_instance, field_name)
 				if TypedControls.get_control(field_type) is not None:
 					continue
 				elif hasattr(field_value, '__annotations__'):
 					item = self.findOrAddChild(parent, field_name)
 					self.all_items.append(item)
-					self._addChildren(item, field_value)
+					self._addChildren(item, field_value, setting_item)
 					item.setting_model = field_value
+					item.setting_item = setting_item
 				else:
 					pass
 				
@@ -384,7 +398,9 @@ class SettingsWindow(QDialog):
 		if setting_item is not None and setting_item.view_factory is not None:
 			self.formLayout.addRow(setting_item.view_factory())
 		elif setting_model is not None and hasattr(setting_model, "__annotations__"):
-			for field_name, field_type in setting_model.__annotations__.items():
+			for field_name, field_type in all_annotations(setting_model.__class__).items():
+				if field_name in getattr(setting_item, "excluded_fields", set()):
+					continue
 				field_value = getattr(setting_model, field_name)
 				control_type = TypedControls.get_control(field_type)
 				if control_type is None:
@@ -397,9 +413,10 @@ class SettingsWindow(QDialog):
 				self.formLayout.addRow(QLabel(field_name), control)
 				
 			if setting_item is not None:
-				if setting_item.view_factories is not None:
-					for view_factory in setting_item.view_factories:
-						self.formLayout.addRow(QLabel(view_factory[0]), view_factory[1]())
+				if setting_item.model is setting_model:
+					if setting_item.view_factories is not None:
+						for view_factory in setting_item.view_factories:
+							self.formLayout.addRow(QLabel(view_factory[0]), view_factory[1]())
 		else:
 			clear_forum_layout()
 			self.formLayout.addRow(QLabel(""))
@@ -438,11 +455,18 @@ if __name__ == "__main__":
 		model1: Model1
 		
 	@dataclass
-	class NestedModel:
+	class NestedModel:		
 		name:str
 		description:str
 		child: NestedChild
 		model2: Model2
+		
+	@dataclass
+	class ParentModel:
+		parent_field: int = field(default=42, kw_only=True)
+	@dataclass
+	class ChildModel(ParentModel):
+		child_field: int
 	
 	#Demo starting a settings window with some items:
 	model1 = Model1(42, "hello world", True)
@@ -463,6 +487,7 @@ if __name__ == "__main__":
 		SettingItem(model3, "Items/Model2/Model3"),
 		SettingItem(nested_model, "Items/Nested/Linked Model"),
 		SettingItem(nested_model_2, "Items/Nested/UnLinked Model"),
+		SettingItem(ChildModel(3,parent_field=42), "Items/Child Model"),
 	]
 	window = SettingsWindow(setting_items)
 	window.show()
