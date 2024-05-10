@@ -50,7 +50,9 @@ class TypedControls:
 			return control_type
 		
 		for value_type, control_type in self._registry.items():
-			if issubclass(type_, value_type):
+			if hasattr(type_, '__origin__'):
+				return None #Lists, Dicts, etc. are not supported yet
+			elif issubclass(type_, value_type):
 				return control_type
 		return None
 	
@@ -305,23 +307,23 @@ class SettingsWindow(QDialog):
 			index = self.treeModel.indexFromItem(item)
 			self.treeView.expand(index)
 			
-			indent_level = getattr(item, 'indent_level', -1)
-			
-			if indent_level == 0:
-				font = item.font()
-				font.setPointSize(20)
-				font.setBold(True)
-				item.setFont(font)
-			elif indent_level == 1:
-				font = item.font()
-				font.setPointSize(15)
-				font.setBold(True)
-				item.setFont(font)
-			elif indent_level == 2:
-				font = item.font()
-				font.setItalic(True)
-				font.setBold(True)
-				item.setFont(font)
+		indent_level = getattr(item, 'indent_level', -1)
+		
+		if indent_level == 0:
+			font = item.font()
+			font.setPointSize(20)
+			font.setBold(True)
+			item.setFont(font)
+		elif indent_level == 1:
+			font = item.font()
+			font.setPointSize(15)
+			font.setBold(True)
+			item.setFont(font)
+		elif indent_level == 2:
+			font = item.font()
+			font.setItalic(True)
+			font.setBold(True)
+			item.setFont(font)
 				
 	def redrawItems(self):
 		self._clearItems()

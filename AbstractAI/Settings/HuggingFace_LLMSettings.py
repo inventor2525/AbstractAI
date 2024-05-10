@@ -68,6 +68,7 @@ class HuggingFace_LLMTokenizerSettings:
 	
 @ConversationDATA
 class HuggingFace_LLMSettings(LLMSettings):
+	__ui_name__ = "HuggingFace"
 	model_name_path:str = ""
 	model :HuggingFace_LLMInitSettings = field(default_factory=HuggingFace_LLMInitSettings)
 	generate :HuggingFace_LLMGenerateSettings = field(default_factory=HuggingFace_LLMGenerateSettings)

@@ -17,6 +17,10 @@ from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 from AbstractAI.UI.Context import Context
 from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
+Stopwatch("Setting Models", log_statistics=False)
+from AbstractAI.Settings.LLMSettings import *
+llm_settings_types = LLMSettings.load_subclasses()
+
 Stopwatch("Remote client", log_statistics=False)
 from AbstractAI.Remote.client import System, RemoteLLM
 Stopwatch("ModelLoader", log_statistics=False)
@@ -58,6 +62,8 @@ class Application(QMainWindow):
 		self.settings_window = SettingsWindow()
 		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{Context.args.storage_location}")
 		
+		self.init_settings()
+		
 		Stopwatch("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
 		
@@ -87,6 +93,62 @@ class Application(QMainWindow):
 		
 		Stopwatch.end_scope(log_statistics=False)
 	
+	def init_settings(self):
+		llmConfigs:LLMConfigs = None
+		with self.engine.session() as session:
+			llmConfigs = session.query(LLMConfigs).where(LLMConfigs.id == "main").first()
+			
+		if llmConfigs is None:
+			llmConfigs = LLMConfigs()
+			llmConfigs.id = "main"
+		
+		type_counts = {}
+		def add_model(model:LLMSettings):
+			nonlocal type_counts
+			model_type_name = type(model).ui_name()
+			current_count = type_counts.get(type(model).ui_name(), 0) + 1
+			self.settings_window.addSettingItem(SettingItem(
+				model,
+				f"Models/{model_type_name}/{current_count}"
+			))
+			type_counts[model_type_name] = current_count
+			
+		def create_model_view():
+			widget = QWidget()
+			layout = QHBoxLayout()
+			widget.setLayout(layout)
+			
+			model_picker = QComboBox()
+			model_picker.addItems(llm_settings_types.keys())
+			layout.addWidget(model_picker)
+			
+			def create_clicked():
+				model_type = llm_settings_types[model_picker.currentText()]
+				model = model_type()
+				llmConfigs.models.append(model)
+				add_model(model)
+				
+			create_button = QPushButton("Create")
+			create_button.clicked.connect(create_clicked)
+			create_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+			layout.addWidget(create_button)
+			return widget
+			
+		self.settings_window.addSettingItem(SettingItem(
+			llmConfigs,
+			"Models",
+			view_factories=[
+				("Create Model", create_model_view)
+			]
+		))
+		
+		for model in llmConfigs.models:
+			add_model(model)
+			
+		def save_settings():
+			self.engine.merge(llmConfigs)
+		self.settings_window.settingsSaved.connect(save_settings)
+		
 	def init_ui(self):
 		#split view:
 		self.splitter = QSplitter(Qt.Horizontal)

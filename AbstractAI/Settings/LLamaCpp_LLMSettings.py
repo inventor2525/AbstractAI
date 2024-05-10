@@ -1,7 +1,7 @@
 from .LLMSettings import *
 
 @ConversationDATA
-class LLamaCpp_LLMInitSettings(LLMSettings):
+class LLamaCpp_LLMInitSettings:
 	'''
 	Used to load the model.
 	'''
@@ -18,7 +18,7 @@ class LLamaCpp_LLMInitSettings(LLMSettings):
 	verbose:bool = False
 
 @ConversationDATA
-class LLamaCpp_LLMGenerateSettings(LLMSettings):
+class LLamaCpp_LLMGenerateSettings:
 	'''
 	Used when generating text with the model.
 	'''
@@ -38,6 +38,7 @@ class LLamaCpp_LLMGenerateSettings(LLMSettings):
 	
 @ConversationDATA
 class LLamaCpp_LLMSettings(LLMSettings):
+	__ui_name__ = "LLamaCPP"
 	model:LLamaCpp_LLMInitSettings = field(default_factory=LLamaCpp_LLMInitSettings)
 	generate:LLamaCpp_LLMGenerateSettings = field(default_factory=LLamaCpp_LLMGenerateSettings)
 	
