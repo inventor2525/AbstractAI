@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea, QSplitter
+from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea, QSplitter, QDialog
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from dataclasses import dataclass
@@ -206,10 +206,10 @@ class TreeView(QTreeView):
 		if getattr(item, 'isAlwaysExpanded', False):
 			self.expand(index)
 			
-class SettingsWindow(QWidget):
+class SettingsWindow(QDialog):
 	settingsSaved = pyqtSignal()
-
-	def __init__(self, setting_items):
+	closed = pyqtSignal()
+	def __init__(self, setting_items: List[SettingItem] = []):
 		super().__init__()
 		self.setting_items = setting_items
 		self.initUI()
@@ -260,6 +260,7 @@ class SettingsWindow(QWidget):
 		# Save button setup:
 		self.saveButton = QPushButton("Save")
 		self.saveButton.clicked.connect(self.saveSettings)
+		self.saveButton.setToolTip("Save settings to disk.\n\nChanges apply immediately but are not\nsaved unless this button is clicked.")
 		self.left_layout.addWidget(self.saveButton)
 		
 		# Settings area setup:
@@ -403,6 +404,10 @@ class SettingsWindow(QWidget):
 
 	def saveSettings(self):
 		self.settingsSaved.emit()
+		
+	def closeEvent(self, event):
+		self.closed.emit()
+		super().closeEvent(event)
 
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
