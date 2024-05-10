@@ -15,6 +15,7 @@ from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
 from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 from AbstractAI.UI.Context import Context
+from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
 Stopwatch("Remote client", log_statistics=False)
 from AbstractAI.Remote.client import System, RemoteLLM
@@ -53,6 +54,8 @@ class Application(QMainWindow):
 		self.setWindowTitle("AbstractAI")
 		self.app = QApplication.instance()
 		Stopwatch("Connect to database", log_statistics=False)
+		
+		self.settings_window = SettingsWindow()
 		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{Context.args.storage_location}")
 		
 		Stopwatch("Load conversations", log_statistics=False)
@@ -115,15 +118,24 @@ class Application(QMainWindow):
 		self.conversation_list_view = ConversationListView(self.conversations)
 		self.left_panel.addWidget(self.conversation_list_view)
 		
-		self.new_conversation_layout = QHBoxLayout()
+		self.bottom_left_layout = QHBoxLayout()
+		
+		self.settings_button = QToolButton()
+		self.settings_button.setText("Settings")
+		self.settings_button.setCheckable(True)
+		self.settings_button.clicked.connect(self.toggle_settings_window)
+		self.bottom_left_layout.addWidget(self.settings_button)
+		self.settings_button.setStyleSheet("QToolButton { padding: 2px; }")
+		self.settings_window.closed.connect(lambda: self.settings_button.setChecked(False))
+		
 		self.new_conversation_name = QLineEdit()
 		self.new_conversation_name.setPlaceholderText("New Conversation Name...")
-		self.new_conversation_layout.addWidget(self.new_conversation_name)
+		self.bottom_left_layout.addWidget(self.new_conversation_name)
 		self.new_conversation_button = QPushButton()
 		self.new_conversation_button.setIcon(QIcon.fromTheme("list-add"))
 		self.new_conversation_button.clicked.connect(self.new_conversation)
-		self.new_conversation_layout.addWidget(self.new_conversation_button)
-		self.left_panel.addLayout(self.new_conversation_layout)
+		self.bottom_left_layout.addWidget(self.new_conversation_button)
+		self.left_panel.addLayout(self.bottom_left_layout)
 		
 		w = QWidget()
 		w.setLayout(self.left_panel)
@@ -198,6 +210,23 @@ class Application(QMainWindow):
 		Context.context_changed()
 		return conv
 	
+	def toggle_settings_window(self):
+		def get_settings_window_geometry():
+			main_window_rect = self.frameGeometry()
+			offset = 50
+			x = main_window_rect.x() + offset
+			y = main_window_rect.y() + offset
+			width = main_window_rect.width() - offset
+			height = main_window_rect.height() - offset
+			return QRect(x, y, width, height)
+		if self.settings_button.isChecked():
+			self.settings_window.show()
+			self.settings_window.raise_()
+			self.settings_window.activateWindow()
+			self.settings_window.setGeometry(get_settings_window_geometry())
+		else:
+			self.settings_window.close()
+			
 	def _name_description_confirm(self):
 		if Context.conversation is None:
 			return
