@@ -17,6 +17,9 @@
 			"type": "python",
 			"request": "launch",
 			"program": "${workspaceFolder}/AbstractAI/UI/main.py",
+			"args": [
+				"AbstractAI_Test.db"
+			],
 			"console": "integratedTerminal",
 			"justMyCode": false
 		}

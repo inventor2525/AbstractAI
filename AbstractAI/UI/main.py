@@ -29,6 +29,7 @@ import json
 from datetime import datetime
 from copy import deepcopy
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder
+import argparse
 import os
 
 Stopwatch("PyQT5", log_statistics=False)
@@ -49,11 +50,10 @@ class Application(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		Stopwatch.new_scope()
-		
+		self.setWindowTitle("AbstractAI")
 		self.app = QApplication.instance()
 		Stopwatch("Connect to database", log_statistics=False)
-		config_dir = os.path.expanduser("~/.config/AbstractAI/")
-		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{config_dir}chats.db")
+		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{Context.args.storage_location}")
 		
 		Stopwatch("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
@@ -341,6 +341,27 @@ if __name__ == "__main__":
 	Stopwatch("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
 	Context.settings = QSettings("Inventor2525", "AbstractAI")
+	
+	def get_default_storage_location():
+		config_dir = os.path.expanduser("~/.config/AbstractAI/")
+		if os.path.exists(config_dir):
+			return os.path.join(config_dir, 'chats.db')
+		return os.path.join(os.path.expanduser('~'), 'AbstractAI.db')
+
+	parser = argparse.ArgumentParser(description='AbstractAI')
+	
+	parser.add_argument(
+		'storage_location', nargs='?',
+		default=Context.settings.value(
+			"main/storage_location",
+			get_default_storage_location(), 
+			type=str
+		),
+		help='Path to SQLite database file (default: %(default)s)'
+	)
+	
+	Context.args = parser.parse_args()
+	Context.settings.setValue("main/storage_location", Context.args.storage_location)
 	
 	Stopwatch("Load models", log_statistics=False)
 	models = {
