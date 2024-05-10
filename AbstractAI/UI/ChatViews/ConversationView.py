@@ -129,6 +129,12 @@ class ConversationView(QListWidget):
 		message._item = message_item
 		
 		def message_selected(msg:Message):
+			if getattr(msg, "_view", None) is None:
+				try:
+					message_view.message_selected.disconnect()
+				except:
+					pass
+				return
 			has_focus = msg._view.text_edit.hasFocus()
 			scroll_val = self.verticalScrollBar().value()
 			if msg.auto_id == getattr(self.currentMessage, "auto_id", None):
