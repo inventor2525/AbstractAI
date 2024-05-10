@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import field, dataclass
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, TypeVar, Dict, Any
 
 def function_to_model(func):
 	argspec = inspect.getfullargspec(func)
@@ -50,27 +50,44 @@ def function_to_model(func):
 			namespace[field_name] = field(default=default, init=False)
 	return type(f"{func.__name__}__AutoSettingModel", (object,), namespace)
 
-T = TypeVar('T')
-def call_with_class(func:Callable[[Any], T], instance:Any) -> T:
-    """
-    Calls the given function with the attributes of a class instance as keyword arguments.
-    
-    Args:
-        func: The function to be called with the dataclass instance's fields as keyword arguments.
-        instance: A class instance whose fields are to be used as keyword arguments.
-    
-    Returns:
-        The result of the function call.
-    """
+def kwargs_from_instance(func:Callable[[Any], Any], instance:Any, replacements:Dict[str, Any]={}) -> Dict[str, Any]:
+	"""
+	Extracts the arguments from a dataclass instance that are also parameters of a function.
 	
-    # Extracting the function's parameter names
-    func_params = inspect.signature(func).parameters
-    
-    # Building a dictionary of arguments that are both in the instance and the function's parameters
-    kwargs = {param: getattr(instance, param) for param in func_params if hasattr(instance, param)}
-    
-    # Calling the function with the constructed keyword arguments
-    return func(**kwargs)
+	Args:
+		func: The function whose parameters are to be used.
+		instance: The dataclass instance whose fields are to be used as arguments.
+		replacements: An optional dictionary of arguments to replace the instance's fields with.
+		
+	Returns:
+		A dictionary of arguments to be used in a call to the function.
+	"""
+	
+	# Extracting the function's parameter names
+	func_params = inspect.signature(func).parameters
+
+	# Building a dictionary of arguments that are both in the instance and the function's parameters
+	kwargs = {param: getattr(instance, param) for param in func_params if hasattr(instance, param)}
+
+	# Replacing any arguments that are in the replacements dictionary
+	kwargs.update(replacements)
+
+	return kwargs
+
+T = TypeVar('T')
+def call_with_class(func:Callable[[Any], T], instance:Any, replacements:Dict[str, Any]={}) -> Dict[str, Any]:
+	"""
+	Calls the given function with the attributes of a class instance as keyword arguments.
+	
+	Args:
+		func: The function to be called with the dataclass instance's fields as keyword arguments.
+		instance: A class instance whose fields are to be used as keyword arguments.
+	
+	Returns:
+		The result of the function call.
+	"""
+	kwargs = kwargs_from_instance(func, instance, replacements)
+	return func(**kwargs)
 
 if __name__ == "__main__":
 	def test_func1(a:int, b:str, c:bool, d:list=[1,2,3], e:float=3.14, f:dict={"a":1,"b":2}) -> int:
