@@ -369,6 +369,11 @@ Stopwatch.end_scope(log_statistics=False)
 if __name__ == "__main__":
 	Stopwatch("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
+	qss_path = os.path.join(os.path.dirname(__file__), "Styles", "AbstractAI.qss")
+	app.setStyle("Fusion")
+	with open(qss_path, "r") as f:
+		app.setStyleSheet(f.read())
+		
 	Context.settings = QSettings("Inventor2525", "AbstractAI")
 	
 	def get_default_storage_location():
