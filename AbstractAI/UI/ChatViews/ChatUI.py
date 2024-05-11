@@ -160,7 +160,7 @@ class ChatUI(QWidget):
 		
 		new_message = Message(self.input_field.toPlainText())
 		if selected_role == "Assistant":
-			new_message.source = ModelSource(self.role_source_map[selected_role], self.conversation.message_sequence)
+			new_message.source = ModelSource(type(self).__name__, self.role_source_map[selected_role], self.conversation.message_sequence)
 		elif selected_role == "Files":
 			items = ItemsModel(items=deepcopy(self.file_selector.items))
 			items.new_id()
