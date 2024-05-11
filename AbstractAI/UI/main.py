@@ -208,6 +208,7 @@ class Application(QMainWindow):
 		self.right_panel = QVBoxLayout()
 		self.name_description_layout = QHBoxLayout()
 		self.models_combobox = QComboBox()
+		self.models_combobox.beingUpdated = False
 		self.update_models_dict()
 		self.models_combobox.currentTextChanged.connect(self.select_model)
 		self.name_description_layout.addWidget(self.models_combobox)
@@ -264,6 +265,7 @@ class Application(QMainWindow):
 		self.setCentralWidget(self.splitter)
 	
 	def update_models_dict(self):
+		self.models_combobox.beingUpdated = True
 		self.models_combobox.clear()
 		self.models_by_users_name = {}
 		for model in self.llmConfigs.models:
@@ -272,9 +274,11 @@ class Application(QMainWindow):
 		if self.llm is None:
 			self.models_combobox.addItem("Select A Model...")
 			self.models_combobox.setCurrentIndex(0)
-		else:
-			self.models_combobox.setCurrentText(self.llm.settings.user_model_name)
 		self.models_combobox.addItems(sorted(self.models_by_users_name.keys()))
+		
+		if self.llm is not None:
+			self.models_combobox.setCurrentText(self.llm.settings.user_model_name)
+		self.models_combobox.beingUpdated = False
 		
 	def new_conversation(self):
 		name = self.new_conversation_name.text()
@@ -399,6 +403,9 @@ class Application(QMainWindow):
 		self.generate_ai_response(conv)
 		
 	def select_model(self, model_name:str):
+		if self.models_combobox.beingUpdated:
+			return
+		
 		self.models_combobox.currentTextChanged.disconnect(self.select_model)
 		if self.models_combobox.itemText(0) == "Select A Model...":
 			self.models_combobox.removeItem(0)

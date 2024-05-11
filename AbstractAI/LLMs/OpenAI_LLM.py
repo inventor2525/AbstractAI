@@ -40,7 +40,7 @@ class OpenAI_LLM(LLM):
 			model=self.settings.model_name,
 			messages=message_list,
 			max_tokens=max_tokens,
-			temperature=self.settings.temperature,
+			# temperature=self.settings.temperature,
 			stream=stream
 		)
 		if stream:
@@ -77,7 +77,7 @@ class OpenAI_LLM(LLM):
 		return "\n\n".join(prompt_peices)
 	
 	def _load_model(self):
-		self.client = OpenAI(api_key=self.api_key)
+		self.client = OpenAI(api_key=self.settings.api_key)
 	
 	def count_tokens(self, text:str, model_name:str=None) -> int:
 		'''Count the number of tokens in the passed text.'''
