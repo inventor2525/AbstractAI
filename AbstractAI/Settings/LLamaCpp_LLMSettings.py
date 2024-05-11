@@ -44,4 +44,4 @@ class LLamaCpp_LLMSettings(LLMSettings):
 	
 	def load(self):
 		from AbstractAI.LLMs.LLamaCPP_LLM import LLamaCPP_LLM
-		# return LLamaCPP_LLM(self)
+		return LLamaCPP_LLM(self)

@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from PyQt5.QtCore import QSettings
 from AbstractAI.ConversationModel import *
-from AbstractAI.LLMs.ModelLoader import ModelLoader
 from AbstractAI.Helpers.Signal import Signal
 from argparse import Namespace
 
@@ -9,7 +8,6 @@ from argparse import Namespace
 class Context:
 	args:Namespace = None
 	settings: QSettings = None
-	model_loader: ModelLoader = None
 	start_str: str = ""
 	
 	llm_loaded: bool = False

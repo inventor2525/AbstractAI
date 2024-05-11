@@ -10,4 +10,4 @@ class Groq_LLMSettings(LLMSettings):
 	
 	def load(self):
 		from AbstractAI.LLMs.Groq_LLM import Groq_LLM
-		# return Groq_LLM(self)
+		return Groq_LLM(self)

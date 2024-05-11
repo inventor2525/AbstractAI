@@ -9,6 +9,7 @@ class OpenAI_LLMSettings(LLMSettings):
 	base_url:str = ""
 	organization: str = ""
 	
+	temperature: float = 0.2
 	def load(self):
 		from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
-		# return OpenAI_LLM(self)
+		return OpenAI_LLM(self)

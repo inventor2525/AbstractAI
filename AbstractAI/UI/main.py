@@ -13,7 +13,6 @@ from AbstractAI.UI.ChatViews.ConversationView import *
 from AbstractAI.UI.ChatViews.ChatUI import *
 from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
-from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 from AbstractAI.UI.Context import Context
 from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
@@ -21,10 +20,10 @@ Stopwatch("Setting Models", log_statistics=False)
 from AbstractAI.Settings.LLMSettings import *
 llm_settings_types = LLMSettings.load_subclasses()
 
-Stopwatch("Remote client", log_statistics=False)
-from AbstractAI.Remote.client import System, RemoteLLM
-Stopwatch("ModelLoader", log_statistics=False)
-from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
+from AbstractAI.LLMs.LLM import LLM
+
+# Stopwatch("Remote client", log_statistics=False)
+# from AbstractAI.Remote.client import System, RemoteLLM
 
 Stopwatch("DATAEngine", log_statistics=False)
 from ClassyFlaskDB.DATA import DATAEngine
@@ -54,6 +53,8 @@ class Application(QMainWindow):
 		
 	def __init__(self):
 		super().__init__()
+		self.llm : LLM = None
+		
 		Stopwatch.new_scope()
 		self.setWindowTitle("AbstractAI")
 		self.app = QApplication.instance()
@@ -62,6 +63,14 @@ class Application(QMainWindow):
 		self.settings_window = SettingsWindow()
 		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{Context.args.storage_location}")
 		
+		self.llmConfigs:LLMConfigs = None
+		with self.engine.session() as session:
+			self.llmConfigs = session.query(LLMConfigs).where(LLMConfigs.id == "main").first()
+			
+		if self.llmConfigs is None:
+			self.llmConfigs = LLMConfigs()
+			self.llmConfigs.id = "main"
+			
 		self.init_settings()
 		
 		Stopwatch("Load conversations", log_statistics=False)
@@ -89,24 +98,19 @@ class Application(QMainWindow):
 		
 		self.read_settings()
 		
-		self.llm : LLM = None
-		
 		Stopwatch.end_scope(log_statistics=False)
 	
 	def init_settings(self):
-		llmConfigs:LLMConfigs = None
-		with self.engine.session() as session:
-			llmConfigs = session.query(LLMConfigs).where(LLMConfigs.id == "main").first()
-			
-		if llmConfigs is None:
-			llmConfigs = LLMConfigs()
-			llmConfigs.id = "main"
+		def settings_changed(path:str):
+			if "Models/" in path:
+				self.update_models_dict()
+		self.settings_window.settingsChanged.connect(settings_changed)
 		
 		def add_model(model:LLMSettings):
 			model_type_name = type(model).ui_name()
 			self.settings_window.addSettingItem(SettingItem(
 				model,
-				f"Models/{model_type_name}/{model.auto_id}",
+				f"Models/{model_type_name}/{model.get_primary_key()}",
 				excluded_fields=["auto_id", "id"]
 			))
 			
@@ -115,14 +119,14 @@ class Application(QMainWindow):
 			layout = QHBoxLayout()
 			widget.setLayout(layout)
 			
-			model_picker = QComboBox()
-			model_picker.addItems(llm_settings_types.keys())
-			layout.addWidget(model_picker)
+			model_type_picker = QComboBox()
+			model_type_picker.addItems(llm_settings_types.keys())
+			layout.addWidget(model_type_picker)
 			
 			def create_clicked():
-				model_type = llm_settings_types[model_picker.currentText()]
+				model_type = llm_settings_types[model_type_picker.currentText()]
 				model = model_type()
-				llmConfigs.models.append(model)
+				self.llmConfigs.models.append(model)
 				add_model(model)
 				
 			create_button = QPushButton("Create")
@@ -132,7 +136,7 @@ class Application(QMainWindow):
 			return widget
 			
 		self.settings_window.addSettingItem(SettingItem(
-			llmConfigs,
+			self.llmConfigs,
 			"Models",
 			view_factories=[
 				("Create Model", create_model_view)
@@ -140,11 +144,11 @@ class Application(QMainWindow):
 			excluded_fields=["id", "models", "auto_id"]
 		))
 		
-		for model in llmConfigs.models:
+		for model in self.llmConfigs.models:
 			add_model(model)
 			
 		def save_settings():
-			self.engine.merge(llmConfigs)
+			self.engine.merge(self.llmConfigs)
 		self.settings_window.settingsSaved.connect(save_settings)
 		
 	def init_ui(self):
@@ -204,8 +208,7 @@ class Application(QMainWindow):
 		self.right_panel = QVBoxLayout()
 		self.name_description_layout = QHBoxLayout()
 		self.models_combobox = QComboBox()
-		self.models_combobox.addItem("Select A Model...")
-		self.models_combobox.addItems(Context.model_loader.model_names)
+		self.update_models_dict()
 		self.models_combobox.currentTextChanged.connect(self.select_model)
 		self.name_description_layout.addWidget(self.models_combobox)
 		self.name_field = QLineEdit()
@@ -260,6 +263,19 @@ class Application(QMainWindow):
 		self.splitter.setStretchFactor(1, 1)
 		self.setCentralWidget(self.splitter)
 	
+	def update_models_dict(self):
+		self.models_combobox.clear()
+		self.models_by_users_name = {}
+		for model in self.llmConfigs.models:
+			self.models_by_users_name[model.user_model_name] = model
+		
+		if self.llm is None:
+			self.models_combobox.addItem("Select A Model...")
+			self.models_combobox.setCurrentIndex(0)
+		else:
+			self.models_combobox.setCurrentText(self.llm.settings.user_model_name)
+		self.models_combobox.addItems(sorted(self.models_by_users_name.keys()))
+		
 	def new_conversation(self):
 		name = self.new_conversation_name.text()
 		if name == "":
@@ -393,7 +409,7 @@ class Application(QMainWindow):
 		
 		def load_model():
 			try:
-				self.llm = Context.model_loader[model_name]
+				self.llm = self.models_by_users_name[model_name].load()
 				self.llm.start()
 				return True
 			except Exception as e:
@@ -457,42 +473,7 @@ if __name__ == "__main__":
 	Context.args = parser.parse_args()
 	Context.settings.setValue("main/storage_location", Context.args.storage_location)
 	
-	Stopwatch("Load models", log_statistics=False)
-	models = {
-		"Mistral": {
-			"LoaderType": "LLamaCPP",
-			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
-			"Parameters": {}
-		},
-		"Mixtral": {
-			"LoaderType": "LLamaCPP",
-			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf",
-			"Parameters": { 
-				"model": {
-					"n_gpu_layers":0,
-				}
-			}
-		},
-		"GPT-3.5 Turbo": {
-			"ModelName": "gpt-3.5-turbo",
-			"LoaderType": "OpenAI",
-			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", Context.settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
-		},
-		"GPT-4": {
-			"ModelName": "gpt-4",
-			"LoaderType": "OpenAI",
-			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", Context.settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
-		},
-		"GPT-4 (OLD)" : {
-			"ModelName": "gpt-4-0613",
-			"LoaderType": "OpenAI",
-			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", Context.settings)
-		}
-	}
-	Context.model_loader = ModelLoader(models)
+	# new model loading code:
 	Stopwatch("Load window", log_statistics=False)
 	window = Application()
 	

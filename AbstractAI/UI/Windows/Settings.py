@@ -223,6 +223,7 @@ def all_annotations(cls):
 		
 class SettingsWindow(QDialog):
 	settingsSaved = pyqtSignal()
+	settingsChanged = pyqtSignal(str)
 	closed = pyqtSignal()
 	def __init__(self, setting_items: List[SettingItem] = []):
 		super().__init__()
@@ -409,6 +410,7 @@ class SettingsWindow(QDialog):
 				control.value = field_value
 				def change_value(control=control, model=setting_model, field_name=field_name):
 					setattr(model, field_name, control.value)
+					self.settingsChanged.emit(f"{setting_item.path}.{field_name}")
 				control.valueChanged.connect(change_value)
 				self.formLayout.addRow(QLabel(field_name), control)
 				

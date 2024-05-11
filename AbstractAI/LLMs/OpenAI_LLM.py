@@ -5,20 +5,12 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 import json
 import os
-#"gpt-3.5-turbo"
+from AbstractAI.Settings.OpenAI_LLMSettings import OpenAI_LLMSettings
 
 class OpenAI_LLM(LLM):
-	def __init__(self, api_key:str, model_name:str, parameters:Dict[str, Any]={}):
+	def __init__(self, settings:OpenAI_LLMSettings):
 		self.client = None
-		self.api_key = api_key
-		
-		default = {
-			"generate": {
-				"temperature":0.2,
-				"max_tokens":512
-			}
-		}
-		super().__init__(model_name, merge_dictionaries(default, parameters))
+		super().__init__(settings)
 	
 	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
 		raise Exception("This doesn't support string prompts")
@@ -44,14 +36,11 @@ class OpenAI_LLM(LLM):
 		wip_message = self._new_message(json.dumps(message_list, indent=4), conversation, "")
 		response = LLM_Response(wip_message, 0, stream)
 		
-		params = self.model_info.parameters["generate"]
-		if max_tokens is not None:
-			params = replace_parameters(params, {"max_tokens": max_tokens})
-		
 		completion = self.client.chat.completions.create(
-			model=self.model_info.model_name,
+			model=self.settings.model_name,
 			messages=message_list,
-			**params,
+			max_tokens=max_tokens,
+			temperature=self.settings.temperature,
 			stream=stream
 		)
 		if stream:
@@ -93,5 +82,5 @@ class OpenAI_LLM(LLM):
 	def count_tokens(self, text:str, model_name:str=None) -> int:
 		'''Count the number of tokens in the passed text.'''
 		if model_name is None:
-			model_name = self.model_info.model_name
+			model_name = self.settings.model_name
 		return len(tiktoken.encoding_for_model(model_name).encode(text))

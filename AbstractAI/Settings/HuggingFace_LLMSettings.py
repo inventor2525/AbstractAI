@@ -47,6 +47,7 @@ class HuggingFace_LLMInitSettings:
 	torch_dtype:torch_dtype_redefine = torch_dtype_redefine.float16
 	low_cpu_mem_usage:bool = True
 	device_map:str = "auto"
+	device:str = None
 	trust_remote_code:bool = False
 
 @ConversationDATA
@@ -65,15 +66,21 @@ class HuggingFace_LLMTokenizerSettings:
 	'''
 	use_fast:bool = False
 	trust_remote_code:bool = False
-	
+# "bnb_config" : {
+			# 	"load_in_4bit":True,
+			# 	"bnb_4bit_quant_type":'nf4',
+			# 	"bnb_4bit_use_double_quant":True,
+			# 	"bnb_4bit_compute_dtype":torch.bfloat16
+			# },
 @ConversationDATA
 class HuggingFace_LLMSettings(LLMSettings):
 	__ui_name__ = "HuggingFace"
-	model_name_path:str = ""
+	model_str:str = ""
+	del_token_type_ids:bool = True
 	model :HuggingFace_LLMInitSettings = field(default_factory=HuggingFace_LLMInitSettings)
 	generate :HuggingFace_LLMGenerateSettings = field(default_factory=HuggingFace_LLMGenerateSettings)
 	tokenize :HuggingFace_LLMTokenizerSettings = field(default_factory=HuggingFace_LLMTokenizerSettings)
 	
 	def load(self):
 		from AbstractAI.LLMs.HuggingFaceLLM import HuggingFaceLLM
-		# return HuggingFaceLLM(self.model_name_path, self)
+		return HuggingFaceLLM(self)
