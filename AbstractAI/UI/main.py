@@ -102,16 +102,13 @@ class Application(QMainWindow):
 			llmConfigs = LLMConfigs()
 			llmConfigs.id = "main"
 		
-		type_counts = {}
 		def add_model(model:LLMSettings):
-			nonlocal type_counts
 			model_type_name = type(model).ui_name()
-			current_count = type_counts.get(type(model).ui_name(), 0) + 1
 			self.settings_window.addSettingItem(SettingItem(
 				model,
-				f"Models/{model_type_name}/{current_count}"
+				f"Models/{model_type_name}/{model.auto_id}",
+				excluded_fields=["auto_id", "id"]
 			))
-			type_counts[model_type_name] = current_count
 			
 		def create_model_view():
 			widget = QWidget()
@@ -139,7 +136,8 @@ class Application(QMainWindow):
 			"Models",
 			view_factories=[
 				("Create Model", create_model_view)
-			]
+			],
+			excluded_fields=["id", "models", "auto_id"]
 		))
 		
 		for model in llmConfigs.models:
