@@ -1,5 +1,6 @@
 from .MessageSource import MessageSource
 from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.ConversationModel.ModelInfo import *
 from AbstractAI.ConversationModel.MessageSequence import MessageSequence
 from typing import Dict, Any, List, Union
 
@@ -11,6 +12,7 @@ class ModelSource(MessageSource):
 	message_sequence: MessageSequence = None
 	prompt: str = None
 	start_str: str = ""
+	model_info:ModelInfo=None #This is a legacy field that is no longer used, here only to support legacy database entries and can be removed completely and safely for new users
 
 	serialized_raw_output: Dict[str,Any] = field(default_factory=dict, compare=False)
 	
