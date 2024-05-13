@@ -29,11 +29,11 @@ class HuggingFaceLLM(LLM):
 		)
 		self.model = AutoModelForCausalLM.from_pretrained(
 			self.settings.model_str,
-			revision=self.settings.model.revision,
+			# revision=self.settings.model.revision,
 			torch_dtype=self.settings.model.torch_dtype.to_torch(),
 			low_cpu_mem_usage=self.settings.model.low_cpu_mem_usage,
 			device_map=self.settings.model.device_map,
-			device=self.device,
+			# device=self.device,
 			trust_remote_code=self.settings.model.trust_remote_code
 		)
 	
@@ -51,7 +51,8 @@ class HuggingFaceLLM(LLM):
 			pass
 		
 		if stream:
-			raise NotImplementedError("Stream not yet implemented for HuggingFaceLLM")
+			# raise NotImplementedError("Stream not yet implemented for HuggingFaceLLM")
+			pass
 		else:
 			replace_parameters = {}
 			if max_tokens is not None:

@@ -38,7 +38,7 @@ class torch_dtype_redefine(Enum):
 		except Exception as e:
 			raise e
 	
-@ConversationDATA
+@ConversationDATA(generated_id_type=ID_Type.HASHID)
 class HuggingFace_LLMInitSettings:
 	'''
 	Used to load the model.
@@ -50,7 +50,7 @@ class HuggingFace_LLMInitSettings:
 	device:str = None
 	trust_remote_code:bool = False
 
-@ConversationDATA
+@ConversationDATA(generated_id_type=ID_Type.HASHID)
 class HuggingFace_LLMGenerateSettings:
 	'''
 	Used when generating text with the model.
@@ -59,7 +59,7 @@ class HuggingFace_LLMGenerateSettings:
 	top_p:float = 0.95
 	top_k:int = 0
 
-@ConversationDATA
+@ConversationDATA(generated_id_type=ID_Type.HASHID)
 class HuggingFace_LLMTokenizerSettings:
 	'''
 	Used to load the tokenizer.
@@ -72,7 +72,7 @@ class HuggingFace_LLMTokenizerSettings:
 			# 	"bnb_4bit_use_double_quant":True,
 			# 	"bnb_4bit_compute_dtype":torch.bfloat16
 			# },
-@ConversationDATA
+@ConversationDATA(generated_id_type=ID_Type.HASHID)
 class HuggingFace_LLMSettings(LLMSettings):
 	__ui_name__ = "HuggingFace"
 	model_str:str = ""
@@ -83,4 +83,4 @@ class HuggingFace_LLMSettings(LLMSettings):
 	
 	def load(self):
 		from AbstractAI.LLMs.HuggingFaceLLM import HuggingFaceLLM
-		return HuggingFaceLLM(self)
+		return HuggingFaceLLM(self.copy())

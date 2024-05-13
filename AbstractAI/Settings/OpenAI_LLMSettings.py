@@ -1,6 +1,6 @@
 from .LLMSettings import *
 
-@ConversationDATA
+@ConversationDATA(generated_id_type=ID_Type.HASHID)
 class OpenAI_LLMSettings(LLMSettings):
 	__ui_name__ = "OpenAI"
 	model_name:str = ""
@@ -12,4 +12,4 @@ class OpenAI_LLMSettings(LLMSettings):
 	temperature: float = 0.2
 	def load(self):
 		from AbstractAI.LLMs.OpenAI_LLM import OpenAI_LLM
-		return OpenAI_LLM(self)
+		return OpenAI_LLM(self.copy())

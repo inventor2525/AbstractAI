@@ -148,6 +148,8 @@ class Application(QMainWindow):
 			add_model(model)
 			
 		def save_settings():
+			for model in self.llmConfigs.models:
+				model.new_id(True)
 			self.engine.merge(self.llmConfigs)
 		self.settings_window.settingsSaved.connect(save_settings)
 		
