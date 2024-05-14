@@ -68,7 +68,6 @@ class LLM_Response:
 		if not has_more:
 			self.message.source.finished = True
 			self.message.source.generating = False
-			print("donne!")
 		return has_more
 	
 	def stop_streaming(self):
