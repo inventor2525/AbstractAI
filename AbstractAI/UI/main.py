@@ -432,7 +432,11 @@ class Application(QMainWindow):
 		current_item = model.itemFromIndex(q_index)
 		self.select_model(current_item.data(Qt.UserRole))
 		
-	def select_model(self, model:LLMSettings):		
+	def select_model(self, model:LLMSettings):
+		if model.__ui_name__ is "HuggingFace":
+			QMessageBox.critical(None, "Error", "Hugging Face models are currently broken in the UI.")
+			return
+		
 		self.models_combobox.currentIndexChanged.disconnect(self._current_model_selection_changed)
 		if self.models_combobox.itemText(0) == "Select A Model...":
 			self.models_combobox.removeItem(0)
