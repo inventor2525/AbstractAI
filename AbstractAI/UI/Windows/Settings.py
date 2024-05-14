@@ -176,12 +176,28 @@ class EnumControl(QComboBox, TypedControl[Enum]):
 			self.addItem(enum_value.name)
 			
 class SettingItem:
-	def __init__(self, model, path, view_factory=None, view_factories=None, excluded_fields:Set[str]=set()):
+	def __init__(self, model:Any, path_format:str, view_factory=None, view_factories=None, excluded_fields:Set[str]=set()):
 		self.model = model
-		self.path = path
+		self.path_format = path_format
+		self.evaluate_path()
 		self.view_factory = view_factory
 		self.view_factories:List[Tuple[str,Callable[[],QWidget]]] = view_factories
 		self.excluded_fields:Set[str] = excluded_fields
+	
+	def evaluate_path(self) -> List[str]:
+		path_parts = []
+		self.path_format_fields = set()
+		for part in self.path_format.split('/'):
+			if part.startswith('{') and part.endswith('}'):
+				field_name = part[1:-1]
+				if hasattr(self.model, field_name):
+					path_parts.append(getattr(self.model, field_name))
+					self.path_format_fields.add(field_name)
+				else:
+					raise ValueError(f"Model {self.model} has no field {field_name}")
+			else:
+				path_parts.append(part)
+		self.path = [str(part) for part in path_parts]
 		
 class TreeViewItem(QStandardItem):
 	def __init__(self, *args, **kwargs):
@@ -298,12 +314,13 @@ class SettingsWindow(QDialog):
 	def _add_item(self, setting_item: SettingItem) -> None:
 		parent = self.treeModel.invisibleRootItem()
 		indent_level = 0
-		for part in setting_item.path.split("/"):
+		for part in setting_item.path:
 			parent = self.findOrAddChild(parent, part)
 			parent.indent_level = indent_level
 			self.all_items.append(parent)
 			indent_level += 1
 		item = parent
+		setting_item.item = item
 		item.setting_item = setting_item
 		item.setting_model = setting_item.model
 		item.isTopLevelItem = True
@@ -393,7 +410,7 @@ class SettingsWindow(QDialog):
 		
 		index = selection[0]
 		item = self.treeModel.itemFromIndex(index)
-		setting_item = getattr(item, 'setting_item', None)
+		setting_item:SettingItem = getattr(item, 'setting_item', None)
 		setting_model = getattr(item, 'setting_model', None)
 		
 		if setting_item is not None and setting_item.view_factory is not None:
@@ -408,9 +425,15 @@ class SettingsWindow(QDialog):
 					continue
 				control = control_type(field_type)
 				control.value = field_value
-				def change_value(control=control, model=setting_model, field_name=field_name):
+				value_updates_path = field_name in setting_item.path_format_fields
+				def change_value(control=control, model=setting_model, field_name=field_name, setting_item=setting_item, value_updates_path=value_updates_path):
 					setattr(model, field_name, control.value)
-					self.settingsChanged.emit(f"{setting_item.path}.{field_name}")
+					if value_updates_path:
+						old_path = setting_item.path
+						setting_item.evaluate_path()
+						if old_path != setting_item.path:
+							setting_item.item.setText(setting_item.path[-1])
+					self.settingsChanged.emit(f"{setting_item.path_format}.{field_name}")
 				control.valueChanged.connect(change_value)
 				self.formLayout.addRow(QLabel(field_name), control)
 				
@@ -487,7 +510,7 @@ if __name__ == "__main__":
 		SettingItem(model1, "Items/Model1"),
 		SettingItem(model2, "Items/Model2"),
 		SettingItem(model3, "Items/Model2/Model3"),
-		SettingItem(nested_model, "Items/Nested/Linked Model"),
+		SettingItem(nested_model, "Items/Nested/{name}"),
 		SettingItem(nested_model_2, "Items/Nested/UnLinked Model"),
 		SettingItem(ChildModel(3,parent_field=42), "Items/Child Model"),
 	]

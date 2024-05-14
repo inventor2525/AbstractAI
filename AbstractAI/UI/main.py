@@ -110,7 +110,7 @@ class Application(QMainWindow):
 			model_type_name = type(model).ui_name()
 			self.settings_window.addSettingItem(SettingItem(
 				model,
-				f"Models/{model_type_name}/{model.get_primary_key()}",
+				f"Models/{model_type_name}/"+"{user_model_name}",
 				excluded_fields=["auto_id", "id"]
 			))
 			
