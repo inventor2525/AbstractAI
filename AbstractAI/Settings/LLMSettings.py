@@ -66,6 +66,7 @@ class LLMSettings:
 		'''
 		copy = deepcopy(self)
 		copy.new_id(True)
+		copy._copy_source_ = self
 		return copy
 
 @ConversationDATA(generated_id_type=ID_Type.HASHID)

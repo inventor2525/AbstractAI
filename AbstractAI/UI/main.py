@@ -212,7 +212,7 @@ class Application(QMainWindow):
 		self.models_combobox = QComboBox()
 		self.models_combobox.beingUpdated = False
 		self.update_models_dict()
-		self.models_combobox.currentTextChanged.connect(self.select_model)
+		self.models_combobox.currentIndexChanged.connect(self._current_model_selection_changed)
 		self.name_description_layout.addWidget(self.models_combobox)
 		self.name_field = QLineEdit()
 		self.name_field.setPlaceholderText("Conversation Name...")
@@ -266,20 +266,46 @@ class Application(QMainWindow):
 		self.splitter.setStretchFactor(1, 1)
 		self.setCentralWidget(self.splitter)
 	
+	def format_model_name(self, model):
+		return f"{model.__ui_name__}: {model.user_model_name}"
+	
 	def update_models_dict(self):
 		self.models_combobox.beingUpdated = True
 		self.models_combobox.clear()
 		self.models_by_users_name = {}
-		for model in self.llmConfigs.models:
-			self.models_by_users_name[model.user_model_name] = model
 		
 		if self.llm is None:
 			self.models_combobox.addItem("Select A Model...")
-			self.models_combobox.setCurrentIndex(0)
-		self.models_combobox.addItems(sorted(self.models_by_users_name.keys()))
-		
+			
+		color_counter = 0
+		default_background_color = "white"
+		alternate_background_color = "lightgrey"
+		prev_ui_name = None
+		for model in sorted(self.llmConfigs.models, key=self.format_model_name):
+			self.models_by_users_name[model.user_model_name] = model
+			if prev_ui_name is None:
+				prev_ui_name = model.__ui_name__
+			if not(prev_ui_name == model.__ui_name__):
+				prev_ui_name = model.__ui_name__
+				color_counter += 1
+			item_text = self.format_model_name(model)
+			self.models_combobox.addItem(item_text)
+			
+			if color_counter % 2 == 0:
+				background_color = default_background_color
+			else:
+				background_color = alternate_background_color
+			
+			item = self.models_combobox.model().item(self.models_combobox.count() - 1)
+			item.setBackground(QColor(background_color))
+			item.setData(model, Qt.UserRole)
+			
 		if self.llm is not None:
-			self.models_combobox.setCurrentText(self.llm.settings.user_model_name)
+			current_model_name = self.llm.settings.user_model_name
+			for i in range(self.models_combobox.count()):
+				if self.models_combobox.itemText(i) == self.format_model_name(self.llm.settings._copy_source_):
+					self.models_combobox.setCurrentIndex(i)
+					break
 		self.models_combobox.beingUpdated = False
 		
 	def new_conversation(self):
@@ -397,12 +423,17 @@ class Application(QMainWindow):
 		self.chatUI.conversation_view.conversation = conv
 		
 		self.generate_ai_response(conv)
-		
-	def select_model(self, model_name:str):
+	
+	def _current_model_selection_changed(self, index: int):
 		if self.models_combobox.beingUpdated:
 			return
+		model = self.models_combobox.model()
+		q_index = model.index(index, 0)
+		current_item = model.itemFromIndex(q_index)
+		self.select_model(current_item.data(Qt.UserRole))
 		
-		self.models_combobox.currentTextChanged.disconnect(self.select_model)
+	def select_model(self, model:LLMSettings):		
+		self.models_combobox.currentIndexChanged.disconnect(self._current_model_selection_changed)
 		if self.models_combobox.itemText(0) == "Select A Model...":
 			self.models_combobox.removeItem(0)
 			self.models_combobox.setEnabled(False)
@@ -412,11 +443,11 @@ class Application(QMainWindow):
 		
 		def load_model():
 			try:
-				self.llm = self.models_by_users_name[model_name].load()
+				self.llm = model.load()
 				self.llm.start()
 				return True
 			except Exception as e:
-				print(f"Error loading model '{model_name}' with exception: {e}")
+				print(f"Error loading model '{model.user_model_name}' with exception: {e}")
 				return False
 		
 		self.task = BackgroundTask(load_model, 200)
@@ -433,11 +464,11 @@ class Application(QMainWindow):
 		def model_loaded():
 			self.models_combobox.removeItem(0)
 			if self.task.return_val:
-				self.models_combobox.setCurrentText(model_name)
+				self.models_combobox.setCurrentText(self.format_model_name(self.llm.settings))           
 			else:
 				self.models_combobox.insertItem(0, "Select A Model...")
 				self.models_combobox.setCurrentIndex(0)
-			self.models_combobox.currentTextChanged.connect(self.select_model)
+			self.models_combobox.currentIndexChanged.connect(self._current_model_selection_changed)
 			self.models_combobox.setEnabled(True)
 		
 		self.task.finished.connect(model_loaded)
