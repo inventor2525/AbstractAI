@@ -18,10 +18,9 @@ This also implements speech to text as a type anywhere input method and several 
 
 ```bash
 cd <path to AbstractAI>
-python AbstractAI/UI/main.py
+python AbstractAI/UI/main.py <optional path to your sql lite db file>
 ```
-Add models to models.json in ~/.config/AbstractAI/ to use them in the chat interface.
-Config screen to come.
+You can add models in settings
 
 #### Speech to Text
 Requires a server or modification to run locally.
