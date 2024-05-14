@@ -1,7 +1,6 @@
 from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.LLMStats import LLMStats
 from AbstractAI.LLMs.CommonRoles import CommonRoles
-from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 from AbstractAI.Helpers.merge_dictionaries import *
 from .LLM_Response import LLM_Response
 
@@ -9,29 +8,22 @@ from datetime import datetime
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Any, Union, Dict, List
 import json
-	
+
+from AbstractAI.Helpers.func_to_model import kwargs_from_instance
+from AbstractAI.Settings.LLMSettings import LLMSettings
+
 class LLM(ABC):
-	def __init__(self, model_name:str, parameters:Dict[str, Any]={}):
-		default = {
-			"roles": {
-				"must_alternate": False,
-				"mapping": {
-					CommonRoles.System.value: "system",
-					CommonRoles.User.value: "user",
-					CommonRoles.Assistant.value: "assistant"
-				}
-			}
-		}
+	def __init__(self, settings:LLMSettings):
 		self.stats = LLMStats()
-		self.model_info = ModelInfo(type(self).__name__, model_name, merge_dictionaries(default, parameters))
+		self.settings = settings
 		self.started = False
 
 	def start(self):
 		if self.started:
 			return
-		print(f"Loading LLM \"{self.model_info.model_name}\" using \"{self.model_info.class_name}\" with parameters: {json.dumps(self.model_info.parameters,indent=4, cls=JSONEncoder)}")
+		print(f"Loading LLM \"{self.settings.user_model_name}\" using \"{type(self).__name__}\"")
 		self._load_model()
-		print(f"LLM \"{self.model_info.model_name}\" loaded!")
+		print(f"LLM \"{self.settings.user_model_name}\" loaded!")
 		self.started = True
 		
 	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> LLM_Response:
@@ -83,8 +75,12 @@ class LLM(ABC):
 		chat = []
 		prev_role = None
 		prev_user_name = None
-		role_mapping = self.model_info.parameters["roles"]["mapping"]
-		must_alternate = self.model_info.parameters["roles"]["must_alternate"]
+		role_mapping  = {
+			CommonRoles.System.value: "system",
+			CommonRoles.User.value: "user",
+			CommonRoles.Assistant.value: "assistant"
+		}
+		must_alternate = self.settings.roles.must_alternate
 		
 		def append(msg:Dict[str,str], name:str):
 			if name is not None:
@@ -130,7 +126,7 @@ class LLM(ABC):
 		
 		# Store info about where the message came from:
 		source = ModelSource(
-			self.model_info, message_sequence=message_sequence,
+			type(self).__name__, self.settings, message_sequence=message_sequence,
 			prompt=prompt, start_str=start_str
 		)
 		

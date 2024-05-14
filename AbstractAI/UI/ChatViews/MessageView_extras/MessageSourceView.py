@@ -47,11 +47,26 @@ class MessageSourceView(QWidget):
 					f"{pascal_case(message_source.user_name)}:"
 				])
 		elif isinstance(message_source, ModelSource):
-			return "\n".join([
-				"Model",
-				message_source.model_info.class_name,
-				message_source.model_info.model_name,
-			])
+			try:
+				if message_source.model_class is None:
+					#legacy code support:
+					#This is from when we loaded models from json rather than the db
+					#and the model info had a 'model_source' that dumbly pointed to
+					#a duplication of the json model config
+					return "\n".join([
+						"Model",
+						message_source.model_info.class_name,
+						message_source.model_info.model_name,
+					])
+				
+				return "\n".join([
+					"Model",
+					message_source.model_class,
+					message_source.settings.user_model_name,
+				])
+			except Exception as e:
+				return "Model:\nUnknown"
+		
 		elif isinstance(message_source, TerminalSource):
 			return "Terminal:"
 		elif isinstance(message_source, EditSource):

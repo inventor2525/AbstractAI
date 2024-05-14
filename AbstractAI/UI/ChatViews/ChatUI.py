@@ -6,6 +6,7 @@ from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.ConversationModel import *
 from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemsModel
+from AbstractAI.Settings.LLMSettings import LLMSettings
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from PyQt5.QtCore import QTimer
@@ -40,7 +41,7 @@ class ChatUI(QWidget):
 		
 		self.role_source_map = {
 			"Human": UserSource(),
-			"Assistant": ModelInfo("ChatUI", "Impersonation", log_caller_info(except_keys=['instance_id'])),
+			"Assistant": LLMSettings(user_model_name="ChatUI", user_description="Impersonation by ChatUI.py"),
 			"System": SystemSource()
 		}
 		
@@ -159,7 +160,7 @@ class ChatUI(QWidget):
 		
 		new_message = Message(self.input_field.toPlainText())
 		if selected_role == "Assistant":
-			new_message.source = ModelSource(self.role_source_map[selected_role], self.conversation.message_sequence)
+			new_message.source = ModelSource(type(self).__name__, self.role_source_map[selected_role], self.conversation.message_sequence)
 		elif selected_role == "Files":
 			items = ItemsModel(items=deepcopy(self.file_selector.items))
 			items.new_id()

@@ -3,7 +3,6 @@ from .Message import Message
 from .Conversation import Conversation, MessageSequence
 from .ConversationCollection import ConversationCollection
 from .ModelBase import ConversationDATA, get_local_time
-from .ModelInfo import ModelInfo
 
 def print_conversation(conversation:Conversation):
 	import json

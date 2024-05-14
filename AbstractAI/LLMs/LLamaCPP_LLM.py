@@ -3,36 +3,31 @@ from .LLM import *
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import LlamaChatCompletionHandlerRegistry, ChatFormatter, ChatFormatterResponse
+from AbstractAI.Settings.LLamaCpp_LLMSettings import LLamaCpp_LLMSettings
 
 class LLamaCPP_LLM(LLM):
-	def __init__(self, model_name:str, model_path:str, parameters:Dict[str, Any]={}):
-		default = {
-			"tokenizer": {
-				"use_fast": False,
-				"trust_remote_code": True
-			},
-			"model": {
-				"model_path": model_path,
-				"n_ctx":2048,
-				"n_threads":7,
-				"n_gpu_layers":0,
-				"chat_format":"llama-2"
-			},
-			"generate": {
-				"max_tokens":1024,
-				"stop": ["</s>"]
-			}
-		}
-		super().__init__(model_name, merge_dictionaries(default, parameters))
+	def __init__(self, settings:LLamaCpp_LLMSettings):
+		super().__init__(settings)
 		self.model = None
 		
 	def _load_model(self):
-		self.model = Llama(**self.model_info.parameters["model"])
+		self.model = Llama(
+			self.settings.model.model_path,
+			n_ctx=self.settings.model.n_ctx,
+			n_gpu_layers=self.settings.model.n_gpu_layers,
+			n_threads=self.settings.model.n_threads,
+			main_gpu=self.settings.model.main_gpu,
+			chat_format=self.settings.model.chat_format,
+			flash_attn=self.settings.model.flash_attn,
+			verbose=self.settings.model.verbose
+		)
 	
 	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
-		params = self.model_info.parameters["generate"]
+		params = kwargs_from_instance(self.model.create_completion, self.settings.generate)
+		
 		if max_tokens is not None:
-			params = replace_parameters(params, {"max_tokens": max_tokens})
+			params["max_tokens"] = max_tokens
+		print(params)
 		completion = self.model.create_completion(prompt, **params, stream=stream)
 		response = LLM_Response(wip_message, self.count_tokens(prompt), stream)
 		if not stream:

@@ -13,13 +13,17 @@ from AbstractAI.UI.ChatViews.ConversationView import *
 from AbstractAI.UI.ChatViews.ChatUI import *
 from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
-from AbstractAI.UI.Support.APIKeyGetter import APIKeyGetter
 from AbstractAI.UI.Context import Context
+from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
-Stopwatch("Remote client", log_statistics=False)
-from AbstractAI.Remote.client import System, RemoteLLM
-Stopwatch("ModelLoader", log_statistics=False)
-from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
+Stopwatch("Setting Models", log_statistics=False)
+from AbstractAI.Settings.LLMSettings import *
+llm_settings_types = LLMSettings.load_subclasses()
+
+from AbstractAI.LLMs.LLM import LLM
+
+# Stopwatch("Remote client", log_statistics=False)
+# from AbstractAI.Remote.client import System, RemoteLLM
 
 Stopwatch("DATAEngine", log_statistics=False)
 from ClassyFlaskDB.DATA import DATAEngine
@@ -29,6 +33,7 @@ import json
 from datetime import datetime
 from copy import deepcopy
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder
+import argparse
 import os
 
 Stopwatch("PyQT5", log_statistics=False)
@@ -48,12 +53,25 @@ class Application(QMainWindow):
 		
 	def __init__(self):
 		super().__init__()
-		Stopwatch.new_scope()
+		self.llm : LLM = None
 		
+		Stopwatch.new_scope()
+		self.setWindowTitle("AbstractAI")
 		self.app = QApplication.instance()
 		Stopwatch("Connect to database", log_statistics=False)
-		config_dir = os.path.expanduser("~/.config/AbstractAI/")
-		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{config_dir}chats.db")
+		
+		self.settings_window = SettingsWindow()
+		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{Context.args.storage_location}")
+		
+		self.llmConfigs:LLMConfigs = None
+		with self.engine.session() as session:
+			self.llmConfigs = session.query(LLMConfigs).where(LLMConfigs.id == "main").first()
+			
+		if self.llmConfigs is None:
+			self.llmConfigs = LLMConfigs()
+			self.llmConfigs.id = "main"
+			
+		self.init_settings()
 		
 		Stopwatch("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
@@ -80,10 +98,61 @@ class Application(QMainWindow):
 		
 		self.read_settings()
 		
-		self.llm : LLM = None
-		
 		Stopwatch.end_scope(log_statistics=False)
 	
+	def init_settings(self):
+		def settings_changed(path:str):
+			if "Models/" in path:
+				self.update_models_dict()
+		self.settings_window.settingsChanged.connect(settings_changed)
+		
+		def add_model(model:LLMSettings):
+			model_type_name = type(model).ui_name()
+			self.settings_window.addSettingItem(SettingItem(
+				model,
+				f"Models/{model_type_name}/"+"{user_model_name}",
+				excluded_fields=["auto_id", "id"]
+			))
+			
+		def create_model_view():
+			widget = QWidget()
+			layout = QHBoxLayout()
+			widget.setLayout(layout)
+			
+			model_type_picker = QComboBox()
+			model_type_picker.addItems(llm_settings_types.keys())
+			layout.addWidget(model_type_picker)
+			
+			def create_clicked():
+				model_type = llm_settings_types[model_type_picker.currentText()]
+				model = model_type()
+				self.llmConfigs.models.append(model)
+				add_model(model)
+				
+			create_button = QPushButton("Create")
+			create_button.clicked.connect(create_clicked)
+			create_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+			layout.addWidget(create_button)
+			return widget
+			
+		self.settings_window.addSettingItem(SettingItem(
+			self.llmConfigs,
+			"Models",
+			view_factories=[
+				("Create Model", create_model_view)
+			],
+			excluded_fields=["id", "models", "auto_id"]
+		))
+		
+		for model in self.llmConfigs.models:
+			add_model(model)
+			
+		def save_settings():
+			for model in self.llmConfigs.models:
+				model.new_id(True)
+			self.engine.merge(self.llmConfigs)
+		self.settings_window.settingsSaved.connect(save_settings)
+		
 	def init_ui(self):
 		#split view:
 		self.splitter = QSplitter(Qt.Horizontal)
@@ -115,15 +184,24 @@ class Application(QMainWindow):
 		self.conversation_list_view = ConversationListView(self.conversations)
 		self.left_panel.addWidget(self.conversation_list_view)
 		
-		self.new_conversation_layout = QHBoxLayout()
+		self.bottom_left_layout = QHBoxLayout()
+		
+		self.settings_button = QToolButton()
+		self.settings_button.setText("Settings")
+		self.settings_button.setCheckable(True)
+		self.settings_button.clicked.connect(self.toggle_settings_window)
+		self.bottom_left_layout.addWidget(self.settings_button)
+		self.settings_button.setStyleSheet("QToolButton { padding: 2px; }")
+		self.settings_window.closed.connect(lambda: self.settings_button.setChecked(False))
+		
 		self.new_conversation_name = QLineEdit()
 		self.new_conversation_name.setPlaceholderText("New Conversation Name...")
-		self.new_conversation_layout.addWidget(self.new_conversation_name)
+		self.bottom_left_layout.addWidget(self.new_conversation_name)
 		self.new_conversation_button = QPushButton()
 		self.new_conversation_button.setIcon(QIcon.fromTheme("list-add"))
 		self.new_conversation_button.clicked.connect(self.new_conversation)
-		self.new_conversation_layout.addWidget(self.new_conversation_button)
-		self.left_panel.addLayout(self.new_conversation_layout)
+		self.bottom_left_layout.addWidget(self.new_conversation_button)
+		self.left_panel.addLayout(self.bottom_left_layout)
 		
 		w = QWidget()
 		w.setLayout(self.left_panel)
@@ -132,9 +210,9 @@ class Application(QMainWindow):
 		self.right_panel = QVBoxLayout()
 		self.name_description_layout = QHBoxLayout()
 		self.models_combobox = QComboBox()
-		self.models_combobox.addItem("Select A Model...")
-		self.models_combobox.addItems(Context.model_loader.model_names)
-		self.models_combobox.currentTextChanged.connect(self.select_model)
+		self.models_combobox.beingUpdated = False
+		self.update_models_dict()
+		self.models_combobox.currentIndexChanged.connect(self._current_model_selection_changed)
 		self.name_description_layout.addWidget(self.models_combobox)
 		self.name_field = QLineEdit()
 		self.name_field.setPlaceholderText("Conversation Name...")
@@ -188,6 +266,48 @@ class Application(QMainWindow):
 		self.splitter.setStretchFactor(1, 1)
 		self.setCentralWidget(self.splitter)
 	
+	def format_model_name(self, model):
+		return f"{model.__ui_name__}: {model.user_model_name}"
+	
+	def update_models_dict(self):
+		self.models_combobox.beingUpdated = True
+		self.models_combobox.clear()
+		self.models_by_users_name = {}
+		
+		if self.llm is None:
+			self.models_combobox.addItem("Select A Model...")
+			
+		color_counter = 0
+		default_background_color = "white"
+		alternate_background_color = "lightgrey"
+		prev_ui_name = None
+		for model in sorted(self.llmConfigs.models, key=self.format_model_name):
+			self.models_by_users_name[model.user_model_name] = model
+			if prev_ui_name is None:
+				prev_ui_name = model.__ui_name__
+			if not(prev_ui_name == model.__ui_name__):
+				prev_ui_name = model.__ui_name__
+				color_counter += 1
+			item_text = self.format_model_name(model)
+			self.models_combobox.addItem(item_text)
+			
+			if color_counter % 2 == 0:
+				background_color = default_background_color
+			else:
+				background_color = alternate_background_color
+			
+			item = self.models_combobox.model().item(self.models_combobox.count() - 1)
+			item.setBackground(QColor(background_color))
+			item.setData(model, Qt.UserRole)
+			
+		if self.llm is not None:
+			current_model_name = self.llm.settings.user_model_name
+			for i in range(self.models_combobox.count()):
+				if self.models_combobox.itemText(i) == self.format_model_name(self.llm.settings._copy_source_):
+					self.models_combobox.setCurrentIndex(i)
+					break
+		self.models_combobox.beingUpdated = False
+		
 	def new_conversation(self):
 		name = self.new_conversation_name.text()
 		if name == "":
@@ -198,6 +318,23 @@ class Application(QMainWindow):
 		Context.context_changed()
 		return conv
 	
+	def toggle_settings_window(self):
+		def get_settings_window_geometry():
+			main_window_rect = self.frameGeometry()
+			offset = 50
+			x = main_window_rect.x() + offset
+			y = main_window_rect.y() + offset
+			width = main_window_rect.width() - offset
+			height = main_window_rect.height() - offset
+			return QRect(x, y, width, height)
+		if self.settings_button.isChecked():
+			self.settings_window.show()
+			self.settings_window.raise_()
+			self.settings_window.activateWindow()
+			self.settings_window.setGeometry(get_settings_window_geometry())
+		else:
+			self.settings_window.close()
+			
 	def _name_description_confirm(self):
 		if Context.conversation is None:
 			return
@@ -258,18 +395,12 @@ class Application(QMainWindow):
 		max_tokens = self.chatUI.max_tokens
 			
 		def chat():
-			print(f"chat:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			response = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
-			print(f"chat done:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			conversation.add_message(response.message)
-			print(f"message added:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 			while response.generate_more():
-				print(f"generate more:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 				if not self._should_generate:
 					response.stop_streaming()
 					break
-			print(f"generate more DONE:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}")
-			print(f"AI said: {response.message.content}")
 			return response.message
 		
 		self.task = BackgroundTask(chat)
@@ -292,9 +423,21 @@ class Application(QMainWindow):
 		self.chatUI.conversation_view.conversation = conv
 		
 		self.generate_ai_response(conv)
+	
+	def _current_model_selection_changed(self, index: int):
+		if self.models_combobox.beingUpdated:
+			return
+		model = self.models_combobox.model()
+		q_index = model.index(index, 0)
+		current_item = model.itemFromIndex(q_index)
+		self.select_model(current_item.data(Qt.UserRole))
 		
-	def select_model(self, model_name:str):
-		self.models_combobox.currentTextChanged.disconnect(self.select_model)
+	def select_model(self, model:LLMSettings):
+		if model.__ui_name__ is "HuggingFace":
+			QMessageBox.critical(None, "Error", "Hugging Face models are currently broken in the UI.")
+			return
+		
+		self.models_combobox.currentIndexChanged.disconnect(self._current_model_selection_changed)
 		if self.models_combobox.itemText(0) == "Select A Model...":
 			self.models_combobox.removeItem(0)
 			self.models_combobox.setEnabled(False)
@@ -304,11 +447,11 @@ class Application(QMainWindow):
 		
 		def load_model():
 			try:
-				self.llm = Context.model_loader[model_name]
+				self.llm = model.load()
 				self.llm.start()
 				return True
 			except Exception as e:
-				print(f"Error loading model '{model_name}' with exception: {e}")
+				print(f"Error loading model '{model.user_model_name}' with exception: {e}")
 				return False
 		
 		self.task = BackgroundTask(load_model, 200)
@@ -325,11 +468,11 @@ class Application(QMainWindow):
 		def model_loaded():
 			self.models_combobox.removeItem(0)
 			if self.task.return_val:
-				self.models_combobox.setCurrentText(model_name)
+				self.models_combobox.setCurrentText(self.format_model_name(self.llm.settings))           
 			else:
 				self.models_combobox.insertItem(0, "Select A Model...")
 				self.models_combobox.setCurrentIndex(0)
-			self.models_combobox.currentTextChanged.connect(self.select_model)
+			self.models_combobox.currentIndexChanged.connect(self._current_model_selection_changed)
 			self.models_combobox.setEnabled(True)
 		
 		self.task.finished.connect(model_loaded)
@@ -340,44 +483,35 @@ Stopwatch.end_scope(log_statistics=False)
 if __name__ == "__main__":
 	Stopwatch("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
+	qss_path = os.path.join(os.path.dirname(__file__), "Styles", "AbstractAI.qss")
+	app.setStyle("Fusion")
+	with open(qss_path, "r") as f:
+		app.setStyleSheet(f.read())
+		
 	Context.settings = QSettings("Inventor2525", "AbstractAI")
 	
-	Stopwatch("Load models", log_statistics=False)
-	models = {
-		"Mistral": {
-			"LoaderType": "LLamaCPP",
-			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
-			"Parameters": {}
-		},
-		"Mixtral": {
-			"LoaderType": "LLamaCPP",
-			"ModelPath": "/home/charlie/Projects/text-generation-webui/models/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf",
-			"Parameters": { 
-				"model": {
-					"n_gpu_layers":0,
-				}
-			}
-		},
-		"GPT-3.5 Turbo": {
-			"ModelName": "gpt-3.5-turbo",
-			"LoaderType": "OpenAI",
-			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", Context.settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
-		},
-		"GPT-4": {
-			"ModelName": "gpt-4",
-			"LoaderType": "OpenAI",
-			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", Context.settings) #TODO: include this as a default: os.environ.get("OPENAI_API_KEY")
-		},
-		"GPT-4 (OLD)" : {
-			"ModelName": "gpt-4-0613",
-			"LoaderType": "OpenAI",
-			"Parameters": {},
-			"APIKey": APIKeyGetter("OpenAI", Context.settings)
-		}
-	}
-	Context.model_loader = ModelLoader(models)
+	def get_default_storage_location():
+		config_dir = os.path.expanduser("~/.config/AbstractAI/")
+		if os.path.exists(config_dir):
+			return os.path.join(config_dir, 'chats.db')
+		return os.path.join(os.path.expanduser('~'), 'AbstractAI.db')
+
+	parser = argparse.ArgumentParser(description='AbstractAI')
+	
+	parser.add_argument(
+		'storage_location', nargs='?',
+		default=Context.settings.value(
+			"main/storage_location",
+			get_default_storage_location(), 
+			type=str
+		),
+		help='Path to SQLite database file (default: %(default)s)'
+	)
+	
+	Context.args = parser.parse_args()
+	Context.settings.setValue("main/storage_location", Context.args.storage_location)
+	
+	# new model loading code:
 	Stopwatch("Load window", log_statistics=False)
 	window = Application()
 	

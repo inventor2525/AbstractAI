@@ -5,7 +5,7 @@ from AbstractAI.LLMs.ModelLoader import ModelLoader
 from AbstractAI.ConversationModel import *
 from AbstractAI.Helpers.FairLock import FairLock
 from AbstractAI.Helpers.Stopwatch import Stopwatch
-
+from AbstractAI.Settings.LLMSettings import LLMSettings
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from typing import Dict, Any, List
 import json
@@ -60,7 +60,7 @@ class RemoteLLM_Backend:
 			RemoteLLM_Backend.streams = {}
 		
 	@StaticRoute
-	def init_model(model_name:str, loader_params:Dict[str, Any]) -> ModelInfo:
+	def init_model(model_name:str, loader_params:Dict[str, Any]) -> LLMSettings:
 		with Stopwatch.singleton.timed_block("RemoteLLM.init_model"):
 			if loader_params is not None and len(loader_params) > 0:
 				raise NotImplementedError("add model with dict not implemented yet")
@@ -71,17 +71,17 @@ class RemoteLLM_Backend:
 			return RemoteLLM_Backend.models_by_name[model_name].model_info
 	
 	@StaticRoute
-	def load_model(model_info:ModelInfo):
+	def load_model(model_info:LLMSettings):
 		with Stopwatch.singleton.timed_block("RemoteLLM.load_model"):
 			RemoteLLM_Backend.models_by_id[model_info.auto_id].start()
 		
 	@StaticRoute
-	def apply_chat_template(model_info:ModelInfo, chat: List[Dict[str,str]], start_str:str="") -> str:
+	def apply_chat_template(model_info:LLMSettings, chat: List[Dict[str,str]], start_str:str="") -> str:
 		with Stopwatch.singleton.timed_block("RemoteLLM.apply_chat_template"):
 			return RemoteLLM_Backend.models_by_id[model_info.auto_id]._apply_chat_template(chat, start_str)
 	
 	@StaticRoute
-	def chat(model_info:ModelInfo, conversation: Conversation, start_str: str = "", stream=False, max_tokens:int=None) -> Message:
+	def chat(model_info:LLMSettings, conversation: Conversation, start_str: str = "", stream=False, max_tokens:int=None) -> Message:
 		with Stopwatch.singleton.timed_block("RemoteLLM.chat"):
 			response = RemoteLLM_Backend.models_by_id[model_info.auto_id].chat(conversation, start_str, stream, max_tokens)
 			if stream:
@@ -89,7 +89,7 @@ class RemoteLLM_Backend:
 			return response.message
 	
 	@StaticRoute
-	def complete_str(model_info:ModelInfo, text:str, stream=False, max_tokens:int=None) -> Message:
+	def complete_str(model_info:LLMSettings, text:str, stream=False, max_tokens:int=None) -> Message:
 		with Stopwatch.singleton.timed_block("RemoteLLM.complete_str"):
 			response = RemoteLLM_Backend.models_by_id[model_info.auto_id].complete_str(text, stream, max_tokens)
 			if stream:

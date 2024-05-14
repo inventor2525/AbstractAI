@@ -1,17 +1,12 @@
-from .LLM import *
-from AbstractAI.LLMs.CommonRoles import CommonRoles
-import tiktoken
-from openai import OpenAI
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
-import json
-import os
-from AbstractAI.Settings.OpenAI_LLMSettings import OpenAI_LLMSettings
+from AbstractAI.LLMs.LLM import *
+from AbstractAI.Settings.Ollama_LLMSettings import Ollama_LLMSettings
+import ollama
 
-class OpenAI_LLM(LLM):
-	def __init__(self, settings:OpenAI_LLMSettings):
+class Ollama_LLM(LLM):
+	def __init__(self, settings:Ollama_LLMSettings):
 		self.client = None
 		super().__init__(settings)
-	
+		
 	def _complete_str_into(self, prompt:str, message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
 		raise Exception("This doesn't support string prompts")
 	
@@ -36,11 +31,9 @@ class OpenAI_LLM(LLM):
 		wip_message = self._new_message(json.dumps(message_list, indent=4), conversation, "")
 		response = LLM_Response(wip_message, 0, stream)
 		
-		completion = self.client.chat.completions.create(
+		completion = ollama.chat(
 			model=self.settings.model_name,
 			messages=message_list,
-			max_tokens=max_tokens,
-			# temperature=self.settings.temperature,
 			stream=stream
 		)
 		if stream:
@@ -50,10 +43,10 @@ class OpenAI_LLM(LLM):
 					next_response:ChatCompletionChunk = next(completion)
 					if response.input_token_count == 0:
 						try:
-							response.input_token_count = self.count_tokens(self._apply_chat_template(message_list), next_response.model)
+							response.input_token_count = -1
 						except Exception as e:
 							print(e)
-					content = next_response.choices[0].delta.content
+					content = next_response['message']['content']
 					has_content = content is not None and len(content) > 0
 					response.add_response_chunk(content, 1 if has_content else 0, deep_object_to_dict(next_response))
 					return True
@@ -70,17 +63,14 @@ class OpenAI_LLM(LLM):
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		if start_str is not None and len(start_str) > 0:
-			raise Exception("Start string not supported by OpenAI")
+			raise Exception("Start string not supported by Ollama")
 		prompt_peices = []
 		for message in chat:
 			prompt_peices.append( f"#{message['role']}:\n{message['content']}" )
 		return "\n\n".join(prompt_peices)
 	
 	def _load_model(self):
-		self.client = OpenAI(api_key=self.settings.api_key)
-	
+		pass
+		
 	def count_tokens(self, text:str, model_name:str=None) -> int:
-		'''Count the number of tokens in the passed text.'''
-		if model_name is None:
-			model_name = self.settings.model_name
-		return len(tiktoken.encoding_for_model(model_name).encode(text))
+		return -1
