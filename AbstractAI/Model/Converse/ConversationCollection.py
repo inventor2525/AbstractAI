@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from ClassyFlaskDB.DATA import DATAEngine
 from AbstractAI.Helpers.Signal import Signal
 from dataclasses import dataclass, field

@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView import *
 from PyQt5.QtGui import QWheelEvent

@@ -2,7 +2,7 @@ from typing import List
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from ClassyFlaskDB.DATA import DATAEngine
 
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.SpeechToText.SpeechToText import SpeechToText
 from AbstractAI.TextToSpeech.TextToSpeech import TextToSpeech
 from AbstractAI.LLMs.ModelLoader import ModelLoader
@@ -14,7 +14,7 @@ from pydub import AudioSegment
 import re
 
 # Finish creating the conversation model:
-data_engine = DATAEngine(ConversationDATA)
+data_engine = DATAEngine(DATA)
 
 @Flaskify
 class System():

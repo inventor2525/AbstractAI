@@ -1,11 +1,11 @@
 from threading import Thread, Lock
-from AbstractAI.ConversationModel import Conversation
+from AbstractAI.Model.Converse import Conversation
 from AbstractAI.LLMs.LLM import LLM, LLMStats, LLM_Response
 from AbstractAI.LLMs.ModelLoader import ModelLoader
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.FairLock import FairLock
 from AbstractAI.Helpers.Stopwatch import Stopwatch
-from AbstractAI.Settings.LLMSettings import LLMSettings
+from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 from ClassyFlaskDB.Flaskify import StaticRoute, Flaskify
 from typing import Dict, Any, List
 import json

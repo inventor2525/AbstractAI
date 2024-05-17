@@ -1,10 +1,10 @@
 import unittest
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from ClassyFlaskDB.DATA import DATAEngine, print_DATA_json
 
 class TestConversation(unittest.TestCase):
 	def setUp(self) -> None:
-		self.engine = DATAEngine(ConversationDATA)
+		self.engine = DATAEngine(DATA)
 		return super().setUp()
 	
 	def test_add_messages(self):

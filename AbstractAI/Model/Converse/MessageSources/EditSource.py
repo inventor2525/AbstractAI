@@ -1,8 +1,9 @@
 from .MessageSource import MessageSource
-from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from datetime import datetime
 
-@ConversationDATA
+@DATA
+@dataclass
 class EditSource(MessageSource):
 	"""A message source representing an edited message."""
 

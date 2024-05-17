@@ -1,9 +1,9 @@
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from ClassyFlaskDB.DATA import *
 
-from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
+from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
 
-engine = DATAEngine(ConversationDATA, engine_str="sqlite:///ConversationModel.db")
+engine = DATAEngine(DATA, engine_str="sqlite:///ConversationModel.db")
 
 class Chatbot:
 	def __init__(self):

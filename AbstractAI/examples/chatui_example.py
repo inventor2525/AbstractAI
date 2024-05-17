@@ -4,7 +4,7 @@ from AbstractAI.UI.ChatViews.ConversationView import *
 import json
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 from ClassyFlaskDB.DATA import DATAEngine
-data_engine = DATAEngine(ConversationDATA)
+data_engine = DATAEngine(DATA)
 
 #create a QT window with a message view in it:
 app = QApplication(sys.argv)

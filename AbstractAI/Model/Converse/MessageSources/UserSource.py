@@ -1,9 +1,10 @@
-from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from .MessageSource import MessageSource
 
 DefaultUser = "User"
 
-@ConversationDATA
+@DATA
+@dataclass
 class UserSource(MessageSource):
 	'''Describes the source of a message from a person.'''
 	user_name: str = field(default=DefaultUser, kw_only=True)

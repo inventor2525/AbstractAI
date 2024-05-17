@@ -1,10 +1,11 @@
 from .MessageSource import MessageSource
-from AbstractAI.ConversationModel.ModelBase import *
-from AbstractAI.ConversationModel.ModelInfo import *
-from AbstractAI.ConversationModel.MessageSequence import MessageSequence
+from AbstractAI.Model.Decorator import *
+from AbstractAI.Model.Converse.ModelInfo import *
+from AbstractAI.Model.Converse.MessageSequence import MessageSequence
 from typing import Dict, Any, List, Union
 
-@ConversationDATA
+@DATA
+@dataclass
 class ModelSource(MessageSource):
 	'''Describes a message from a Large Language Model.'''
 	model_class: str = None

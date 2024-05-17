@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Helpers.Signal import Signal
 from .MessageSequence import MessageSequence
 from .Message import Message
@@ -6,7 +6,8 @@ from .Message import Message
 from datetime import datetime
 from typing import Callable, List, Union
 
-@ConversationDATA(excluded_fields=["all_message_sequences"])
+@DATA(excluded_fields=["all_message_sequences"])
+@dataclass
 class Conversation:
 	name: str = "Conversation"
 	description: str = ""

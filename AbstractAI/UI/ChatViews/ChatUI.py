@@ -4,9 +4,9 @@ from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationActionControl, ConversationAction
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
-from AbstractAI.ConversationModel import *
-from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemsModel
-from AbstractAI.Settings.LLMSettings import LLMSettings
+from AbstractAI.Model.Converse import *
+from AbstractAI.Model.Converse.MessageSources.FilesSource import ItemsModel
+from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from PyQt5.QtCore import QTimer

@@ -1,10 +1,11 @@
 from .MessageSource import MessageSource
-from AbstractAI.ConversationModel.ModelBase import *
-from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
+from AbstractAI.Model.Decorator import *
+from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
 from datetime import datetime
 import hashlib
 
-@ConversationDATA
+@DATA
+@dataclass
 class HardCodedSource(MessageSource):
 	"""
 	A hard-coded message source with a primary key that is the

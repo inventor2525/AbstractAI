@@ -1,7 +1,8 @@
-from AbstractAI.ConversationModel.ModelBase import *
-from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
+from AbstractAI.Model.Decorator import *
+from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
 
-@ConversationDATA
+@DATA
+@dataclass
 class MessageSource:
 	"""
 	Base class for message sources.

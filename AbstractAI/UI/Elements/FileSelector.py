@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTr
                              QSizePolicy)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt, QEvent, pyqtSignal
-from AbstractAI.ConversationModel.MessageSources.FilesSource import ItemModel, FolderModel
+from AbstractAI.Model.Converse.MessageSources.FilesSource import ItemModel, FolderModel
 
 class FileFolderTreeView(QTreeView):
     onSelectionChanged = pyqtSignal()

@@ -1,5 +1,5 @@
-from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
-from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Helpers.Signal import Signal, LazySignal
 from .MessageSources.EditSource import EditSource
 from .MessageSources.HardCodedSource import HardCodedSource
@@ -7,7 +7,8 @@ from datetime import datetime
 
 from typing import Iterable, List, Union
 
-@ConversationDATA
+@DATA
+@dataclass
 class Message:
 	content: str
 	source: "MessageSource" = None

@@ -8,4 +8,4 @@ def get_local_time():
 
 # Define a decorator instance that we can use to create our whole 
 # conversation model, and latter attach it to any SQL instance.
-ConversationDATA = DATADecorator()
+DATA = DATADecorator(auto_decorate_as_dataclass=False)

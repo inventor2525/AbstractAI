@@ -1,5 +1,5 @@
 from AbstractAI.LLMs.LLM import *
-from AbstractAI.Settings.Ollama_LLMSettings import Ollama_LLMSettings
+from AbstractAI.Model.Settings.Ollama_LLMSettings import Ollama_LLMSettings
 import ollama
 
 class Ollama_LLM(LLM):

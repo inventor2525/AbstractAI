@@ -4,7 +4,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import transformers
 
-from AbstractAI.Settings.HuggingFace_LLMSettings import HuggingFace_LLMSettings
+from AbstractAI.Model.Settings.HuggingFace_LLMSettings import HuggingFace_LLMSettings
 
 class HuggingFaceLLM(LLM):
 	def __init__(self, settings:HuggingFace_LLMSettings):
