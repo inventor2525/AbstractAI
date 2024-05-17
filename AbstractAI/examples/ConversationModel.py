@@ -3,7 +3,7 @@ from ClassyFlaskDB.DATA import *
 
 from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
 
-engine = DATAEngine(ConversationDATA, engine_str="sqlite:///ConversationModel.db")
+engine = DATAEngine(DATA, engine_str="sqlite:///ConversationModel.db")
 
 class Chatbot:
 	def __init__(self):

@@ -2,7 +2,8 @@ from AbstractAI.ConversationModel.ModelBase import *
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from threading import Lock, get_ident
 	
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class CallerInfo:
 	module_name: str
 	function_name: str

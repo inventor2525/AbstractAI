@@ -4,7 +4,8 @@ from AbstractAI.ConversationModel.MessageSources.CallerInfo import CallerInfo
 from datetime import datetime
 import hashlib
 
-@ConversationDATA
+@DATA
+@dataclass
 class HardCodedSource(MessageSource):
 	"""
 	A hard-coded message source with a primary key that is the

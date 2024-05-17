@@ -7,7 +7,8 @@ from datetime import datetime
 
 from typing import Iterable, List, Union
 
-@ConversationDATA
+@DATA
+@dataclass
 class Message:
 	content: str
 	source: "MessageSource" = None

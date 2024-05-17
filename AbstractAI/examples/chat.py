@@ -5,7 +5,7 @@ from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
 from datetime import datetime
 
 from ClassyFlaskDB.DATA import DATAEngine
-data_engine = DATAEngine(ConversationDATA, engine_str="sqlite:///chat.db")
+data_engine = DATAEngine(DATA, engine_str="sqlite:///chat.db")
 
 model_loader = ModelLoader()
 model_name = None

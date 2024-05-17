@@ -4,7 +4,8 @@ from AbstractAI.ConversationModel.ModelInfo import *
 from AbstractAI.ConversationModel.MessageSequence import MessageSequence
 from typing import Dict, Any, List, Union
 
-@ConversationDATA
+@DATA
+@dataclass
 class ModelSource(MessageSource):
 	'''Describes a message from a Large Language Model.'''
 	model_class: str = None

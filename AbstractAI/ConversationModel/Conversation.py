@@ -6,7 +6,8 @@ from .Message import Message
 from datetime import datetime
 from typing import Callable, List, Union
 
-@ConversationDATA(excluded_fields=["all_message_sequences"])
+@DATA(excluded_fields=["all_message_sequences"])
+@dataclass
 class Conversation:
 	name: str = "Conversation"
 	description: str = ""

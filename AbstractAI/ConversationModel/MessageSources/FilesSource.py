@@ -3,7 +3,8 @@ from typing import List, Iterable, Tuple
 import os
 import re
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path"])
+@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path"])
+@dataclass
 class ItemModel:
 	path:str = field(default=None, kw_only=True)
 	
@@ -31,7 +32,8 @@ class ItemModel:
 			else:
 				yield item.path
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path", "file_pattern", "folder_pattern", "extension_pattern"])
+@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path", "file_pattern", "folder_pattern", "extension_pattern"])
+@dataclass
 class FolderModel(ItemModel):
 	file_pattern:str = field(default='', kw_only=True)
 	folder_pattern:str = field(default='', kw_only=True)
@@ -43,7 +45,8 @@ class FolderModel(ItemModel):
 			return set(self.extension_pattern.replace(',', ' ').split())
 		return set()
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID, hashed_fields=["items"])
+@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["items"])
+@dataclass
 class ItemsModel:
 	items:List[ItemModel] = field(default_factory=list, kw_only=True)
 	
@@ -51,7 +54,8 @@ class ItemsModel:
 		for item in self.items:
 			item.new_id()
 
-@ConversationDATA
+@DATA
+@dataclass
 class FilesSource(UserSource):
 	'''Describes the source of a message from a person.'''
 	items:ItemsModel = field(default_factory=ItemsModel, kw_only=True)

@@ -61,7 +61,7 @@ class Application(QMainWindow):
 		Stopwatch("Connect to database", log_statistics=False)
 		
 		self.settings_window = SettingsWindow()
-		self.engine = DATAEngine(ConversationDATA, engine_str=f"sqlite:///{Context.args.storage_location}")
+		self.engine = DATAEngine(DATA, engine_str=f"sqlite:///{Context.args.storage_location}")
 		
 		self.llmConfigs:LLMConfigs = None
 		with self.engine.session() as session:

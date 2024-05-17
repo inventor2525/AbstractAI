@@ -15,7 +15,8 @@ from typing import Dict, Any
 #it should have been.
 
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class ModelInfo:
 	'''
 	This is legacy code that supports the

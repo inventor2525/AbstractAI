@@ -1,6 +1,7 @@
 from .LLMSettings import *
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class Groq_LLMSettings(LLMSettings):
 	__ui_name__ = "Groq"
 	model_name:str = ""

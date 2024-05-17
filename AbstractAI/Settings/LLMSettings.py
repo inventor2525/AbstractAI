@@ -1,12 +1,13 @@
-from AbstractAI.ConversationModel import ConversationDATA
-from ClassyFlaskDB.DATA import ID_Type
+from AbstractAI.ConversationModel import DATA
+from ClassyFlaskDB.DATA import ID_Type, dataclass
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from dataclasses import field
 from copy import deepcopy
 from typing import List
 from typing import Dict
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class RolesSettings:
 	must_alternate:bool = False
 	merge_consecutive_messages_by_same_role:bool = False
@@ -16,7 +17,8 @@ class RolesSettings:
 	# 	CommonRoles.Assistant: "assistant"
 	# })
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class LLMSettings:
 	user_model_name:str = field(default="", kw_only=True)
 	user_description:str = field(default="", kw_only=True)
@@ -69,7 +71,8 @@ class LLMSettings:
 		copy._copy_source_ = self
 		return copy
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class LLMConfigs:
 	id:str = field(default="", metadata={"primary_key":True})
 	models:List[LLMSettings] = field(default_factory=list)

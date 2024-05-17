@@ -1,6 +1,7 @@
 from .LLMSettings import *
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class LLamaCpp_LLMInitSettings:
 	'''
 	Used to load the model.
@@ -17,7 +18,8 @@ class LLamaCpp_LLMInitSettings:
 	flash_attn:bool = False
 	verbose:bool = False
 
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class LLamaCpp_LLMGenerateSettings:
 	'''
 	Used when generating text with the model.
@@ -36,7 +38,8 @@ class LLamaCpp_LLMGenerateSettings:
 	mirostat_tau: float = 5.0
 	mirostat_eta: float = 0.1
 	
-@ConversationDATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID)
+@dataclass
 class LLamaCpp_LLMSettings(LLMSettings):
 	__ui_name__ = "LLamaCPP"
 	model:LLamaCpp_LLMInitSettings = field(default_factory=LLamaCpp_LLMInitSettings)
