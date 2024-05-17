@@ -1,4 +1,4 @@
-from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
 
 @DATA

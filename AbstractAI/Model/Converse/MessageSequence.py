@@ -1,4 +1,4 @@
-from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from .Message import Message
 from typing import List, Optional
 

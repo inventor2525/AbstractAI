@@ -1,5 +1,5 @@
 from .MessageSource import MessageSource
-from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Model.Converse.ModelInfo import *
 from AbstractAI.Model.Converse.MessageSequence import MessageSequence
 from typing import Dict, Any, List, Union

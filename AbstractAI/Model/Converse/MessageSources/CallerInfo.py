@@ -1,4 +1,4 @@
-from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from threading import Lock, get_ident
 	

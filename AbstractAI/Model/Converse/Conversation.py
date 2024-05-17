@@ -1,4 +1,4 @@
-from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Helpers.Signal import Signal
 from .MessageSequence import MessageSequence
 from .Message import Message

@@ -1,5 +1,5 @@
 from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
-from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Decorator import *
 from AbstractAI.Helpers.Signal import Signal, LazySignal
 from .MessageSources.EditSource import EditSource
 from .MessageSources.HardCodedSource import HardCodedSource
