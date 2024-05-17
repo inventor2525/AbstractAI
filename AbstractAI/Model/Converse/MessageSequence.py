@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel.ModelBase import *
+from AbstractAI.Model.Converse.ModelBase import *
 from .Message import Message
 from typing import List, Optional
 

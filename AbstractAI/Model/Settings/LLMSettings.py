@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel import DATA
+from AbstractAI.Model.Converse import DATA
 from ClassyFlaskDB.DATA import ID_Type, dataclass
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from dataclasses import field

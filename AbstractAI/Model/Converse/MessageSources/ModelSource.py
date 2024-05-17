@@ -1,7 +1,7 @@
 from .MessageSource import MessageSource
-from AbstractAI.ConversationModel.ModelBase import *
-from AbstractAI.ConversationModel.ModelInfo import *
-from AbstractAI.ConversationModel.MessageSequence import MessageSequence
+from AbstractAI.Model.Converse.ModelBase import *
+from AbstractAI.Model.Converse.ModelInfo import *
+from AbstractAI.Model.Converse.MessageSequence import MessageSequence
 from typing import Dict, Any, List, Union
 
 @DATA

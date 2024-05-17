@@ -3,7 +3,7 @@ from .LLM import *
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import LlamaChatCompletionHandlerRegistry, ChatFormatter, ChatFormatterResponse
-from AbstractAI.Settings.LLamaCpp_LLMSettings import LLamaCpp_LLMSettings
+from AbstractAI.Model.Settings.LLamaCpp_LLMSettings import LLamaCpp_LLMSettings
 
 class LLamaCPP_LLM(LLM):
 	def __init__(self, settings:LLamaCpp_LLMSettings):

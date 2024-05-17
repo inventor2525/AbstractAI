@@ -1,5 +1,5 @@
 from typing import Tuple
-from AbstractAI.ConversationModel.MessageSources import *
+from AbstractAI.Model.Converse.MessageSources import *
 from enum import Enum
 
 class CommonRoles(Enum):

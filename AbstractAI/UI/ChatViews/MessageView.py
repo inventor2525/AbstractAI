@@ -1,8 +1,8 @@
 from AbstractAI.UI.Support.ColoredFrame import *
 from AbstractAI.UI.Elements.TextEdit import TextEdit
 from AbstractAI.UI.Elements.FlashingButton import FlashingButton
-from AbstractAI.ConversationModel import Message, MessageSequence
-from AbstractAI.ConversationModel.MessageSources import *
+from AbstractAI.Model.Converse import Message, MessageSequence
+from AbstractAI.Model.Converse.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView_extras.MessageSourceView import MessageSourceView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet

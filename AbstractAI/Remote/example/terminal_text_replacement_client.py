@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.Remote.client import System
 
 if __name__ == "__main__":

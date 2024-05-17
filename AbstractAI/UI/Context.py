@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from PyQt5.QtCore import QSettings
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.Signal import Signal
 from argparse import Namespace
 

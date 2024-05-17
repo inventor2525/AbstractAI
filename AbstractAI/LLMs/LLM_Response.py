@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel.Message import Message
+from AbstractAI.Model.Converse.Message import Message
 from AbstractAI.Helpers.Signal import Signal
 from typing import Dict, Any, List, Union, Callable
 from dataclasses import dataclass, field

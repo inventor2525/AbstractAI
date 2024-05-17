@@ -1,5 +1,5 @@
 import unittest
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from ClassyFlaskDB.DATA import DATAEngine, print_DATA_json
 
 class TestConversation(unittest.TestCase):

@@ -1,5 +1,5 @@
 from AbstractAI.ChatBot import *
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.LLMs.ModelLoader import ModelLoader, LLM
 
 from datetime import datetime

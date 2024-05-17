@@ -17,7 +17,7 @@ from AbstractAI.UI.Context import Context
 from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
 Stopwatch("Setting Models", log_statistics=False)
-from AbstractAI.Settings.LLMSettings import *
+from AbstractAI.Model.Settings.LLMSettings import *
 llm_settings_types = LLMSettings.load_subclasses()
 
 from AbstractAI.LLMs.LLM import LLM

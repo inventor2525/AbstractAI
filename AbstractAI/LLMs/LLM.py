@@ -1,4 +1,4 @@
-from AbstractAI.ConversationModel import *
+from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.LLMStats import LLMStats
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from AbstractAI.Helpers.merge_dictionaries import *
@@ -10,7 +10,7 @@ from typing import Any, Union, Dict, List
 import json
 
 from AbstractAI.Helpers.func_to_model import kwargs_from_instance
-from AbstractAI.Settings.LLMSettings import LLMSettings
+from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 
 class LLM(ABC):
 	def __init__(self, settings:LLMSettings):

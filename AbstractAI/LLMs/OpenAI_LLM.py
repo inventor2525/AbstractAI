@@ -5,7 +5,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 import json
 import os
-from AbstractAI.Settings.OpenAI_LLMSettings import OpenAI_LLMSettings
+from AbstractAI.Model.Settings.OpenAI_LLMSettings import OpenAI_LLMSettings
 
 class OpenAI_LLM(LLM):
 	def __init__(self, settings:OpenAI_LLMSettings):
