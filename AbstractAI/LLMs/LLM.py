@@ -1,5 +1,4 @@
 from AbstractAI.Model.Converse import *
-from AbstractAI.Helpers.LLMStats import LLMStats
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from AbstractAI.Helpers.merge_dictionaries import *
 from .LLM_Response import LLM_Response
@@ -14,7 +13,6 @@ from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 
 class LLM(ABC):
 	def __init__(self, settings:LLMSettings):
-		self.stats = LLMStats()
 		self.settings = settings
 		self.started = False
 
@@ -114,9 +112,6 @@ class LLM(ABC):
 			prev_role = role
 			prev_user_name = user_name
 		return chat
-	
-	def _serialize_raw_response(self, response:object) -> Dict[str,Any]:
-		return response
 		
 	def _new_message(self, prompt: str, conversation:Conversation=None, start_str:str="") -> Message:
 		'''Creates a new message that the model will fill in.'''
@@ -132,30 +127,3 @@ class LLM(ABC):
 		
 		# Create the message object:
 		return Message(start_str, source)
-	
-	def timed_prompt(self, model_input: Union[str, Conversation]) -> LLM_Response:
-		'''
-		Prompt the model with timing, can be either a string
-		or a conversation. This is a blocking function.
-		'''
-		start_time = datetime.now()
-		response:LLM_Response = None
-		if isinstance(input, Conversation):
-			response = self.chat(model_input)
-		else:
-			response = self.complete_str(model_input)
-		end_time = datetime.now()
-		
-		print(f"Started prompting at: '{start_time}'\nFinished at: '{end_time}'")
-		
-		duration_seconds = (end_time - start_time).total_seconds()
-		token_count = response.token_counts["completion_tokens"]
-		char_count = len(response.message.content)
-		
-		self.stats.duration.add(duration_seconds)
-		self.stats.character_count.add(char_count)
-		self.stats.token_count.add(token_count)
-		self.stats.chars_per_second.add(char_count / duration_seconds)
-		self.stats.tokens_per_second.add(token_count / duration_seconds)
-		self.stats.print()
-		return response
