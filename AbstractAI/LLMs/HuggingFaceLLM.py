@@ -34,36 +34,45 @@ class HuggingFaceLLM(LLM):
 			low_cpu_mem_usage=self.settings.model.low_cpu_mem_usage,
 			device_map=self.settings.model.device_map,
 			# device=self.device,
-			trust_remote_code=self.settings.model.trust_remote_code
+			trust_remote_code=self.settings.model.trust_remote_code,
+			attn_implementation='eager'
 		)
 	
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
-		inputs = self.tokenizer(prompt, return_tensors="pt")
-		inputs_len = len(inputs['input_ids'][0])
-		inputs = inputs.to(self.device)
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, auto_append:bool=False) -> Union[LLM_Response, Iterator[LLM_Response]]:
+		wip_message, message_list = self._new_message(conversation, start_str, auto_append=auto_append)
 		
-		response = LLM_Response(wip_message, inputs_len, stream)
+		replace_parameters = {}
+		if max_tokens is not None:
+			replace_parameters["max_new_tokens"] = max_tokens
+		params = kwargs_from_instance(self.model.generate, self.settings.generate, replace_parameters)
+	
+		inputs_local = self.tokenizer(wip_message.source.prompt, return_tensors="pt")
+		wip_message.source.in_token_count = len(inputs_local['input_ids'][0])
+		inputs = inputs_local.to(self.device)
 		
 		try:
 			if self.settings.del_token_type_ids:
 				del inputs["token_type_ids"]
-		except Exception as e:
+		except:
 			pass
-		
+	
+		response = LLM_Response(wip_message, stop_streaming_func=None)
 		if stream:
-			# raise NotImplementedError("Stream not yet implemented for HuggingFaceLLM")
-			pass
-		else:
-			replace_parameters = {}
-			if max_tokens is not None:
-				replace_parameters["max_new_tokens"] = max_tokens
-			params = kwargs_from_instance(self.model.generate, self.settings.generate, replace_parameters)
-			output_tokens = self.model.generate(**inputs, **params)
-			response_tokens = output_tokens[0][inputs_len:]
+			#stream not supported in this HF implementation, but we need to be an iterator so...
+			yield response 
 			
-			response_str = self.tokenizer.decode(response_tokens, skip_special_tokens=True)
-			response.set_response(response_str, len(response_tokens), response_tokens.tolist())
+		output_tokens = self.model.generate(**inputs, **params)
+		response_tokens = output_tokens[0][response.source.in_token_count:]
 		
+		response.source.finished = True
+		response.message.content = self.tokenizer.decode(response_tokens, skip_special_tokens=True)
+		response.source.out_token_count = len(response_tokens)
+		response.source.serialized_raw_output = {
+			"in_tokens":inputs_local['input_ids'][0].tolist(),
+			"out_tokens":response_tokens.tolist()
+		}
+		response.source.generating = False
+		wip_message.emit_changed()
 		return response
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:

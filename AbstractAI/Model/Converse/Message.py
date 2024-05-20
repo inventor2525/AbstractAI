@@ -5,7 +5,7 @@ from .MessageSources.EditSource import EditSource
 from .MessageSources.HardCodedSource import HardCodedSource
 from datetime import datetime
 
-from typing import Iterable, List, Union
+from typing import Iterable, List, Union, Optional
 
 @DATA
 @dataclass
@@ -19,6 +19,20 @@ class Message:
 	conversation: "Conversation" = field(default=None, compare=False)
 	
 	changed:LazySignal[["Message"],None] = LazySignal.field()
+	
+	def emit_changed(self):
+		self.changed(self)
+		
+	def append(self, text:Optional[str]) -> bool:
+		'''
+		Safely append text to the content, useful when api's return None.
+		
+		Returns true if changed. This does not emit 'changed'!
+		'''
+		if text and isinstance(text, str) and len(text)>0:
+			self.content += text
+			return True
+		return False
 	
 	@staticmethod	
 	def expand_previous_messages(messages:Iterable["Message"]) -> Iterable["Message"]:

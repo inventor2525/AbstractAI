@@ -17,6 +17,6 @@ class ModelSource(MessageSource):
 
 	serialized_raw_output: Dict[str,Any] = field(default_factory=dict, compare=False)
 	
-	in_token_count: int = 0
+	in_token_count: int = -1
 	out_token_count: int = 0
 	finished: bool = False

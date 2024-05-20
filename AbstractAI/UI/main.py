@@ -22,9 +22,6 @@ llm_settings_types = LLMSettings.load_subclasses()
 
 from AbstractAI.LLMs.LLM import LLM
 
-# Stopwatch("Remote client", log_statistics=False)
-# from AbstractAI.Remote.client import System, RemoteLLM
-
 Stopwatch("DATAEngine", log_statistics=False)
 from ClassyFlaskDB.DATA import DATAEngine
 
@@ -395,13 +392,11 @@ class Application(QMainWindow):
 		max_tokens = self.chatUI.max_tokens
 			
 		def chat():
-			response = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
-			conversation.add_message(response.message)
-			while response.generate_more():
+			responses = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens, auto_append=True)
+			for response in responses:
 				if not self._should_generate:
-					response.stop_streaming()
-					break
-			return response.message
+					response.stop()
+				response.message.emit_changed()
 		
 		self.task = BackgroundTask(chat)
 		
@@ -433,9 +428,9 @@ class Application(QMainWindow):
 		self.select_model(current_item.data(Qt.UserRole))
 		
 	def select_model(self, model:LLMSettings):
-		if model.__ui_name__ is "HuggingFace":
-			QMessageBox.critical(None, "Error", "Hugging Face models are currently broken in the UI.")
-			return
+		# if model.__ui_name__ is "HuggingFace":
+		# 	QMessageBox.critical(None, "Error", "Hugging Face models are currently broken in the UI.")
+		# 	return
 		
 		self.models_combobox.currentIndexChanged.disconnect(self._current_model_selection_changed)
 		if self.models_combobox.itemText(0) == "Select A Model...":
