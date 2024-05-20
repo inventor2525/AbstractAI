@@ -22,25 +22,40 @@ class LLamaCPP_LLM(LLM):
 			verbose=self.settings.model.verbose
 		)
 	
-	def _complete_str_into(self, prompt: str, wip_message:Message, stream:bool=False, max_tokens:int=None) -> LLM_Response:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, auto_append:bool=False) -> Union[LLM_Response, Iterator[LLM_Response]]:
+		wip_message, message_list = self._new_message(conversation, start_str, auto_append=auto_append)
+		
 		params = kwargs_from_instance(self.model.create_completion, self.settings.generate)
 		
 		if max_tokens is not None:
 			params["max_tokens"] = max_tokens
-		print(params)
-		completion = self.model.create_completion(prompt, **params, stream=stream)
-		response = LLM_Response(wip_message, self.count_tokens(prompt), stream)
-		if not stream:
-			response.set_response(completion['choices'][0]['text'], completion["usage"]["completion_tokens"], completion)
+		
+		completion = self.model(
+			wip_message.source.prompt,
+			**params,
+			stream=stream
+		)
+		
+		if stream:
+			response = LLM_Response(wip_message, completion.close)
+			response.message.content = start_str
+			yield response
+			
+			for i, chunk in enumerate(completion):
+				if response.message.append(chunk['choices'][0]['text']):
+					response.source.out_token_count += 1
+				response.log_chunk(chunk)
+				response.source.finished = chunk['choices'][0].get('finish_reason', None) == 'stop'
+				yield response
+			response.source.generating = False
 		else:
-			def genenerate_more_func():
-				try:
-					next_response = next(completion)
-					response.add_response_chunk(next_response['choices'][0]['text'], 1, next_response)
-					return True
-				except StopIteration:
-					return False
-			response.genenerate_more_func = genenerate_more_func
+			response.source.finished = completion['choices'][0]['finish_reason'] == 'stop'
+			response.message.append(completion['choices'][0]['text'])
+			response.source.in_token_count = completion["usage"]["prompt_tokens"]
+			response.source.out_token_count = completion["usage"]["completion_tokens"]
+			response.source.serialized_raw_output = completion
+			response.source.generating = False
+		
 		return response
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
