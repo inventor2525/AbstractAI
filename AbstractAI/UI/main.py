@@ -428,9 +428,9 @@ class Application(QMainWindow):
 		self.select_model(current_item.data(Qt.UserRole))
 		
 	def select_model(self, model:LLMSettings):
-		if model.__ui_name__ is "HuggingFace":
-			QMessageBox.critical(None, "Error", "Hugging Face models are currently broken in the UI.")
-			return
+		# if model.__ui_name__ is "HuggingFace":
+		# 	QMessageBox.critical(None, "Error", "Hugging Face models are currently broken in the UI.")
+		# 	return
 		
 		self.models_combobox.currentIndexChanged.disconnect(self._current_model_selection_changed)
 		if self.models_combobox.itemText(0) == "Select A Model...":
