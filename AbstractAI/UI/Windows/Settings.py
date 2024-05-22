@@ -164,15 +164,19 @@ class EnumControl(QComboBox, TypedControl[Enum]):
 		return None
 
 	def _set_value(self, value: Enum) -> None:
+		self.repopulate()
+		if value is None:
+			self.setCurrentText("")
+			return
 		if not isinstance(value, Enum):
 			raise ValueError("Value must be an Enum")
 		if self.currentText != value.name:
-			self.repopulate(value.__class__)
+			# self.repopulate(value.__class__)
 			self.setCurrentText(value.name)
 
-	def repopulate(self, enum_type: Type[Enum]):
+	def repopulate(self):
 		self.clear()
-		for enum_value in enum_type:
+		for enum_value in self.derived_type:
 			self.addItem(enum_value.name)
 			
 class SettingItem:
