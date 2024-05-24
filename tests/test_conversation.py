@@ -67,7 +67,7 @@ class TestConversation(unittest.TestCase):
 
 		edited_msg3 = Message("I am an updated AI.", terminal_source)
 		edited_msg3_2 = Message("I am an updated AI.", terminal_source)
-		edited_msg3_2.creation_time = edited_msg3.creation_time
+		edited_msg3_2.date_created = edited_msg3.date_created
 		
 		conv.message_sequence.replace_message(msg3, edited_msg3)
 

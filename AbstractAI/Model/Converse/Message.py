@@ -13,7 +13,7 @@ class Message:
 	content: str
 	source: "MessageSource" = None
 	
-	creation_time: datetime = field(default_factory=get_local_time)
+	date_created: datetime = field(default_factory=get_local_time)
 	
 	prev_message: "Message" = field(default=None, compare=False)
 	conversation: "Conversation" = field(default=None, compare=False)

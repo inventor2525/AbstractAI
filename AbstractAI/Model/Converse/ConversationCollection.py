@@ -50,18 +50,18 @@ class ConversationCollection():
 		collection = cls()
 		local_timezone = tzlocal.get_localzone()
 		with engine.session() as session:
-			all_conversations = session.query(Conversation.auto_id, Conversation.name, Conversation.description, Conversation.creation_time__DateTimeObj, Conversation.creation_time__TimeZone, Conversation.last_modified__DateTimeObj, Conversation.last_modified__TimeZone).all()
+			all_conversations = session.query(Conversation.auto_id, Conversation.name, Conversation.description, Conversation.date_created__DateTimeObj, Conversation.date_created__TimeZone, Conversation.last_modified__DateTimeObj, Conversation.last_modified__TimeZone).all()
 			for conversation_fields in all_conversations:
-				auto_id, name, description, creation_time, creation_timezone, last_modified, last_modified_timezone = deepcopy(conversation_fields)
-				if creation_timezone is not None:
-					creation_time = creation_time.replace(tzinfo=tz.gettz(creation_timezone))
+				auto_id, name, description, date_created, created_timezone, last_modified, last_modified_timezone = deepcopy(conversation_fields)
+				if created_timezone is not None:
+					date_created = date_created.replace(tzinfo=tz.gettz(created_timezone))
 				else:
-					creation_time = creation_time.replace(tzinfo=local_timezone)
+					date_created = date_created.replace(tzinfo=local_timezone)
 				if last_modified_timezone is not None:
 					last_modified = last_modified.replace(tzinfo=tz.gettz(last_modified_timezone))
 				else:
 					last_modified = last_modified.replace(tzinfo=local_timezone)
-				conversation = Conversation(name, description, creation_time, last_modified, None)
+				conversation = Conversation(name, description, date_created, last_modified, None)
 				conversation.auto_id = auto_id
 				
 				collection.conversations.append(conversation)

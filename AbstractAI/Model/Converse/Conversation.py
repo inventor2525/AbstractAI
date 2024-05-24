@@ -12,7 +12,7 @@ class Conversation:
 	name: str = "Conversation"
 	description: str = ""
 	
-	creation_time: datetime = field(default_factory=get_local_time)
+	date_created: datetime = field(default_factory=get_local_time)
 	last_modified: datetime = field(default_factory=get_local_time)
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)

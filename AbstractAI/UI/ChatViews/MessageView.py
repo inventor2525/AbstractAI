@@ -195,10 +195,10 @@ class MessageView(BaseMessageView):
 			if self_index is None:
 				si = 0
 			if messages is not None and len(messages) > si:
-				return messages[si].creation_time
+				return messages[si].date_created
 			else:
 				m = None
-			return getattr(m, 'creation_time', datetime.now())
+			return getattr(m, 'date_created', datetime.now())
 		self.alternates = sorted(self.alternates, key=sort_func, reverse=False)
 		#TODO: add ability to browse the end (where a deleted message was)
 		#TODO: (optional) speed up alternates calculation by caching results if needed.
@@ -325,7 +325,7 @@ class MessageView(BaseMessageView):
 			self.text_edit.setPlainText(value.content)
 		self._update_can_edit()
 
-		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
+		self.date_label.setText(value.date_created.strftime("%Y-%m-%d %H:%M:%S"))
 		
 		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
 		

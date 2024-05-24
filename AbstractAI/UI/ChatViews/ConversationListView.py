@@ -52,7 +52,7 @@ class ConversationListView(QListWidget):
 			item = self.items_map[conversation.auto_id]
 			
 		item.setText(conversation.name)
-		item.setToolTip(f"{conversation.name}\nCreated at {conversation.creation_time.strftime('%Y-%m-%d %H:%M:%S')}\nLast modified at {conversation.last_modified.strftime('%Y-%m-%d %H:%M:%S')}\n\n{conversation.description}")
+		item.setToolTip(f"{conversation.name}\nCreated at {conversation.date_created.strftime('%Y-%m-%d %H:%M:%S')}\nLast modified at {conversation.last_modified.strftime('%Y-%m-%d %H:%M:%S')}\n\n{conversation.description}")
 		if is_selected is not None:
 			item.setSelected(is_selected)
 		
@@ -81,9 +81,9 @@ class ConversationListView(QListWidget):
 		Sort the conversations by the given type.
 		'''
 		self._sorted_conversations = []
-		print("\n".join([str(conversation.creation_time) for conversation in self.conversations]))
+		print("\n".join([str(conversation.date_created) for conversation in self.conversations]))
 		if sort_type == SortByType.CREATION_TIME:
-			self._sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.creation_time)
+			self._sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.date_created)
 		elif sort_type == SortByType.LAST_MODIFIED:
 			self._sorted_conversations = sorted(self.conversations, key=lambda conversation: conversation.last_modified)
 		elif sort_type == SortByType.NAME:
