@@ -17,7 +17,7 @@ class ChatBot:
 		
 		self.last_response = None
 		
-	def prompt(self, prompt:str, source:MessageSource=None) -> str:
+	def prompt(self, prompt:str, source:Object=None) -> str:
 		if source is None:
 			source = self.default_source
 			

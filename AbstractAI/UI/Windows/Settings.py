@@ -45,6 +45,9 @@ class TypedControls:
 
 	@classmethod
 	def get_control(self, type_: Type) -> Type[TypedControl]:
+		if isinstance(type_, str):
+			return None #Forward references not supported.
+		
 		control_type = self._registry.get(type_, None)
 		if control_type is not None:
 			return control_type

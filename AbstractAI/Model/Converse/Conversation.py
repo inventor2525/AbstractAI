@@ -1,4 +1,4 @@
-from AbstractAI.Model.Decorator import *
+from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal
 from .MessageSequence import MessageSequence
 from .Message import Message
@@ -8,11 +8,10 @@ from typing import Callable, List, Union
 
 @DATA(excluded_fields=["all_message_sequences"])
 @dataclass
-class Conversation:
+class Conversation(Object):
 	name: str = "Conversation"
 	description: str = ""
 	
-	date_created: datetime = field(default_factory=get_local_time)
 	last_modified: datetime = field(default_factory=get_local_time)
 	
 	message_sequence: MessageSequence = field(default_factory=MessageSequence)

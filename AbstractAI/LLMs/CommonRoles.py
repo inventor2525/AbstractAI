@@ -4,7 +4,7 @@ from enum import Enum
 
 class CommonRoles(Enum):
 	'''
-	Useful to fudge a 'Role' from a MessageSource.
+	Useful to fudge a 'Role' from a Object.
 	
 	Normally, such specific roles should not be enforced for general use
 	models that interact with systems or other models and not just people.
@@ -15,13 +15,13 @@ class CommonRoles(Enum):
 	User = "user"
 	Assistant = "assistant"
 	
-	def from_source(source:MessageSource) -> Tuple["CommonRoles", str]:
+	def from_source(source:Object) -> Tuple["CommonRoles", str]:
 		role = CommonRoles.User
 		name = None
 		
 		if source:
 			if isinstance(source, EditSource):
-				source = EditSource.most_original(source).source
+				source = source.original_source()
 			if source.system_message:
 				role = CommonRoles.System
 			elif isinstance(source, UserSource):
@@ -32,7 +32,5 @@ class CommonRoles(Enum):
 			elif isinstance(source, TerminalSource):
 				role = CommonRoles.User
 				name = "terminal"
-			elif isinstance(source, HardCodedSource):
-				role = CommonRoles.User
 		
 		return role, name

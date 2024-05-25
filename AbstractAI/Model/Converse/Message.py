@@ -1,19 +1,13 @@
-from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
-from AbstractAI.Model.Decorator import *
+from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal, LazySignal
 from .MessageSources.EditSource import EditSource
-from .MessageSources.HardCodedSource import HardCodedSource
-from datetime import datetime
 
 from typing import Iterable, List, Union, Optional
 
 @DATA
 @dataclass
-class Message:
+class Message(Object):
 	content: str
-	source: "MessageSource" = None
-	
-	date_created: datetime = field(default_factory=get_local_time)
 	
 	prev_message: "Message" = field(default=None, compare=False)
 	conversation: "Conversation" = field(default=None, compare=False)
@@ -61,20 +55,11 @@ class Message:
 				prev_message = prev_message.prev_message
 		return reversed(all_messages)
 	
-	def create_edited(self, new_content:str, source_of_edit:Union["UserSource", "ModelSource", "HardCodedSource"]=None) -> "Message":
+	def create_edited(self, new_content:str, source_of_edit:Union["UserSource", "ModelSource"]=None) -> "Message":
 		'''Create a new message that is an edited version of this message'''
-		CallerInfo.catch_now(refer_to_next=False)
 		source = EditSource(original=self, source_of_edit=source_of_edit)
 		new_message = Message(new_content, source)
 		new_message.prev_message = self.prev_message
 		new_message.conversation = self.conversation
 		source.new = new_message
 		return new_message
-	
-	@classmethod
-	def HardCoded(cls, content:str, system_message:bool=False) -> "Message":
-		'''Create a new message that is hard-coded.'''
-		CallerInfo.catch_now(refer_to_next=False)
-		message = cls(content)
-		message.source = HardCodedSource.create(message, system_message=system_message)
-		return message

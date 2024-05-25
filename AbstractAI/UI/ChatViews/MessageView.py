@@ -271,7 +271,7 @@ class MessageView(BaseMessageView):
 	def reload_files_message(self):
 		source = self.message.source
 		if isinstance(source, EditSource):
-			source = EditSource.most_original(self.message.source).source
+			source = source.original_source()
 		if not isinstance(source, FilesSource):
 			return
 		
@@ -282,9 +282,9 @@ class MessageView(BaseMessageView):
 		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
 		self.message_changed.emit(self.message)
 		
-	def _origional_source(self, source:MessageSource):
+	def _origional_source(self, source:Object):
 		if isinstance(source, EditSource):
-			source = EditSource.most_original(source).source
+			source = source.original_source()
 		return source
 	
 	def _update_can_edit(self):
@@ -311,7 +311,7 @@ class MessageView(BaseMessageView):
 		edit_sources_source = value.source
 		if value.source is not None:
 			if isinstance(most_original, EditSource):
-				most_original = EditSource.most_original(most_original).source
+				most_original = most_original.original_source()
 				edit_sources_source = value.source.source_of_edit
 				
 		if isinstance(most_original, FilesSource):

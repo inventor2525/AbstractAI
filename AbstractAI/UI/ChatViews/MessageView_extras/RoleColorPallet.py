@@ -18,13 +18,13 @@ class RoleColorPallet:
 				"user": "#9DFFA6",
 			},
 			ModelSource:"#FFC4B0",
-			TerminalSource:"#FFEBE4",
+			# TerminalSource:"#FFEBE4",
 			EditSource:"#9DFFA6",
 			FilesSource:"#7DDF86"
 		}
 		self._rolling_pallet = RollingColorPallet()
 	
-	def get_color(self, source:MessageSource) -> QColor:
+	def get_color(self, source:Object) -> QColor:
 		if source is None:
 			return QColor(Qt.white)
 		

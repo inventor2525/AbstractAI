@@ -1,3 +1,4 @@
+from ClassyFlaskDB.DefaultModel import Object
 from AbstractAI.Model.Converse.MessageSources import *
 from AbstractAI.UI.Support._CommonImports import *
 
@@ -6,17 +7,17 @@ def pascal_case(string:str) -> str:
 	
 class MessageSourceView(QWidget):
 	@property
-	def message_source(self) -> MessageSource:
+	def message_source(self) -> Object:
 		return self._message_source
 	@message_source.setter
-	def message_source(self, value:MessageSource):
+	def message_source(self, value:Object):
 		self._message_source = value
 		if value is None:
 			self.label.setText("Unknown\nSource:")
 		else:
 			self.label.setText(self._get_source_label(value))
 		
-	def __init__(self, message_source:MessageSource=None):
+	def __init__(self, message_source:Object=None):
 		super().__init__()
 		
 		self.init_ui()
@@ -33,7 +34,7 @@ class MessageSourceView(QWidget):
 		self.label = QLabel()
 		self.layout.addWidget(self.label)
 		
-	def _get_source_label(self, message_source:MessageSource) -> str:
+	def _get_source_label(self, message_source:Object) -> str:
 		if message_source is None:
 			return "Unknown\nSource:"
 		elif isinstance(message_source, UserSource):
@@ -67,10 +68,8 @@ class MessageSourceView(QWidget):
 			except Exception as e:
 				return "Model:\nUnknown"
 		
-		elif isinstance(message_source, TerminalSource):
-			return "Terminal:"
 		elif isinstance(message_source, EditSource):
-			most_original = EditSource.most_original(message_source)
+			most_original = message_source.original_object()
 			
 			if most_original is None or most_original.source is None:
 				return "Edited from\nUnknown Source:"

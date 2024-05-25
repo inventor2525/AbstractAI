@@ -176,7 +176,7 @@ class TestConversation(unittest.TestCase):
 		self.assertEqual(len(conv_json["obj"]["HardCodedSource_Table"]), 1)
 		self.assertEqual(len(conv_json["obj"]["MessageSequence_Table"]), 1)
 		self.assertEqual(len(conv_json["obj"]["MessageSequence_messages_mapping"]), 3)
-		self.assertEqual(len(conv_json["obj"]["MessageSource_Table"]), 3)
+		self.assertEqual(len(conv_json["obj"]["Object_Table"]), 3)
 		self.assertEqual(len(conv_json["obj"]["ModelSource_Table"]), 0)
 		self.assertEqual(len(conv_json["obj"]["Message_Table"]), 3)
 		self.assertEqual(len(conv_json["obj"]["TerminalSource_Table"]), 1)

@@ -1,5 +1,4 @@
-from AbstractAI.Model.Converse import DATA
-from ClassyFlaskDB.DATA import ID_Type, dataclass
+from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.LLMs.CommonRoles import CommonRoles
 from dataclasses import field
 from copy import deepcopy
@@ -8,7 +7,7 @@ from typing import Dict
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class RolesSettings:
+class RolesSettings(Object):
 	must_alternate:bool = False
 	merge_consecutive_messages_by_same_role:bool = False
 	# mapping:Dict[CommonRoles, str] = field(default_factory=lambda: {
@@ -19,7 +18,7 @@ class RolesSettings:
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class LLMSettings:
+class LLMSettings(Object):
 	user_model_name:str = field(default="", kw_only=True)
 	user_description:str = field(default="", kw_only=True)
 	roles:RolesSettings = field(default_factory=RolesSettings, kw_only=True)
@@ -73,6 +72,6 @@ class LLMSettings:
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class LLMConfigs:
+class LLMConfigs(Object):
 	id:str = field(default="", metadata={"primary_key":True})
 	models:List[LLMSettings] = field(default_factory=list)

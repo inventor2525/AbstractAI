@@ -1,10 +1,10 @@
-from AbstractAI.Model.Decorator import *
+from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.log_caller_info import log_caller_info
 from threading import Lock, get_ident
 	
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class CallerInfo:
+class CallerInfo(Object):
 	module_name: str
 	function_name: str
 	class_name: str
