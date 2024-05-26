@@ -1,5 +1,4 @@
 from ClassyFlaskDB.DefaultModel import *
-from datetime import datetime
 
 @DATA
 @dataclass

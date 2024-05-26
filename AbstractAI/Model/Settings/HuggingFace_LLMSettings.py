@@ -40,7 +40,7 @@ class torch_dtype_redefine(Enum):
 	
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class HuggingFace_LLMInitSettings:
+class HuggingFace_LLMInitSettings(Object):
 	'''
 	Used to load the model.
 	'''
@@ -53,7 +53,7 @@ class HuggingFace_LLMInitSettings:
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class HuggingFace_LLMGenerateSettings:
+class HuggingFace_LLMGenerateSettings(Object):
 	'''
 	Used when generating text with the model.
 	'''
@@ -63,7 +63,7 @@ class HuggingFace_LLMGenerateSettings:
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class HuggingFace_LLMTokenizerSettings:
+class HuggingFace_LLMTokenizerSettings(Object):
 	'''
 	Used to load the tokenizer.
 	'''

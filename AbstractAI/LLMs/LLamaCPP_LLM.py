@@ -1,4 +1,3 @@
-from AbstractAI.LLMs.CommonRoles import CommonRoles
 from .LLM import *
 
 from llama_cpp import Llama

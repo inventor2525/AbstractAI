@@ -39,12 +39,6 @@ class ChatUI(QWidget):
 		super().__init__()		
 		self.roles = roles
 		
-		self.role_source_map = {
-			"Human": UserSource(),
-			"Assistant": LLMSettings(user_model_name="ChatUI", user_description="Impersonation by ChatUI.py"),
-			"System": SystemSource()
-		}
-		
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
 		

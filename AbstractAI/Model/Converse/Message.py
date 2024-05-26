@@ -1,6 +1,7 @@
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal, LazySignal
 from .MessageSources.EditSource import EditSource
+from .Role import *
 
 from typing import Iterable, List, Union, Optional
 
@@ -8,6 +9,7 @@ from typing import Iterable, List, Union, Optional
 @dataclass
 class Message(Object):
 	content: str
+	role: Object = field(default=User)
 	
 	prev_message: "Message" = field(default=None, compare=False)
 	conversation: "Conversation" = field(default=None, compare=False)

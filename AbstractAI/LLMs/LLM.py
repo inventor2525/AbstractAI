@@ -1,5 +1,4 @@
 from AbstractAI.Model.Converse import *
-from AbstractAI.LLMs.CommonRoles import CommonRoles
 from AbstractAI.Helpers.merge_dictionaries import *
 from .LLM_Response import LLM_Response
 
@@ -54,46 +53,53 @@ class LLM():
 	
 	def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
 		chat = []
-		prev_role = None
-		prev_user_name = None
+		prev_role:Role = None
 		role_mapping  = {
-			CommonRoles.System.value: "system",
-			CommonRoles.User.value: "user",
-			CommonRoles.Assistant.value: "assistant"
+			System.type: self.settings.roles.System,
+			User.type: self.settings.roles.User,
+			Assistant.type: self.settings.roles.Assistant
 		}
-		must_alternate = self.settings.roles.must_alternate
+		should_merge = self.settings.roles.merge_consecutive_messages_by_same_role
 		
-		def append(msg:Dict[str,str], name:str):
-			if name is not None:
-				msg["name"] = name
-			chat.append(msg)
+		def append_msg(message:Message, role:Role):
+			m = {
+				"role":role_mapping[role.type],
+				"content":message.content
+			}
+			if role.name is not None:
+				m["name"] = role.name
+			chat.append(m)
+		def append_empty(role:str):
+			chat.append({"role":role, "content":""})
+			
 		for message in conversation.message_sequence.messages:
-			message_role, user_name = CommonRoles.from_source(message.source)
-			role = role_mapping[message_role.value]
-			if must_alternate:
+			role:Role = message.role
+			if not self.settings.roles.accepts_system_messages:
+				if role.type == System.type:
+					role = User
+			
+			if self.settings.roles.must_alternate:
 				# Make sure roles alternate
-				if prev_role is None and role == "assistant":
-					append({
-						"role":role_mapping[CommonRoles.User.value],
-						"content":""
-					}, user_name)
-				if role == prev_role:
-					chat[-1]["content"] += "\n\n" + message.content
+				if prev_role is None and role.type == Assistant.type:
+					append_empty(User.type)
+				
+				if role.type == prev_role.type:
+					if should_merge and role == prev_role: #names might not be ==
+						chat[-1]["content"] += "\n\n" + message.content
+					else:
+						if role.type == Assistant.type:
+							append_empty(User.type)
+						else:
+							append_empty(Assistant.type)
+						append_msg(message, role)
 				else:
-					append({
-						"role":role,
-						"content":message.content
-					}, user_name)
+					append_msg(message, role)
 			else:
-				if role == prev_role and user_name == prev_user_name:
+				if should_merge and role == prev_role:
 					chat[-1]["content"] += "\n\n" + message.content
 				else:
-					append({
-						"role":role,
-						"content":message.content
-					}, user_name)
+					append_msg(message, role)
 			prev_role = role
-			prev_user_name = user_name
 		return chat
 		
 	def _new_message(self, input:Union[str,Conversation]=None, start_str:str="", start_request_prompt:str=None, auto_append=False) -> Tuple[Message, Optional[List[Dict[str,str]]]]:
@@ -108,7 +114,7 @@ class LLM():
 		None then it is assumed your model can handle start_str and it will be stored in
 		the source information as normal. - Note that this method WILL cost you input tokens.
 		'''
-		source = ModelSource(model_class=type(self).__name__, settings=self.settings, start_str=start_str)
+		source = ModelSource(settings=self.settings, start_str=start_str)
 		source.generating = True
 		message_list = None
 		new_message = Message("", source)

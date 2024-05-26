@@ -6,7 +6,6 @@ from typing import Dict, Any, List, Union
 @dataclass
 class ModelSource(Object):
 	'''Describes a message from a Large Language Model.'''
-	model_class: str = None
 	settings:"LLMSettings" = None
 	message_sequence: MessageSequence = None
 	prompt: str = None

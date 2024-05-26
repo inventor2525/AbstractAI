@@ -1,5 +1,6 @@
 from .MessageSources import UserSource, ModelSource, EditSource, FilesSource
 from .Message import Message
+from .Role import *
 from .Conversation import Conversation, MessageSequence
 from .ConversationCollection import ConversationCollection
 from ClassyFlaskDB.DefaultModel import *
