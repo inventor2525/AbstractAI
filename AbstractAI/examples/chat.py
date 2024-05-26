@@ -28,7 +28,7 @@ while conv is None:
 		conversations_by_id = {}
 		for conv in conversations:
 			conversations_by_id[conv.auto_id] = conv
-			print(f"{conv.name}\nID:{conv.auto_id}\nCreated at:{conv.creation_time}\n{conv.description}\n")
+			print(f"{conv.name}\nID:{conv.auto_id}\nCreated at:{conv.date_created}\n{conv.description}\n")
 		conv_id = input(">> ")
 		if conv_id.lower() == "new":
 			conv_name = input("Enter a name for the new conversation: ")

@@ -1,13 +1,12 @@
-from AbstractAI.Model.Decorator import *
+from ClassyFlaskDB.DefaultModel import *
 from .Message import Message
 from typing import List, Optional
 
 @DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
 @dataclass
-class MessageSequence:
+class MessageSequence(Object):
 	messages: List[Message] = field(default_factory=list)
 	conversation: "Conversation" = field(default=None, compare=False)
-	creation_time: datetime = field(default_factory=get_local_time)
 	
 	def add_message(self, message: Message):
 		self._add_message(message)

@@ -1,5 +1,4 @@
 from .LLM import *
-from AbstractAI.LLMs.CommonRoles import CommonRoles
 from AbstractAI.Helpers.dict_from_obj import dict_from_obj
 import tiktoken
 from openai import OpenAI

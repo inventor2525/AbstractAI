@@ -62,11 +62,10 @@ class Application(QMainWindow):
 		
 		self.llmConfigs:LLMConfigs = None
 		with self.engine.session() as session:
-			self.llmConfigs = session.query(LLMConfigs).where(LLMConfigs.id == "main").first()
+			self.llmConfigs = session.query(LLMConfigs).first()
 			
 		if self.llmConfigs is None:
 			self.llmConfigs = LLMConfigs()
-			self.llmConfigs.id = "main"
 			
 		self.init_settings()
 		

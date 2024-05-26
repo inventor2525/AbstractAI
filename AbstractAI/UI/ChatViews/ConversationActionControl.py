@@ -143,7 +143,7 @@ class ConversationActionControl(QWidget):
 					else:
 						msg_source = Context.conversation[-1].source
 						if isinstance(msg_source, EditSource):
-							msg_source = EditSource.most_original(msg_source).source
+							msg_source = msg_source.original_source()
 						if isinstance(msg_source, ModelSource):
 							self.set_btn_mode(self.right_button, ConversationAction.Continue, enabled=Context.llm_loaded)
 						else:

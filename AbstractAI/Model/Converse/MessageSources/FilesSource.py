@@ -5,7 +5,7 @@ import re
 
 @DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path"])
 @dataclass
-class ItemModel:
+class ItemModel(Object):
 	path:str = field(default=None, kw_only=True)
 	
 	@staticmethod
@@ -47,7 +47,7 @@ class FolderModel(ItemModel):
 
 @DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["items"])
 @dataclass
-class ItemsModel:
+class ItemsModel(Object):
 	items:List[ItemModel] = field(default_factory=list, kw_only=True)
 	
 	def new_id(self):

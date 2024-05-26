@@ -2,7 +2,7 @@ from .LLMSettings import *
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class LLamaCpp_LLMInitSettings:
+class LLamaCpp_LLMInitSettings(Object):
 	'''
 	Used to load the model.
 	'''
@@ -20,7 +20,7 @@ class LLamaCpp_LLMInitSettings:
 
 @DATA(generated_id_type=ID_Type.HASHID)
 @dataclass
-class LLamaCpp_LLMGenerateSettings:
+class LLamaCpp_LLMGenerateSettings(Object):
 	'''
 	Used when generating text with the model.
 	'''

@@ -1,8 +1,9 @@
-from .MessageSources import MessageSource, UserSource, ModelSource, EditSource, TerminalSource, HardCodedSource, SystemSource, FilesSource
+from .MessageSources import *
 from .Message import Message
+from .Role import *
 from .Conversation import Conversation, MessageSequence
 from .ConversationCollection import ConversationCollection
-from ..Decorator import DATA, get_local_time
+from ClassyFlaskDB.DefaultModel import *
 
 def print_conversation(conversation:Conversation):
 	import json
@@ -10,7 +11,7 @@ def print_conversation(conversation:Conversation):
 	
 	print("=====================================")
 	for message in conversation.message_sequence.messages:
-		print(f"{message.creation_time.strftime('%Y-%m-%d %H:%M:%S')} source: {type(message.source).__name__}")
+		print(f"{message.date_created.strftime('%Y-%m-%d %H:%M:%S')} source: {type(message.source).__name__}")
 		print(message.content)
 		print()
 	print("=====================================")

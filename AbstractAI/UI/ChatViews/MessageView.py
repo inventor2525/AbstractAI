@@ -5,15 +5,14 @@ from AbstractAI.Model.Converse import Message, MessageSequence
 from AbstractAI.Model.Converse.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView_extras.MessageSourceView import MessageSourceView
-from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
+from AbstractAI.Model.Converse.Role import *
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 from AbstractAI.UI.Context import Context
 from datetime import datetime
 from copy import deepcopy
 
-message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
 	def __init__(self, parent, message: Message):
 		super().__init__(parent)
@@ -195,10 +194,10 @@ class MessageView(BaseMessageView):
 			if self_index is None:
 				si = 0
 			if messages is not None and len(messages) > si:
-				return messages[si].creation_time
+				return messages[si].date_created
 			else:
 				m = None
-			return getattr(m, 'creation_time', datetime.now())
+			return getattr(m, 'date_created', datetime.now())
 		self.alternates = sorted(self.alternates, key=sort_func, reverse=False)
 		#TODO: add ability to browse the end (where a deleted message was)
 		#TODO: (optional) speed up alternates calculation by caching results if needed.
@@ -271,7 +270,7 @@ class MessageView(BaseMessageView):
 	def reload_files_message(self):
 		source = self.message.source
 		if isinstance(source, EditSource):
-			source = EditSource.most_original(self.message.source).source
+			source = source.original_source()
 		if not isinstance(source, FilesSource):
 			return
 		
@@ -282,9 +281,9 @@ class MessageView(BaseMessageView):
 		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
 		self.message_changed.emit(self.message)
 		
-	def _origional_source(self, source:MessageSource):
+	def _origional_source(self, source:Object):
 		if isinstance(source, EditSource):
-			source = EditSource.most_original(source).source
+			source = source.original_source()
 		return source
 	
 	def _update_can_edit(self):
@@ -311,7 +310,7 @@ class MessageView(BaseMessageView):
 		edit_sources_source = value.source
 		if value.source is not None:
 			if isinstance(most_original, EditSource):
-				most_original = EditSource.most_original(most_original).source
+				most_original = most_original.original_source()
 				edit_sources_source = value.source.source_of_edit
 				
 		if isinstance(most_original, FilesSource):
@@ -325,9 +324,19 @@ class MessageView(BaseMessageView):
 			self.text_edit.setPlainText(value.content)
 		self._update_can_edit()
 
-		self.date_label.setText(value.creation_time.strftime("%Y-%m-%d %H:%M:%S"))
-		
-		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
+		self.date_label.setText(value.date_created.strftime("%Y-%m-%d %H:%M:%S"))
+	
+		if isinstance(value.source, FilesSource):
+			self.background_color = QColor("#7DDF86")
+		else:
+			if value.role.type == Role.User().type:
+				self.background_color = QColor("#9DFFA6")
+			elif value.role.type == Role.Assistant().type:
+				self.background_color = QColor("#FFC4B0")
+			elif value.role.type == Role.System().type:
+				self.background_color = QColor("lightgrey")
+			else:
+				self.background_color = QColor(Qt.white)
 		
 		self.regenerate_button.setVisible(isinstance(most_original, ModelSource))
 		self.reload_btn.setVisible(isinstance(most_original, FilesSource))
