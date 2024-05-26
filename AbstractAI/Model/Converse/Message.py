@@ -9,7 +9,7 @@ from typing import Iterable, List, Union, Optional
 @dataclass
 class Message(Object):
 	content: str
-	role: Object = field(default=User)
+	role: Object = field(default=Role.User)
 	
 	prev_message: "Message" = field(default=None, compare=False)
 	conversation: "Conversation" = field(default=None, compare=False)

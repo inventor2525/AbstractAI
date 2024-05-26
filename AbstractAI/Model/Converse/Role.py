@@ -1,4 +1,14 @@
 from ClassyFlaskDB.DefaultModel import *
+from functools import wraps
+
+def singleton(method):
+    instances = {}
+    @wraps(method)
+    def wrapper(*args, **kwargs):
+        if method.__name__ not in instances:
+            instances[method.__name__] = method(*args, **kwargs)
+        return instances[method.__name__]
+    return wrapper
 
 @DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["type", "name"])
 @dataclass
@@ -10,7 +20,18 @@ class Role(Object):
 		if not isinstance(value, Role):
 			return False
 		return self.type == value.type and self.name == value.name
-
-System = Role("System")
-User = Role("User")
-Assistant = Role("Assistant")
+	
+	@singleton
+	@staticmethod
+	def System() -> "Role":
+		return Role("System")
+	
+	@singleton
+	@staticmethod
+	def User() -> "Role":
+		return Role("User")
+	
+	@singleton
+	@staticmethod
+	def Assistant() -> "Role":
+		return Role("Assistant")

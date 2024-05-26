@@ -1,4 +1,4 @@
-from .MessageSources import UserSource, ModelSource, EditSource, FilesSource
+from .MessageSources import *
 from .Message import Message
 from .Role import *
 from .Conversation import Conversation, MessageSequence

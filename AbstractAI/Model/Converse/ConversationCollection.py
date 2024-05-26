@@ -61,7 +61,7 @@ class ConversationCollection():
 					last_modified = last_modified.replace(tzinfo=tz.gettz(last_modified_timezone))
 				else:
 					last_modified = last_modified.replace(tzinfo=local_timezone)
-				conversation = Conversation(name, description, date_created, last_modified, None)
+				conversation = Conversation(name, description, last_modified, None)
 				conversation.auto_id = auto_id
 				
 				collection.conversations.append(conversation)

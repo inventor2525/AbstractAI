@@ -5,15 +5,14 @@ from AbstractAI.Model.Converse import Message, MessageSequence
 from AbstractAI.Model.Converse.MessageSources import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from .MessageView_extras.MessageSourceView import MessageSourceView
-from AbstractAI.UI.ChatViews.MessageView_extras.RoleColorPallet import RoleColorPallet
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
+from AbstractAI.Model.Converse.Role import *
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
 from AbstractAI.UI.Context import Context
 from datetime import datetime
 from copy import deepcopy
 
-message_color_pallet = RoleColorPallet()
 class BaseMessageView(ColoredFrame):
 	def __init__(self, parent, message: Message):
 		super().__init__(parent)
@@ -326,8 +325,18 @@ class MessageView(BaseMessageView):
 		self._update_can_edit()
 
 		self.date_label.setText(value.date_created.strftime("%Y-%m-%d %H:%M:%S"))
-		
-		self.background_color = message_color_pallet.get_color(self._origional_source(value.source))
+	
+		if isinstance(value.source, FilesSource):
+			self.background_color = QColor("#7DDF86")
+		else:
+			if value.role.type == Role.User().type:
+				self.background_color = QColor("#9DFFA6")
+			elif value.role.type == Role.Assistant().type:
+				self.background_color = QColor("#FFC4B0")
+			elif value.role.type == Role.System().type:
+				self.background_color = QColor("lightgrey")
+			else:
+				self.background_color = QColor(Qt.white)
 		
 		self.regenerate_button.setVisible(isinstance(most_original, ModelSource))
 		self.reload_btn.setVisible(isinstance(most_original, FilesSource))

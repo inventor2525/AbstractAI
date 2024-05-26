@@ -55,9 +55,9 @@ class LLM():
 		chat = []
 		prev_role:Role = None
 		role_mapping  = {
-			System.type: self.settings.roles.System,
-			User.type: self.settings.roles.User,
-			Assistant.type: self.settings.roles.Assistant
+			Role.System().type: self.settings.roles.System,
+			Role.User().type: self.settings.roles.User,
+			Role.Assistant().type: self.settings.roles.Assistant
 		}
 		should_merge = self.settings.roles.merge_consecutive_messages_by_same_role
 		
@@ -76,21 +76,21 @@ class LLM():
 			role:Role = message.role
 			if not self.settings.roles.accepts_system_messages:
 				if role.type == System.type:
-					role = User
+					role = Role.User()
 			
 			if self.settings.roles.must_alternate:
 				# Make sure roles alternate
-				if prev_role is None and role.type == Assistant.type:
-					append_empty(User.type)
+				if prev_role is None and role.type == Role.Assistant().type:
+					append_empty(Role.User().type)
 				
 				if role.type == prev_role.type:
 					if should_merge and role == prev_role: #names might not be ==
 						chat[-1]["content"] += "\n\n" + message.content
 					else:
-						if role.type == Assistant.type:
+						if role.type == Role.Assistant().type:
 							append_empty(User.type)
 						else:
-							append_empty(Assistant.type)
+							append_empty(Role.Assistant().type)
 						append_msg(message, role)
 				else:
 					append_msg(message, role)
@@ -114,10 +114,10 @@ class LLM():
 		None then it is assumed your model can handle start_str and it will be stored in
 		the source information as normal. - Note that this method WILL cost you input tokens.
 		'''
-		source = ModelSource(settings=self.settings, start_str=start_str)
+		source = ModelSource(settings=self.settings, start_str=start_str) | CallerInfo.catch([1,2])
 		source.generating = True
 		message_list = None
-		new_message = Message("", source)
+		new_message = Message("", Role.Assistant()) | source
 		
 		if isinstance(input, Conversation):
 			source.message_sequence = input.message_sequence

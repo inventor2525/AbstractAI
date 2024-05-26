@@ -6,10 +6,7 @@ from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse import *
 from AbstractAI.Model.Converse.MessageSources.FilesSource import ItemsModel
-from AbstractAI.Model.Settings.LLMSettings import LLMSettings
-from AbstractAI.Helpers.log_caller_info import log_caller_info
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
-from PyQt5.QtCore import QTimer
 from copy import deepcopy
 
 class ChatUI(QWidget):
@@ -38,7 +35,15 @@ class ChatUI(QWidget):
 	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System", "Files"], max_new_message_lines=10):
 		super().__init__()		
 		self.roles = roles
+		self.roles_map = {
+			"Human":Role.User(),
+			"Assistant":Role.Assistant(),
+			"System":Role.System(),
+			"Files":Role.User()
+		}
 		
+		self.caller = CallerInfo.catch([0,1])
+		self.user_source = UserSource() | self.caller
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
 		
@@ -151,17 +156,18 @@ class ChatUI(QWidget):
 		
 	def _create_message(self) -> Message:
 		selected_role = self.role_combobox.currentText()
-		
 		new_message = Message(self.input_field.toPlainText())
+		new_message.role = self.roles_map[selected_role]
+		
 		if selected_role == "Assistant":
-			new_message.source = ModelSource(type(self).__name__, self.role_source_map[selected_role], self.conversation.message_sequence)
+			new_message | ModelSource(self.conversation.message_sequence) | self.caller
 		elif selected_role == "Files":
 			items = ItemsModel(items=deepcopy(self.file_selector.items))
 			items.new_id()
-			new_message.source = FilesSource(items=items)
+			new_message | FilesSource(items=items) | self.caller
 			new_message.content = new_message.source.load()
 		else:
-			new_message.source = self.role_source_map[selected_role]
+			new_message | self.user_source
 		return new_message
 	
 	def _add_message(self):
