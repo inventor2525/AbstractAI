@@ -4,7 +4,7 @@ from threading import Lock, get_ident
 from typing import Optional
 
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["module_name", "function_name", "class_name", "instance_id", "file_path", "git_commit"])
 @dataclass
 class CallerInfo(Object):
 	module_name: str = None

@@ -1,10 +1,11 @@
 from ClassyFlaskDB.DefaultModel import *
+from AbstractAI.Model.Converse.Role import Role
 from AbstractAI.Helpers.Signal import Signal
 from .MessageSequence import MessageSequence
 from .Message import Message
 
 from datetime import datetime
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Tuple, Iterator
 
 @DATA(excluded_fields=["all_message_sequences"])
 @dataclass
@@ -41,6 +42,11 @@ class Conversation(Object):
 	def add_message(self, message:Message):
 		self.new_message_sequence()
 		self.message_sequence.add_message(message)
+		
+	def add_messages(self, messages:List[Message]):
+		self.new_message_sequence()
+		for message in messages:
+			self.message_sequence.add_message(message)
 	
 	def insert_message(self, message:Message, index:int):
 		self.new_message_sequence()
@@ -51,6 +57,9 @@ class Conversation(Object):
 		self.message_sequence.remove_message(message, silent)
 	
 	def remove_messages(self, messages:List[Message]):
+		if len(messages)==0:
+			return
+		
 		self.new_message_sequence()
 		self.message_sequence.remove_messages(messages)
 		
@@ -58,6 +67,9 @@ class Conversation(Object):
 		self.new_message_sequence()
 		self.message_sequence.replace_message(old_message, new_message, keeping_latter)
 	
+	def apply_edit(self, edit:EditSource, keeping_latter:bool=False):
+		self.replace_message(edit.original, edit.new, keeping_latter)
+		
 	def alternates(self, message:Union[Message,int]) -> List[MessageSequence]:
 		'''
 		Returns a list of MessageSequences that have the same messages as
@@ -100,14 +112,66 @@ class Conversation(Object):
 			else:
 				self._all_message_sequences = []
 	
-	def __iter__(self):
+	def __iter__(self) -> Iterator[Message]:
 		return iter(self.message_sequence)
 	
-	def __getitem__(self, index):
+	def __getitem__(self, index:int) -> Message:
 		return self.message_sequence[index]
 	
-	def __len__(self):
+	def __len__(self) -> int:
 		return len(self.message_sequence)
 	
-	def __contains__(self, message):
+	def __contains__(self, message:Message) -> bool:
 		return message in self.message_sequence
+	
+	def __add__(self, message_s: Union[Message, str, Tuple[str, Role], List[Union[Message, str, Tuple[str, Role]]]]) -> Union[Message,List[Message]]:
+		def item_to_message(item):
+			if isinstance(item, str):
+				new_msg = Message(item)
+			elif isinstance(item, tuple):
+				new_msg = Message(*item)
+			elif isinstance(item, Message):
+				new_msg = item
+			else:
+				raise ValueError(f"Unsupported type: {type(item)}")
+			return new_msg
+
+		if isinstance(message_s, list):
+			if len(message_s)==0:
+				return None
+			messages = [item_to_message(item) for item in message_s]
+			self.add_messages(messages)
+			return messages
+		else:
+			msg = item_to_message(message_s)
+			self.add_message(msg)
+			return msg
+
+	def __sub__(self, message_s: Union[Message, str, Tuple[str, Role], List[Union[Message, str, Tuple[str, Role]]]]) -> 'Conversation':
+		def get_message(obj):
+			if isinstance(obj, Message):
+				return obj
+			elif isinstance(obj, str):
+				for msg in self.message_sequence.messages:
+					if msg.content == obj:
+						return msg
+			elif isinstance(obj, tuple):
+				for msg in self.message_sequence.messages:
+					if msg.content == obj[0] and msg.role == obj[1]:
+						return msg
+			return None
+
+		if isinstance(message_s, list):
+			messages_to_remove = [get_message(m) for m in message_s]
+			self.remove_messages(messages_to_remove)
+		else:
+			message_to_remove = get_message(message_s)
+			if message_to_remove is not None:
+				self.remove_message(message_to_remove)
+		return self
+	
+	def __str__(self) -> str:
+		return "\n\n".join((
+			f"# {str(msg.role)} (message {index}):\n```txt\n{msg.content}\n```"
+			for index,msg in enumerate(self.message_sequence.messages)
+		))

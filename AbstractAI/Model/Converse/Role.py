@@ -35,3 +35,8 @@ class Role(Object):
 	@staticmethod
 	def Assistant() -> "Role":
 		return Role("Assistant")
+	
+	def __str__(self) -> str:
+		if self.name:
+			return f"{self.type} ({self.name})"
+		return self.type
