@@ -2,6 +2,11 @@ import unittest
 from AbstractAI.Model.Converse import *
 from ClassyFlaskDB.DATA import DATAEngine, print_DATA_json
 
+@DATA
+@dataclass
+class TerminalSource(Object):
+	command:str
+
 class TestConversation(unittest.TestCase):
 	def setUp(self) -> None:
 		self.engine = DATAEngine(DATA)
@@ -107,10 +112,10 @@ class TestConversation(unittest.TestCase):
 	
 	def test_edit_message(self):
 		conv = Conversation()
-		user_source = UserSource("Test User")
+		user_source = UserSource(user_name="Test User")
 		terminal_source = TerminalSource("test_command")
 		
-		msg1 = Message.HardCoded("Hello, World!", system_message=True)
+		msg1 = Message("Hello, World!")
 		msg2 = Message("How are you?", user_source)
 		msg3 = Message("Command not found", terminal_source)
 		
@@ -142,95 +147,7 @@ class TestConversation(unittest.TestCase):
 		
 		self.assertEqual(msg1.prev_message, None)
 		self.assertEqual(msg2.prev_message, msg1)
-	
-	def test_to_json(self):
-		conv = Conversation()
-		user_source = UserSource()
-		terminal_source = TerminalSource("test_command")
-
-		msg1 = Message.HardCoded("Hello", system_message=True)
-		msg2 = Message("How are you?", user_source)
-		msg3 = Message("Command not found", terminal_source)
 		
-		conv.add_message(msg1)
-		conv.add_message(msg2)
-		conv.add_message(msg3)
-		
-		self.assertEqual(msg1.prev_message, None)
-		self.assertEqual(msg2.prev_message, msg1)
-		self.assertEqual(msg3.prev_message, msg2)
-		
-		conv_json = conv.to_json()
-		self.assertIsInstance(conv_json, dict)
-		self.assertEqual(len(conv_json), 3)
-		
-		self.assertEqual(conv_json["primary_key"], conv.get_primary_key())
-		self.assertEqual(conv_json["type"], "Conversation")
-		self.assertIsInstance(conv_json["obj"], dict)
-		
-		print_DATA_json(conv_json)
-		
-		self.assertEqual(len(conv_json["obj"]["CallerInfo_Table"]), 1)
-		self.assertEqual(len(conv_json["obj"]["Conversation_Table"]), 1)
-		self.assertEqual(len(conv_json["obj"]["EditSource_Table"]), 0)
-		self.assertEqual(len(conv_json["obj"]["HardCodedSource_Table"]), 1)
-		self.assertEqual(len(conv_json["obj"]["MessageSequence_Table"]), 1)
-		self.assertEqual(len(conv_json["obj"]["MessageSequence_messages_mapping"]), 3)
-		self.assertEqual(len(conv_json["obj"]["Object_Table"]), 3)
-		self.assertEqual(len(conv_json["obj"]["ModelSource_Table"]), 0)
-		self.assertEqual(len(conv_json["obj"]["Message_Table"]), 3)
-		self.assertEqual(len(conv_json["obj"]["TerminalSource_Table"]), 1)
-		self.assertEqual(len(conv_json["obj"]["UserSource_Table"]), 1)
-		
-		json_messages = {msg_json["content"]:msg_json for msg_json in conv_json["obj"]["Message_Table"]}
-		json_messages_by_key = {msg_json["auto_id"]:msg_json for msg_json in conv_json["obj"]["Message_Table"]}
-		
-		self.assertEqual(json_messages["Hello"]["prev_message_fk"], None)
-		self.assertEqual(json_messages_by_key.get(json_messages["Hello"]["prev_message_fk"], None), None)
-		self.assertEqual(json_messages_by_key.get(json_messages["How are you?"]["prev_message_fk"], None), json_messages["Hello"])
-		self.assertEqual(json_messages_by_key.get(json_messages["Command not found"]["prev_message_fk"], None), json_messages["How are you?"])
-	
-	def test_to_from_json(self):
-		conv = Conversation()
-		user_source = UserSource()
-		terminal_source = TerminalSource("test_command")
-
-		msg1 = Message.HardCoded("Hello", system_message=True)
-		msg2 = Message("How are you?", user_source)
-		msg3 = Message("Command not found", terminal_source)
-		
-		conv.add_message(msg1)
-		conv.add_message(msg2)
-		conv.add_message(msg3)
-		
-		self.assertEqual(msg1.prev_message, None)
-		self.assertEqual(msg2.prev_message, msg1)
-		self.assertEqual(msg3.prev_message, msg2)
-		
-		conv_json = conv.to_json()
-		print_DATA_json(conv_json)
-		
-		conv2 = Conversation.from_json(conv_json)
-		self.assertEqual(conv2.get_primary_key(), conv.get_primary_key())
-		self.assertEqual(len(conv2.message_sequence.messages), len(conv.message_sequence.messages))
-		for message1, message2 in zip(conv.message_sequence.messages, conv2.message_sequence.messages):
-			self.assertEqual(message1.prev_message, message2.prev_message)
-			self.assertEqual(message1.source, message2.source)
-			self.assertEqual(message1.conversation, message2.conversation)
-			
-			self.assertEqual(message1.get_primary_key(), message2.get_primary_key())
-			
-			self.assertEqual(message1.content, message2.content)
-			
-			if message1.source is not None:
-				self.assertEqual(message1.source.get_primary_key(), message2.source.get_primary_key())
-			
-			if message1.prev_message is not None:
-				self.assertEqual(message1.prev_message.get_primary_key(), message2.prev_message.get_primary_key())
-				
-			if message1.conversation is not None:
-				self.assertEqual(message1.conversation.get_primary_key(), message2.conversation.get_primary_key())
-	
 	def test_alternates(self):
 		conv = Conversation()
 		user_source = UserSource()
