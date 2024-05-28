@@ -58,9 +58,6 @@ class Message(Object):
 	
 	def create_edited(self, new_content:str, source_of_edit:Union["UserSource", "ModelSource"]=None) -> "Message":
 		'''Create a new message that is an edited version of this message'''
-		source = EditSource(original=self, source_of_edit=source_of_edit)
-		new_message = Message(new_content, source)
-		new_message.prev_message = self.prev_message
-		new_message.conversation = self.conversation
-		source.new = new_message
+		new_message = Message(new_content, role=self.role, prev_message=self.prev_message, conversation=self.conversation)
+		new_message.source = EditSource(original=self, new=new_message) | source_of_edit
 		return new_message
