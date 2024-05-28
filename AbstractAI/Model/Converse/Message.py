@@ -1,6 +1,5 @@
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal, LazySignal
-from .MessageSources.EditSource import EditSource
 from .Role import *
 
 from typing import Iterable, List, Union, Optional

@@ -1,12 +1,13 @@
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Model.Converse.MessageSequence import MessageSequence
+from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 from typing import Dict, Any, List, Union
 
 @DATA
 @dataclass
 class ModelSource(Object):
 	'''Describes a message from a Large Language Model.'''
-	settings:"LLMSettings" = None
+	settings:LLMSettings = None
 	message_sequence: MessageSequence = None
 	prompt: str = None
 	start_str: str = ""
