@@ -262,7 +262,7 @@ class ChatUI(QWidget):
 		
 		# Add recording indicator
 		self.recording_indicator = RecordingIndicator()
-		self.recording_indicator.clicked.connect(self.transcription.toggle_recording)
+		self.recording_indicator.clicked.connect(self.toggle_recording)
 		self.recording_indicator.show()
 		
 		self.recording_buttons_layout = QHBoxLayout()
