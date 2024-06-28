@@ -71,7 +71,7 @@ class LLM(ABC):
 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
 		pass
 	
-	def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
+	def conversation_to_list(self, conversation: Conversation, include_names:bool=True) -> List[Dict[str,str]]:
 		chat = []
 		prev_role = None
 		prev_user_name = None
@@ -83,7 +83,7 @@ class LLM(ABC):
 		must_alternate = self.settings.roles.must_alternate
 		
 		def append(msg:Dict[str,str], name:str):
-			if name is not None:
+			if name is not None and include_names:
 				msg["name"] = name
 			chat.append(msg)
 		for message in conversation.message_sequence.messages:
@@ -104,7 +104,7 @@ class LLM(ABC):
 						"content":message.content
 					}, user_name)
 			else:
-				if role == prev_role and user_name == prev_user_name:
+				if role == prev_role and (not include_names or user_name == prev_user_name):
 					chat[-1]["content"] += "\n\n" + message.content
 				else:
 					append({

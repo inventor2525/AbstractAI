@@ -78,17 +78,4 @@ class Anthropic_LLM(LLM):
         return self.client.count_tokens(text)
 
     def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
-        chat = []
-        for message in conversation.message_sequence.messages:
-            message_role, _ = CommonRoles.from_source(message.source)
-            role = {
-                CommonRoles.System.value: "system",
-                CommonRoles.User.value: "user",
-                CommonRoles.Assistant.value: "assistant"
-            }[message_role.value]
-            
-            chat.append({
-                "role": role,
-                "content": message.content
-            })
-        return chat
+        return super().conversation_to_list(conversation, False)
