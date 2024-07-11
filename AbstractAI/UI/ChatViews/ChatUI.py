@@ -22,6 +22,26 @@ import time
 from datetime import datetime
 import json
 
+# import os
+# from groq import Groq
+
+# client = Groq()
+# filename = os.path.dirname(__file__) + "/sample_audio.m4a"
+
+# with open(filename, "rb") as file:
+#     transcription = client.audio.transcriptions.create(
+#       file=(filename, file.read()),
+#       model="whisper-large-v3",
+#       prompt="Specify context or spelling",  # Optional
+#       response_format="json",  # Optional
+#       language="en",  # Optional
+#       temperature=0.0  # Optional
+#     )
+#     print(transcription.text)
+import os
+from groq import Groq
+
+client = Groq()
 class Transcription:
 	def __init__(self, output_folder):
 		self.recorder = AudioRecorder()
@@ -54,8 +74,8 @@ class Transcription:
 		self.is_recording = False
 		
 		self.last_file_name = f"{datetime.now().strftime('%Y-%m-%d %H-%M-%S.%f')[:-3]}"
-		audio_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.wav")
-		self.last_recording.export(audio_file_path, format="wav")
+		audio_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.mp3")
+		self.last_recording.export(audio_file_path, format="mp3")
 
 	def transcribe_last_recording(self):
 		if self.last_file_name is None:
@@ -63,34 +83,59 @@ class Transcription:
 			return
 		if self.recording_indicator:
 			self.recording_indicator.is_processing = True
-		audio_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.wav")
+		audio_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.mp3")
 		audio_length = self.last_recording.duration_seconds
 		
 		start_time = time.time()
-		segments, info = self.model.transcribe(audio_file_path, beam_size=5)
-		segments_list = list(segments)
-		end_time = time.time()
-		
-		transcription_time = end_time - start_time
-		transcription_rate = transcription_time / audio_length
+		try:
+			with open(audio_file_path, "rb") as file:
+				transcription = dict(client.audio.transcriptions.create(
+				file=(audio_file_path, file.read()),
+				model="whisper-large-v3",
+				prompt="Specify context or spelling",  # Optional
+				response_format="verbose_json",  # Optional
+				language="en",  # Optional
+				temperature=0.0  # Optional
+				))
+				end_time = time.time()
+				
+				transcription_time = end_time - start_time
+				transcription_rate = transcription_time / audio_length
 
-		full_text = " ".join([segment.text for segment in segments_list])
+				full_text = transcription['text']
 
-		transcription_data = {
-			"language": info.language,
-			"language_probability": info.language_probability,
-			"segments": [
-				{
-					"start": segment.start,
-					"end": segment.end,
-					"text": segment.text
-				} for segment in segments_list
-			],
-			"full_text": full_text,
-			"audio_length": audio_length,
-			"transcription_time": transcription_time,
-			"transcription_rate": transcription_rate
-		}
+				transcription_data = {
+					"raw":transcription,
+					"full_text": full_text,
+					"audio_length": audio_length,
+					"transcription_time": transcription_time,
+					"transcription_rate": transcription_rate
+				}
+		except:
+			segments, info = self.model.transcribe(audio_file_path, beam_size=5)
+			segments_list = list(segments)
+			end_time = time.time()
+			
+			transcription_time = end_time - start_time
+			transcription_rate = transcription_time / audio_length
+
+			full_text = " ".join([segment.text for segment in segments_list])
+
+			transcription_data = {
+				"language": info.language,
+				"language_probability": info.language_probability,
+				"segments": [
+					{
+						"start": segment.start,
+						"end": segment.end,
+						"text": segment.text
+					} for segment in segments_list
+				],
+				"full_text": full_text,
+				"audio_length": audio_length,
+				"transcription_time": transcription_time,
+				"transcription_rate": transcription_rate
+			}
 
 		json_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.json")
 		with open(json_file_path, 'w', encoding='utf-8') as f:
