@@ -38,7 +38,7 @@ class torch_dtype_redefine(Enum):
 		except Exception as e:
 			raise e
 	
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class HuggingFace_LLMInitSettings(Object):
 	'''
@@ -51,7 +51,7 @@ class HuggingFace_LLMInitSettings(Object):
 	device:str = None
 	trust_remote_code:bool = False
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class HuggingFace_LLMGenerateSettings(Object):
 	'''
@@ -61,7 +61,7 @@ class HuggingFace_LLMGenerateSettings(Object):
 	top_p:float = 0.95
 	top_k:int = 0
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class HuggingFace_LLMTokenizerSettings(Object):
 	'''
@@ -75,7 +75,7 @@ class HuggingFace_LLMTokenizerSettings(Object):
 			# 	"bnb_4bit_use_double_quant":True,
 			# 	"bnb_4bit_compute_dtype":torch.bfloat16
 			# },
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class HuggingFace_LLMSettings(LLMSettings):
 	__ui_name__ = "HuggingFace"

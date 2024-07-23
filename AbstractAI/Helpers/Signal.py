@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Callable, TypeVar, Generic, List, Set, Optional, Dict, Any, Tuple
+from typing import Callable, TypeVar, Generic, List, Set, Optional, Dict, Any, Tuple, Type
 from typing_extensions import ParamSpec
 from threading import Lock, Thread, Condition
 from AbstractAI.Helpers.FairLock import FairLock

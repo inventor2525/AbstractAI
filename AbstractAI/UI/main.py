@@ -23,7 +23,7 @@ llm_settings_types = LLMSettings.load_subclasses()
 from AbstractAI.LLMs.LLM import LLM
 
 Stopwatch("DATAEngine", log_statistics=False)
-from ClassyFlaskDB.DATA import DATAEngine
+from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 
 Stopwatch("basics", log_statistics=False)
 import json
@@ -58,11 +58,9 @@ class Application(QMainWindow):
 		Stopwatch("Connect to database", log_statistics=False)
 		
 		self.settings_window = SettingsWindow()
-		self.engine = DATAEngine(DATA, engine_str=f"sqlite:///{Context.args.storage_location}")
+		self.engine = SQLStorageEngine(f"sqlite:///{Context.args.storage_location}", DATA)
 		
-		self.llmConfigs:LLMConfigs = None
-		with self.engine.session() as session:
-			self.llmConfigs = session.query(LLMConfigs).first()
+		self.llmConfigs = self.engine.query(LLMConfigs).first()
 			
 		if self.llmConfigs is None:
 			self.llmConfigs = LLMConfigs()

@@ -1,5 +1,5 @@
 from AbstractAI.Model.Converse import *
-from ClassyFlaskDB.DATA import DATAEngine
+from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 from AbstractAI.Helpers.Signal import Signal
 from dataclasses import dataclass, field
 from typing import List, Union, Dict
@@ -12,14 +12,12 @@ from copy import deepcopy
 @dataclass
 class ConversationCollection():
 	conversations: List[Conversation] = field(default_factory=list)
-	engine : DATAEngine = None
+	engine : SQLStorageEngine = None
 	
-	conversation_indicies: Dict[str, int] = field(default_factory=dict)
 	conversation_added: Signal[[Conversation], None] = Signal.field()
 	
 	def __post_init__(self):
 		for index, conversation in enumerate(self.conversations):
-			self.conversation_indicies[conversation.auto_id] = index
 			self._register_conversation(conversation)
 	
 	def _register_conversation(self, conversation:Conversation) -> None:
@@ -40,58 +38,26 @@ class ConversationCollection():
 			
 	def append(self, conversation:Conversation, should_notify=True) -> None:
 		self.conversations.append(conversation)
-		self.conversation_indicies[conversation.auto_id] = len(self.conversations) - 1
 		self._register_conversation(conversation)
 		if should_notify:
 			self.conversation_added(conversation)
 	
+	def get_conversation(self, conv_id:str) -> Conversation:
+		conv = self.engine.query(Conversation).filter_by_id(conv_id)
+		if conv:
+			return conv
+		for conv in self.conversations:
+			if conv.get_primary_key() == conv_id:
+				return conv
+		return None
+	
 	@classmethod
-	def all_from_engine(cls, engine: DATAEngine) -> 'ConversationCollection':
+	def all_from_engine(cls, engine: SQLStorageEngine) -> 'ConversationCollection':
 		collection = cls()
-		local_timezone = tzlocal.get_localzone()
-		with engine.session() as session:
-			all_conversations = session.query(Conversation.auto_id, Conversation.name, Conversation.description, Conversation.date_created__DateTimeObj, Conversation.date_created__TimeZone, Conversation.last_modified__DateTimeObj, Conversation.last_modified__TimeZone).all()
-			for conversation_fields in all_conversations:
-				auto_id, name, description, date_created, created_timezone, last_modified, last_modified_timezone = deepcopy(conversation_fields)
-				if created_timezone is not None:
-					date_created = date_created.replace(tzinfo=tz.gettz(created_timezone))
-				else:
-					date_created = date_created.replace(tzinfo=local_timezone)
-				if last_modified_timezone is not None:
-					last_modified = last_modified.replace(tzinfo=tz.gettz(last_modified_timezone))
-				else:
-					last_modified = last_modified.replace(tzinfo=local_timezone)
-				conversation = Conversation(name, description, last_modified, None)
-				conversation.auto_id = auto_id
-				
-				collection.conversations.append(conversation)
-				collection.conversation_indicies[auto_id] = len(collection.conversations) - 1
-			collection.engine = engine
+		collection.conversations = list(engine.query(Conversation).all())
+		collection.engine = engine
+			
 		return collection
-
-	def load_completely(self, conversation:Union[int, str, Conversation]) -> Conversation:
-		if isinstance(conversation, int):
-			conversation_index = conversation
-			conversation = self.conversations[conversation]
-		elif isinstance(conversation, str):
-			conversation_index = self.conversation_indicies[conversation]
-			conversation = self.conversations[conversation_index]
-		else:
-			conversation_index = self.conversations.index(conversation)
-		
-		if conversation.message_sequence is None:
-			with self.engine.session() as session:
-				conversations_message_sequences = deepcopy(session.query(MessageSequence).filter(MessageSequence.conversation_fk == conversation.auto_id).all())
-				if len(conversations_message_sequences) == 0:
-					whole_conversation = deepcopy(session.query(Conversation).filter(Conversation.auto_id == conversation.auto_id).first())
-				else:
-					whole_conversation = conversations_message_sequences[0].conversation
-					whole_conversation._all_message_sequences = conversations_message_sequences
-				self.conversations[conversation_index] = whole_conversation
-				self._register_conversation(whole_conversation)
-				return whole_conversation
-		else:
-			return conversation
 	
 	def __iter__(self):
 		return iter(self.conversations)

@@ -2,7 +2,7 @@ from ClassyFlaskDB.DefaultModel import *
 from .Message import Message
 from typing import List, Optional
 
-@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["messages"])
+@DATA(id_type=ID_Type.HASHID, hashed_fields=["messages"])
 @dataclass
 class MessageSequence(Object):
 	messages: List[Message] = field(default_factory=list)
@@ -174,3 +174,5 @@ class MessageSequence(Object):
 				closed_set[m] = len(filtered_sequences)
 				filtered_sequences.append(ms)
 		return filtered_sequences
+
+# from .Conversation import Conversation

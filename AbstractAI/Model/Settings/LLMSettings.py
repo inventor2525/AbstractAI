@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import List
 from typing import Dict
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class RolesSettings(Object):
 	accepts_system_messages:bool = True
@@ -15,7 +15,7 @@ class RolesSettings(Object):
 	User:str = "user"
 	Assistant:str = "assistant"
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class LLMSettings(Object):
 	user_model_name:str = field(default="", kw_only=True)

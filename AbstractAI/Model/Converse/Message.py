@@ -4,7 +4,7 @@ from .Role import *
 
 from typing import Iterable, List, Union, Optional
 
-@DATA
+@DATA(excluded_fields=["changed"])
 @dataclass
 class Message(Object):
 	content: str
@@ -61,3 +61,6 @@ class Message(Object):
 		new_message = Message(new_content, role=self.role, prev_message=self.prev_message, conversation=self.conversation)
 		new_message.source = EditSource(original=self, new=new_message) | source_of_edit
 		return new_message
+
+# from .Conversation import Conversation
+# from .MessageSources import UserSource, ModelSource

@@ -1,6 +1,6 @@
 from .LLMSettings import *
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class LLamaCpp_LLMInitSettings(Object):
 	'''
@@ -18,7 +18,7 @@ class LLamaCpp_LLMInitSettings(Object):
 	flash_attn:bool = False
 	verbose:bool = False
 
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class LLamaCpp_LLMGenerateSettings(Object):
 	'''
@@ -38,7 +38,7 @@ class LLamaCpp_LLMGenerateSettings(Object):
 	mirostat_tau: float = 5.0
 	mirostat_eta: float = 0.1
 	
-@DATA(generated_id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID)
 @dataclass
 class LLamaCpp_LLMSettings(LLMSettings):
 	__ui_name__ = "LLamaCPP"
