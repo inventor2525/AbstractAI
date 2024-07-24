@@ -126,7 +126,7 @@ class LLM():
 			if start_request_prompt and start_str and len(start_str)>0:
 				start_request_prompt = start_request_prompt.replace("<|start_str|>", start_str)
 				if message_list[-1]["role"] is not "user":
-					message_list.append[{"role":"user", "content":start_request_prompt}]
+					message_list.append({"role":"user", "content":start_request_prompt})
 				else:
 					message_list[-1]["content"] = f"{message_list[-1]['content']}\n\n{start_request_prompt}"
 			try:
