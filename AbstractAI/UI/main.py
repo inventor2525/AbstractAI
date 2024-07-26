@@ -59,7 +59,7 @@ class Application(QMainWindow):
 		Stopwatch("Connect to database", log_statistics=False)
 		
 		self.settings_window = SettingsWindow()
-		self.engine = SQLStorageEngine(f"sqlite:///{Context.args.storage_location}", DATA)
+		self.engine = SQLStorageEngine(f"sqlite:///new_engine_test1.db", DATA)#{Context.args.storage_location}", DATA)
 		
 		self.llmConfigs = self.engine.query(LLMConfigs).first()
 			

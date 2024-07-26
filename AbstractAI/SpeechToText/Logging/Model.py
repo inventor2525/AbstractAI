@@ -42,4 +42,4 @@ class Transcription:
 	raw : Dict[str, str] = None
 	max_no_speech_prob : float = -math.inf
 
-stt_logger_engine = DATAEngine(STTLog, engine_str='sqlite:///stt_log.db')
+stt_logger_engine = DATAEngine(STTLog, engine_str='sqlite:///stt_log_new_engine_test.db')
