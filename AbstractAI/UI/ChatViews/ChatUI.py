@@ -175,7 +175,7 @@ class ChatUI(QWidget):
 		self.conversation.add_message(new_message)
 		
 		selected_role = self.role_combobox.currentText()
-		if selected_role is not "Files":
+		if selected_role != "Files":
 			self.input_field.clear()
 		
 	
