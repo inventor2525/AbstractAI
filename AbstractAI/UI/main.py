@@ -1,4 +1,5 @@
 from AbstractAI.Helpers.Stopwatch import Stopwatch
+import traceback
 Stopwatch.singleton = Stopwatch(True)
 Stopwatch = Stopwatch.singleton
 
@@ -444,6 +445,8 @@ class Application(QMainWindow):
 				return True
 			except Exception as e:
 				print(f"Error loading model '{model.user_model_name}' with exception: {e}")
+				print("Stack trace:")
+				traceback.print_exc()
 				return False
 		
 		self.task = BackgroundTask(load_model, 200)
