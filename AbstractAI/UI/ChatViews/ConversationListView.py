@@ -27,6 +27,7 @@ class ConversationListView(QListWidget):
 			self._conversations.conversation_added.disconnect(self._redraw_conversation)
 			
 		self._conversations = value
+		self._conversation_ids = set((conv.get_primary_key() for conv in value))
 		self._sorted_conversations = value.conversations
 		self._redraw_items()
 		self._conversations.conversation_added.connect(self._redraw_conversation)
@@ -67,7 +68,7 @@ class ConversationListView(QListWidget):
 				self._redraw_conversation(conversation, is_selected=conversation.auto_id in selected_ids)
 		
 		if Context.conversation is not None:
-			if Context.conversation.auto_id in self._conversations.conversation_indicies:
+			if Context.conversation.auto_id in self._conversation_ids:
 				try:
 					item = self.items_map[Context.conversation.auto_id]
 					item.setSelected(True)
