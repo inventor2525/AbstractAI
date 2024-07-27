@@ -27,8 +27,7 @@ class ConversationCollection():
 		
 		def message_changed(message):
 			print(f"Message changed in conversation {conversation.get_primary_key()}: {message.content[:50]}...")
-			self.engine.merge(message, deeply=False)
-			self.engine.merge(message.source, deeply=False)
+			self.engine.merge(message, merge_depth_limit=2)
 		def message_added(message):
 			print(f"Message added to conversation {conversation.get_primary_key()}: {message.content[:50]}...")
 			self.engine.merge(message)
