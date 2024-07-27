@@ -390,18 +390,11 @@ class Application(QMainWindow):
 		max_tokens = self.chatUI.max_tokens
 			
 		def chat():
-			print("Starting LLM generation...")
 			responses = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens, auto_append=True)
-			print("LLM generating...")
 			for response in responses:
-				print("LLM generated more.")
 				if not self._should_generate:
-					print("Something said stop.")
 					response.stop()
-					print("Stopped.")
 				response.message.emit_changed()
-				print("LLM message object change notified.")
-			print("Generating complete.")
 		
 		self.task = BackgroundTask(chat)
 		
