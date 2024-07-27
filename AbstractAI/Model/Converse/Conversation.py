@@ -40,8 +40,10 @@ class Conversation(Object):
 		self._all_message_sequences.append(self.message_sequence)
 		
 	def add_message(self, message:Message):
+		print(f"Adding message to conversation {self.get_primary_key()}: {message.content[:50]}...")
 		self.new_message_sequence()
 		self.message_sequence.add_message(message)
+		print(f"Message added, conversation now has {len(self.message_sequence)} messages")
 		
 	def add_messages(self, messages:List[Message]):
 		self.new_message_sequence()

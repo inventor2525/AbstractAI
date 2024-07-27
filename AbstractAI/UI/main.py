@@ -394,7 +394,7 @@ class Application(QMainWindow):
 			responses = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens, auto_append=True)
 			print("LLM generating...")
 			for response in responses:
-				print("LLM generated more.")
+				print(f"LLM generated content: {response.message.content}")
 				if not self._should_generate:
 					print("Something said stop.")
 					response.stop()

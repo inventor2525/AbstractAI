@@ -21,18 +21,22 @@ class ConversationCollection():
 			self._register_conversation(conversation)
 	
 	def _register_conversation(self, conversation:Conversation) -> None:
+		print(f"Registering conversation: {conversation.get_primary_key()}")
 		if self.engine is None:
 			return
 		
 		def message_changed(message):
+			print(f"Message changed in conversation {conversation.get_primary_key()}: {message.content[:50]}...")
 			self.engine.merge(message, deeply=False)
 			self.engine.merge(message.source, deeply=False)
 		def message_added(message):
+			print(f"Message added to conversation {conversation.get_primary_key()}: {message.content[:50]}...")
 			self.engine.merge(message)
 			message.changed.connect(message_changed, auto_disconnect=True)
 		conversation.message_added.connect(message_added)
 		
 		def conversation_changed(conversation):
+			print(f"Conversation changed: {conversation.get_primary_key()}")
 			self.engine.merge(conversation)
 		conversation.conversation_changed.connect(lambda conversation=conversation: conversation_changed(conversation))
 			
