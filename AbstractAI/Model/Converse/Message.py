@@ -16,12 +16,7 @@ class Message(Object):
 	changed:LazySignal[["Message"],None] = LazySignal.field()
 	
 	def emit_changed(self):
-		print(f"Message changed: '{self.content}'")
-		try:
-			self.changed(self)
-		except Exception as e:
-			print("WTF?!?!")
-		print(f"Message change notification complete {self.content}")
+		self.changed(self)
 		
 	def append(self, text:Optional[str]) -> bool:
 		'''
