@@ -43,7 +43,6 @@ class ChatUI(QWidget):
 		}
 		
 		self.caller = CallerInfo.catch([0,1])
-		self.user_source = UserSource() | self.caller
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
 		
@@ -160,14 +159,14 @@ class ChatUI(QWidget):
 		new_message.role = self.roles_map[selected_role]
 		
 		if selected_role == "Assistant":
-			new_message | ModelSource(self.conversation.message_sequence) | self.caller
+			new_message | ModelSource(settings=None, message_sequence=self.conversation.message_sequence) | self.caller
 		elif selected_role == "Files":
 			items = ItemsModel(items=deepcopy(self.file_selector.items))
 			items.new_id()
 			new_message | FilesSource(items=items) | self.caller
 			new_message.content = new_message.source.load()
 		else:
-			new_message | self.user_source
+			new_message | Context.user_source
 		return new_message
 	
 	def _add_message(self):

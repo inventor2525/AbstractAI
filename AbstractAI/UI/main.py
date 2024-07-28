@@ -68,6 +68,9 @@ class Application(QMainWindow):
 			
 		self.init_settings()
 		
+		# Create a user:
+		Context.user_source = UserSource() | CallerInfo.catch([0])
+		
 		Stopwatch("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(self.engine)
 		

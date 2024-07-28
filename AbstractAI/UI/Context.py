@@ -17,6 +17,8 @@ class Context:
 	conversation_selected:Signal[[Conversation, Conversation],None] = Signal.field()
 	context_changed:Signal[[],None] = Signal.field()
 	
+	user_source: UserSource = None
+	
 	@staticmethod
 	def singleton() -> 'Context':
 		if not hasattr(Context, '_singleton'):
