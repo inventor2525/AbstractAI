@@ -98,7 +98,9 @@ class ConversationListView(QListWidget):
 		
 		self._redrawing = True
 		for item in self.selectedItems():
-			Context.conversation = self.conversations.get_conversation(item.conversation)
+			conversation = self.conversations.get_conversation(item.conversation)
+			self.conversations.ensure_loaded(conversation)
+			Context.conversation = conversation
 			Context.context_changed()
 			break
 		self._redrawing = False

@@ -25,13 +25,16 @@ class ConversationCollection():
 			return
 		
 		def message_changed(message):
+			print("------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n")
 			self.engine.merge(message, merge_depth_limit=2)
 		def message_added(message):
+			print("------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n")
 			self.engine.merge(message)
 			message.changed.connect(message_changed, auto_disconnect=True)
 		conversation.message_added.connect(message_added)
 		
 		def conversation_changed(conversation):
+			print("------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n------------------------------\n")
 			self.engine.merge(conversation)
 		conversation.conversation_changed.connect(lambda conversation=conversation: conversation_changed(conversation))
 			
@@ -52,12 +55,18 @@ class ConversationCollection():
 	
 	@classmethod
 	def all_from_engine(cls, engine: SQLStorageEngine) -> 'ConversationCollection':
-		collection = cls()
-		collection.conversations = list(engine.query(Conversation).all())
-		collection.engine = engine
-			
-		return collection
+		conversations = list(engine.query(Conversation).all())
+		for conversation in conversations:
+			conversation.__fully_loaded__ = False
+		return cls(conversations, engine)
 	
+	def ensure_loaded(self, conversation:Conversation):
+		if not getattr(conversation, "__fully_loaded__", True):
+			if not hasattr(conversation, "_all_message_sequences"):
+				conversation._all_message_sequences = []
+			conversation._all_message_sequences.extend(self.engine.query(MessageSequence).all(where=f"conversation_id == '{conversation.get_primary_key()}'"))
+			conversation.__fully_loaded__ = True
+			
 	def __iter__(self):
 		return iter(self.conversations)
 	
