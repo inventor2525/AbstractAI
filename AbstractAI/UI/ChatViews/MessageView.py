@@ -264,7 +264,7 @@ class MessageView(BaseMessageView):
 
 	def confirm_changes(self):
 		if self.editing:
-			self.message = self.message.create_edited(self.text_edit.toPlainText())
+			self.message = self.message.create_edited(self.text_edit.toPlainText(), Context.user_source)
 			self.message_changed.emit(self.message)
 	
 	def reload_files_message(self):
@@ -280,11 +280,6 @@ class MessageView(BaseMessageView):
 		new_content = new_source.load()
 		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
 		self.message_changed.emit(self.message)
-		
-	def _origional_source(self, source:Object):
-		if isinstance(source, EditSource):
-			source = source.original_source()
-		return source
 	
 	def _update_can_edit(self):
 		#a field added to ModelSource by a model to know if it is done generating, defaults to false for other source types or when loaded from db:
@@ -307,16 +302,15 @@ class MessageView(BaseMessageView):
 		self.message_source_view.message_source = value.source
 		
 		most_original = value.source
-		edit_sources_source = value.source
 		if value.source is not None:
 			if isinstance(most_original, EditSource):
 				most_original = most_original.original_source()
-				edit_sources_source = value.source.source_of_edit
 				
 		if isinstance(most_original, FilesSource):
 			self.text_edit.setVisible(False)
 			self.file_selector.setVisible(True)
-			self.file_selector.items = deepcopy(edit_sources_source.items.items)
+			files_source:FilesSource = value.source.source
+			self.file_selector.items = deepcopy(files_source.items.items)
 			self.file_selector.refresh()
 		else:
 			self.text_edit.setVisible(True)

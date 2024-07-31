@@ -7,7 +7,7 @@ from .Message import Message
 from datetime import datetime
 from typing import Callable, List, Union, Tuple, Iterator
 
-@DATA(excluded_fields=["all_message_sequences"])
+@DATA(excluded_fields=["conversation_changed", "message_added", "message_removed"])
 @dataclass
 class Conversation(Object):
 	name: str = "Conversation"

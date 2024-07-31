@@ -1,4 +1,5 @@
 from AbstractAI.Helpers.Stopwatch import Stopwatch
+import traceback
 Stopwatch.singleton = Stopwatch(True)
 Stopwatch = Stopwatch.singleton
 
@@ -23,7 +24,7 @@ llm_settings_types = LLMSettings.load_subclasses()
 from AbstractAI.LLMs.LLM import LLM
 
 Stopwatch("DATAEngine", log_statistics=False)
-from ClassyFlaskDB.DATA import DATAEngine
+from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 
 Stopwatch("basics", log_statistics=False)
 import json
@@ -58,19 +59,20 @@ class Application(QMainWindow):
 		Stopwatch("Connect to database", log_statistics=False)
 		
 		self.settings_window = SettingsWindow()
-		self.engine = DATAEngine(DATA, engine_str=f"sqlite:///{Context.args.storage_location}")
+		Context.engine = SQLStorageEngine(f"sqlite:///new_engine_test1.db", DATA)#{Context.args.storage_location}", DATA)
 		
-		self.llmConfigs:LLMConfigs = None
-		with self.engine.session() as session:
-			self.llmConfigs = session.query(LLMConfigs).first()
+		self.llmConfigs = Context.engine.query(LLMConfigs).first()
 			
 		if self.llmConfigs is None:
 			self.llmConfigs = LLMConfigs()
 			
 		self.init_settings()
 		
+		# Create a user:
+		Context.user_source = UserSource() | CallerInfo.catch([0])
+		
 		Stopwatch("Load conversations", log_statistics=False)
-		self.conversations = ConversationCollection.all_from_engine(self.engine)
+		self.conversations = ConversationCollection.all_from_engine(Context.engine)
 		
 		Stopwatch("Setup UI", log_statistics=False)
 		self.should_filter = False
@@ -146,7 +148,8 @@ class Application(QMainWindow):
 		def save_settings():
 			for model in self.llmConfigs.models:
 				model.new_id(True)
-			self.engine.merge(self.llmConfigs)
+			Context.engine.merge(self.llmConfigs)
+			Context.engine.merge(self.chatUI.transcription.hacky_tts_settings)
 		self.settings_window.settingsSaved.connect(save_settings)
 		
 	def init_ui(self):
@@ -253,6 +256,12 @@ class Application(QMainWindow):
 		self.chatUI.stop_generating.connect(self.stop_generating)
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
 		
+		self.settings_window.addSettingItem(SettingItem(
+			self.chatUI.transcription.hacky_tts_settings,
+			"TTS_Settings",
+			excluded_fields=["auto_id"]
+		))
+		
 		w = QWidget()
 		w.setLayout(self.right_panel)
 		self.splitter.addWidget(w)
@@ -340,7 +349,7 @@ class Application(QMainWindow):
 			Context.conversation.description = self.description_field.text()
 			Context.conversation.last_modified = get_local_time()
 			self.conversation_list_view._redraw_conversation(Context.conversation)
-			self.engine.merge(Context.conversation)
+			Context.engine.merge(Context.conversation)
 	
 	def search_name_description(self):
 		search = self.search_field.text()
@@ -446,6 +455,8 @@ class Application(QMainWindow):
 				return True
 			except Exception as e:
 				print(f"Error loading model '{model.user_model_name}' with exception: {e}")
+				print("Stack trace:")
+				traceback.print_exc()
 				return False
 		
 		self.task = BackgroundTask(load_model, 200)
@@ -472,6 +483,9 @@ class Application(QMainWindow):
 		self.task.finished.connect(model_loaded)
 		self.task.busy_indication.connect(animate)
 		self.task.start()
+		
+	def closeEvent(self, event):
+		QApplication.quit()
 		
 Stopwatch.end_scope(log_statistics=False)
 if __name__ == "__main__":

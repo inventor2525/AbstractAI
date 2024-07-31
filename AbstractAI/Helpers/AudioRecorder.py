@@ -19,7 +19,7 @@ class AudioRecorder:
 		self.stream = sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='float32', device=input_device_index)
 		self.recording_thread = self.RecordingThread(self)
 		self.lock = threading.Lock()
-		self.buffers = []
+		self.buffers = [[]]  # Initialize with an empty list
 		self.recording_thread.start()
 
 	class RecordingThread(threading.Thread):
@@ -37,9 +37,7 @@ class AudioRecorder:
 					data, _ = self.recorder.stream.read(1024)
 					if self.record:
 						with self.recorder.lock:
-							if not self.recorder.buffers:
-								self.recorder.buffers.append(self.temporary_buffer)
-							self.recorder.buffers[-1] = np.append(self.recorder.buffers[-1], data)
+							self.recorder.buffers[-1].append(data.copy())
 					else:
 						self.temporary_buffer = data
 			except KeyboardInterrupt:
@@ -62,8 +60,8 @@ class AudioRecorder:
 			
 			if self.buffers:
 				self.recording_thread.record = False
-				final_buffer = np.concatenate(self.buffers)
-				self.buffers = []
+				final_buffer = np.concatenate([np.concatenate(buffer) for buffer in self.buffers])
+				self.buffers = [[]]  # Reset with a new empty list
 				audio_data = np.int16(final_buffer * 32767).tobytes()
 				return AudioSegment(
 					data=audio_data,
@@ -76,9 +74,9 @@ class AudioRecorder:
 	def peak(self):
 		peak_buffer = None
 		with self.lock:
-			if self.buffers:
-				peak_buffer = self.buffers[-1]
-				self.buffers.append(np.array([], dtype='float32'))
+			if self.buffers[-1]:
+				peak_buffer = np.concatenate(self.buffers[-1])
+				self.buffers.append([])  # Add a new empty list for future recording
 		
 		if peak_buffer is not None:
 			audio_data = np.int16(peak_buffer * 32767).tobytes()

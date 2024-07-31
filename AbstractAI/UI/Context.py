@@ -2,12 +2,14 @@ from dataclasses import dataclass, field
 from PyQt5.QtCore import QSettings
 from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.Signal import Signal
+from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 from argparse import Namespace
 
 @dataclass
 class Context:
 	args:Namespace = None
 	settings: QSettings = None
+	engine:SQLStorageEngine = None
 	start_str: str = ""
 	
 	llm_loaded: bool = False
@@ -16,6 +18,8 @@ class Context:
 	
 	conversation_selected:Signal[[Conversation, Conversation],None] = Signal.field()
 	context_changed:Signal[[],None] = Signal.field()
+	
+	user_source: UserSource = None
 	
 	@staticmethod
 	def singleton() -> 'Context':

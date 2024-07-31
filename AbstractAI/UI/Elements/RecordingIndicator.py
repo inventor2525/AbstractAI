@@ -1,10 +1,11 @@
 from datetime import datetime
 import math
 from PyQt5.QtWidgets import QWidget, QDesktopWidget
-from PyQt5.QtCore import Qt, QTimer, QPoint
+from PyQt5.QtCore import Qt, QTimer, QPoint, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor, QMouseEvent
 
 class RecordingIndicator(QWidget):
+    clicked = pyqtSignal()
     def __init__(self, diameter=60):
         super().__init__()
 
@@ -48,6 +49,7 @@ class RecordingIndicator(QWidget):
 
     def mousePressEvent(self, event: QMouseEvent):
         if self._is_point_in_circle(event.pos()):
+            self.clicked.emit()
             super().mousePressEvent(event)  # Forward the event
 
     def _is_point_in_circle(self, point: QPoint):

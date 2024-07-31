@@ -3,7 +3,7 @@ from typing import List, Iterable, Tuple
 import os
 import re
 
-@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path"])
+@DATA(id_type=ID_Type.HASHID, hashed_fields=["path"])
 @dataclass
 class ItemModel(Object):
 	path:str = field(default=None, kw_only=True)
@@ -32,7 +32,7 @@ class ItemModel(Object):
 			else:
 				yield item.path
 
-@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["path", "file_pattern", "folder_pattern", "extension_pattern"])
+@DATA(id_type=ID_Type.HASHID, hashed_fields=["path", "file_pattern", "folder_pattern", "extension_pattern"])
 @dataclass
 class FolderModel(ItemModel):
 	file_pattern:str = field(default='', kw_only=True)
@@ -45,7 +45,7 @@ class FolderModel(ItemModel):
 			return set(self.extension_pattern.replace(',', ' ').split())
 		return set()
 
-@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["items"])
+@DATA(id_type=ID_Type.HASHID, hashed_fields=["items"])
 @dataclass
 class ItemsModel(Object):
 	items:List[ItemModel] = field(default_factory=list, kw_only=True)

@@ -10,7 +10,7 @@ def singleton(method):
         return instances[method.__name__]
     return wrapper
 
-@DATA(generated_id_type=ID_Type.HASHID, hashed_fields=["type", "name"])
+@DATA(id_type=ID_Type.HASHID, hashed_fields=["type", "name"])
 @dataclass
 class Role(Object):
 	type:str
