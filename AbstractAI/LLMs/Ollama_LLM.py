@@ -26,7 +26,7 @@ class Ollama_LLM(LLM):
 					break
 				if response.message.append(chunk['message']['content']):
 					response.source.out_token_count += 1
-				response.log_chunk(chunk)
+				self._log_chunk(chunk, wip_message)
 				response.source.finished = chunk.get('done_reason', None) == 'stop'
 				yield response
 			response.source.generating = False

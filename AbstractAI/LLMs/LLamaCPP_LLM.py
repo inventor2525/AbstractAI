@@ -43,7 +43,7 @@ class LLamaCPP_LLM(LLM):
 			for i, chunk in enumerate(completion):
 				if response.message.append(chunk['choices'][0]['text']):
 					response.source.out_token_count += 1
-				response.log_chunk(chunk)
+				self._log_chunk(chunk, wip_message)
 				response.source.finished = chunk['choices'][0].get('finish_reason', None) == 'stop'
 				yield response
 			response.source.generating = False

@@ -27,7 +27,7 @@ class Anthropic_LLM(LLM):
 					response.input_token_count = chunk.message.usage.input_tokens
 				elif chunk.type == "content_block_delta":
 					response.message.append(chunk.delta.text)
-					response.log_chunk(chunk.model_dump_json(indent=2))
+					self._log_chunk(chunk.model_dump_json(indent=2), wip_message)
 					response.source.out_token_count += 1
 				elif chunk.type == "message_stop":
 					response.source.finished = True

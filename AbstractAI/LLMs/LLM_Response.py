@@ -16,8 +16,3 @@ class LLM_Response:
 		if self.stop_streaming_func:
 			self.stop_streaming_func()
 			self.stop_streaming_func = None
-	
-	def log_chunk(self, chunk:Dict[str,Any]):
-		if "Chunks" not in self.source.serialized_raw_output:
-			self.source.serialized_raw_output["Chunks"] = []
-		self.source.serialized_raw_output["Chunks"].append(chunk)

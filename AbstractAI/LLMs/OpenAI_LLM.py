@@ -31,7 +31,7 @@ class OpenAI_LLM(LLM):
 			for i, chunk in enumerate(completion):
 				if response.message.append(chunk.choices[0].delta.content):
 					response.source.out_token_count += 1
-				response.log_chunk(dict_from_obj(chunk))
+				self._log_chunk(dict_from_obj(chunk), wip_message)
 				response.source.finished = chunk.choices[0].finish_reason == 'stop'
 				yield response
 			response.source.generating = False

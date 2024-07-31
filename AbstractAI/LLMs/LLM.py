@@ -148,3 +148,8 @@ class LLM():
 			raise ValueError("Invalid input type. 'Input' should be a Conversation or a string.")
 			
 		return new_message, message_list
+	
+	def _log_chunk(self, chunk:Dict[str,Any], message:Message):
+		if "Chunks" not in message.source.serialized_raw_output:
+			message.source.serialized_raw_output["Chunks"] = []
+		message.source.serialized_raw_output["Chunks"].append(chunk)
