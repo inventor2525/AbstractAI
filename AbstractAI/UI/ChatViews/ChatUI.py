@@ -13,44 +13,54 @@ from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.UI.Elements.RecordingIndicator import RecordingIndicator
 from AbstractAI.UI.Support.KeyComboHandler import KeyComboHandler, KeyAction, KeyEvent
-from faster_whisper import WhisperModel
 import os
 import time
 from datetime import datetime
 import json
 
-# import os
-# from groq import Groq
-
-# client = Groq()
-# filename = os.path.dirname(__file__) + "/sample_audio.m4a"
-
-# with open(filename, "rb") as file:
-#     transcription = client.audio.transcriptions.create(
-#       file=(filename, file.read()),
-#       model="whisper-large-v3",
-#       prompt="Specify context or spelling",  # Optional
-#       response_format="json",  # Optional
-#       language="en",  # Optional
-#       temperature=0.0  # Optional
-#     )
-#     print(transcription.text)
 import os
-from groq import Groq
+from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 
-client = Groq()
 class Transcription:
-	def __init__(self, output_folder):
+	def __init__(self, output_folder, hacky_tts_settings :Hacky_Whisper_Settings):
 		self.recorder = AudioRecorder()
 		self.player = AudioPlayer()
-		self.model = WhisperModel("small.en", device="cpu", compute_type="int8")
+		self.hacky_tts_settings = hacky_tts_settings
+		
+		if hacky_tts_settings.use_groq:
+			self._ensure_groq_loaded()
+		else:
+			self._ensure_local_model_loaded()
+			
 		self.output_folder = output_folder
 		self.is_recording = False
 		self.last_recording = None
 		self.last_file_name = None
 		
 		self.recording_indicator = None
-
+	
+	def _ensure_groq_loaded(self):
+		if hasattr(self, "client"):
+			return
+		from groq import Groq
+		try:
+			self.client = Groq(api_key=self.hacky_tts_settings.groq_api_key)
+		except Exception as e:
+			print("Error loading groq whisper {e}")
+		
+	def _ensure_local_model_loaded(self):
+		if hasattr(self, "model"):
+			return
+		from faster_whisper import WhisperModel
+		try:
+			self.model = WhisperModel(
+				self.hacky_tts_settings.model_name, 
+				device=self.hacky_tts_settings.device, 
+				compute_type=self.hacky_tts_settings.compute_type
+			)
+		except Exception as e:
+			print("Error loading local whisper {e}")
+		
 	def toggle_recording(self):
 		if self.is_recording:
 			self.stop_recording()
@@ -85,8 +95,9 @@ class Transcription:
 		
 		start_time = time.time()
 		try:
+			self._ensure_groq_loaded()
 			with open(audio_file_path, "rb") as file:
-				transcription = dict(client.audio.transcriptions.create(
+				transcription = dict(self.client.audio.transcriptions.create(
 				file=(audio_file_path, file.read()),
 				model="whisper-large-v3",
 				prompt="Specify context or spelling",  # Optional
@@ -109,6 +120,7 @@ class Transcription:
 					"transcription_rate": transcription_rate
 				}
 		except:
+			self._ensure_local_model_loaded()
 			segments, info = self.model.transcribe(audio_file_path, beam_size=5)
 			segments_list = list(segments)
 			end_time = time.time()
@@ -185,11 +197,15 @@ class ChatUI(QWidget):
 		self.num_lines = 0
 		
 		# Set up transcription
+		hacky_tts_settings = Context.engine.query(Hacky_Whisper_Settings).first()
+		if hacky_tts_settings is None:
+			hacky_tts_settings = Hacky_Whisper_Settings()
+			
 		db_path = Context.settings.value("main/storage_location", "")
 		db_dir = os.path.dirname(db_path)
 		self.recordings_folder = os.path.join(db_dir, "recordings")
 		os.makedirs(self.recordings_folder, exist_ok=True)
-		self.transcription = Transcription(self.recordings_folder)
+		self.transcription = Transcription(self.recordings_folder, hacky_tts_settings)
 		
 		self.init_ui(conversation)
 		self.transcription.recording_indicator = self.recording_indicator

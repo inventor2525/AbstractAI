@@ -2,12 +2,14 @@ from dataclasses import dataclass, field
 from PyQt5.QtCore import QSettings
 from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.Signal import Signal
+from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 from argparse import Namespace
 
 @dataclass
 class Context:
 	args:Namespace = None
 	settings: QSettings = None
+	engine:SQLStorageEngine = None
 	start_str: str = ""
 	
 	llm_loaded: bool = False
