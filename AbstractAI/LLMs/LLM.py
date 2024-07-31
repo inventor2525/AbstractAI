@@ -51,7 +51,7 @@ class LLM():
 		'''Count the number of tokens in the passed text.'''
 		raise NotImplementedError("This LLM does not support token counting.")
 	
-	def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
+	def conversation_to_list(self, conversation: Conversation, include_names:bool=True) -> List[Dict[str,str]]:
 		chat = []
 		prev_role:Role = None
 		role_mapping  = {
@@ -66,7 +66,7 @@ class LLM():
 				"role":role_mapping[role.type],
 				"content":message.content
 			}
-			if role.name is not None:
+			if role.name is not None and include_names:
 				m["name"] = role.name
 			chat.append(m)
 		def append_empty(role:str):
@@ -95,7 +95,7 @@ class LLM():
 				else:
 					append_msg(message, role)
 			else:
-				if should_merge and role == prev_role:
+				if role == prev_role and (not include_names or user_name == prev_user_name):
 					chat[-1]["content"] += "\n\n" + message.content
 				else:
 					append_msg(message, role)

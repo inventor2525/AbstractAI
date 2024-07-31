@@ -477,6 +477,9 @@ class Application(QMainWindow):
 		self.task.busy_indication.connect(animate)
 		self.task.start()
 		
+	def closeEvent(self, event):
+		QApplication.quit()
+		
 Stopwatch.end_scope(log_statistics=False)
 if __name__ == "__main__":
 	Stopwatch("Load settings", log_statistics=False)
