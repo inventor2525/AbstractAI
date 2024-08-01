@@ -25,18 +25,21 @@ def extract_paths_and_code(text):
         elif depth >= 1:
             pseudo_depth = depth + fuzzy_depth
             if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
-                d = (depth-1)
-                d = d if d>0 else 0
-                d_fuzzied_depth = fuzzy_depth-d
-                if d_fuzzied_depth > 0:
-                    fuzzy_depth -= 1
-                    code += line + "\n"
-                else:
+                fuzzy_depth += 1
+                def could_this_be_the_end():
+                    if depth>fuzzy_depth:
+                        return False
+                    if (fuzzy_depth-depth) % 2 == 0:
+                        return True
+                    return False
+                if could_this_be_the_end():
                     path_and_codes.append((path, code.strip()))
                     path = None
                     code = ""
                     depth = 0
                     fuzzy_depth = 0
+                else:
+                    code += line + "\n"
             elif re.search(nested_code_start_pattern, line):
                 depth += 1
                 code += line + "\n"
