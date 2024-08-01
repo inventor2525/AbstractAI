@@ -16,7 +16,7 @@ class TextToSpeech(ABC):
 	@staticmethod
 	def split_codeblocks(text):
 		'''Separates out the code blocks from input text.'''
-		pattern = '`'+r'``^(\w+)?$'
+		pattern = r'```^(\w+)?$'
 		inside_code_block = False
 		delimiter_count = 0
 		regular_text = ''

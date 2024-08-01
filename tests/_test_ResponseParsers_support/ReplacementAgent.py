@@ -53,7 +53,9 @@ Here is the conversation that occurred:
 
 ReplacementAgent.rewrite_template = Template("""
 Now, in first person, without any prefix, re-write message {{ msg_index }}:
-```txt
+
+This file will fail to parse right here because this gets picked up as the closing tag in the main markdown to this file:
+```
 {{ msg_to_replace.content }}
 ```
 """)
