@@ -7,6 +7,7 @@ def extract_paths_and_code(text):
     path_pattern = r'^/[^\n]+$'
     code_start_pattern = r'^```\w+$'
     code_end_pattern = r'^```$'
+    nested_code_start_pattern = r'(?<!`)```(?:python|rust|cpp|javascript|java|ruby|go|typescript|csharp|php|swift|kotlin|scala|haskell|r|matlab|sql|html|css|xml|json|yaml|toml|bash|sh|powershell)(?!`)'
     nested_code_pattern = r'^(?!.*````.*$)```(?!`)'
 
     path_and_codes = []
@@ -24,14 +25,22 @@ def extract_paths_and_code(text):
         elif depth >= 1:
             pseudo_depth = depth + fuzzy_depth
             if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
-                if fuzzy_depth > 0:
+                d = (depth-1)
+                d = d if d>0 else 0
+                d_fuzzied_depth = fuzzy_depth-d
+                if d_fuzzied_depth > 0:
                     fuzzy_depth -= 1
+                    code += line + "\n"
                 else:
                     path_and_codes.append((path, code.strip()))
                     path = None
                     code = ""
                     depth = 0
-            elif re.match(nested_code_pattern, line):
+                    fuzzy_depth = 0
+            elif re.search(nested_code_start_pattern, line):
+                depth += 1
+                code += line + "\n"
+            elif re.search(nested_code_pattern, line):
                 fuzzy_depth += 1
                 code += line + "\n"
             else:
