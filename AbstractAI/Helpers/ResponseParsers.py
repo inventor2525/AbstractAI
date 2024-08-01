@@ -18,10 +18,13 @@ def extract_paths_and_code(text):
 
     lines = text.split('\n')
     for i, line in enumerate(lines):
-        if re.match(path_pattern, line) and depth == 0:
-            path = line.strip()
-        elif path and depth == 0 and re.match(code_start_pattern, line):
-            depth = 1
+        if depth == 0:
+            if re.match(path_pattern, line):
+                path = line.strip()
+            elif path and re.match(code_start_pattern, line):
+                depth = 1
+            else:
+                path = None
         elif depth >= 1:
             pseudo_depth = depth + fuzzy_depth
             if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
@@ -53,7 +56,5 @@ def extract_paths_and_code(text):
                         depth += 1
                 elif nested_end_matches:
                     fuzzy_depth += 1
-        else:
-            path = None
 
     return path_and_codes

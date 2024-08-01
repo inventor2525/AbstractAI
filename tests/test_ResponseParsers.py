@@ -103,6 +103,13 @@ This block has no path, so it should be ignored.
         self.assertEqual(path_and_codes, expected_path_and_codes)
     
     def test_inception(self):
+        '''
+        See if we can parse markdown that contains both this file
+        and the code to the parser itself. Both of which should
+        by definition never have anything but valid markdown nested
+        inside them and so should be a good basic test that we can
+        handle 'good' cases.
+        '''
         # Get the contents of the current test file
         current_file_path = inspect.getfile(inspect.currentframe())
         with open(current_file_path, 'r') as f:
@@ -228,6 +235,15 @@ End of the large markdown file.
         self.assertEqual(len(extracted_paths_and_code), len(file_contents))
 
     def test_whole_project_inception(self):
+        '''
+        Test the parser on a markdown file containing all files in
+        both projects.
+        
+        With this, we can find more places this fails as time goes on.
+        
+        Any new failing examples can be added to the
+        _test_ResponseParsers_support folder.
+        '''
         def get_package_root(package):
             """Get the root directory of a package."""
             package_path = os.path.abspath(package.__file__)
@@ -248,6 +264,9 @@ End of the large markdown file.
         TestExtractPathsAndCode.process_and_test_files(self, all_files)
 
     def test_previous_whole_project_inception_failures(self):
+        '''
+        Try all files that we know have failed to be parsed from markdown before.
+        '''
         current_file_path = inspect.getfile(inspect.currentframe())
         support_folder = os.path.join(os.path.dirname(current_file_path), '_test_ResponseParsers_support')
 
