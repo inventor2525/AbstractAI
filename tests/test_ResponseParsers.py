@@ -153,9 +153,19 @@ And here's some final random text to conclude our inception test.
         self.assertEqual(extracted_paths_and_code[0][1].strip(), test_file_contents.strip())
         self.assertEqual(extracted_paths_and_code[1][1].strip(), response_parsers_contents.strip())
     
-    def test_extract_all_package_files(self):
-        # Define the file extensions we want to include
-        valid_extensions = ['.py', '.md', '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.txt', '.rst', '.html', '.css', '.js', '.ts', '.jsx', '.tsx']
+    @staticmethod
+    def get_files_with_extensions(directory, valid_extensions=['.py', '.md', '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.txt', '.rst', '.html', '.css', '.js', '.ts', '.jsx', '.tsx'], exclude_dir=None):
+        file_paths = []
+        for root, dirs, files in os.walk(directory):
+            if exclude_dir and os.path.basename(root) == exclude_dir:
+                continue
+            for file in files:
+                if any(file.endswith(ext) for ext in valid_extensions):
+                    file_paths.append(os.path.join(root, file))
+        return file_paths
+
+    @staticmethod
+    def process_and_test_files(self:'TestExtractPathsAndCode', all_files):
         extension_to_language = {
             '.py': 'python',
             '.md': 'markdown',
@@ -174,33 +184,6 @@ And here's some final random text to conclude our inception test.
             '.jsx': 'jsx',
             '.tsx': 'tsx'
         }
-        
-        # Function to get all files with valid extensions in a directory
-        def get_files_with_extensions(directory):
-            file_paths = []
-            for root, _, files in os.walk(directory):
-                for file in files:
-                    if any(file.endswith(ext) for ext in valid_extensions):
-                        file_paths.append(os.path.join(root, file))
-            return file_paths
-        
-        def get_package_root(package):
-            """Get the root directory of a package."""
-            package_path = os.path.abspath(package.__file__)
-            return os.path.dirname(os.path.dirname(package_path))
-        
-        import AbstractAI
-        import ClassyFlaskDB
-        # Get the root directory of AbstractAI and ClassyFlaskDB
-        abstract_ai_root = get_package_root(AbstractAI)
-        classy_flask_db_root = get_package_root(ClassyFlaskDB)
-        
-        # Get all valid files from both packages
-        abstract_ai_files = get_files_with_extensions(abstract_ai_root)
-        classy_flask_db_files = get_files_with_extensions(classy_flask_db_root)
-
-        all_files = abstract_ai_files + classy_flask_db_files
-
         # Read the contents of all files
         file_contents = []
         for file_path in all_files:
@@ -243,5 +226,33 @@ End of the large markdown file.
             
         # Assert that we extracted the correct number of code blocks
         self.assertEqual(len(extracted_paths_and_code), len(file_contents))
+
+    def test_whole_project_inception(self):
+        def get_package_root(package):
+            """Get the root directory of a package."""
+            package_path = os.path.abspath(package.__file__)
+            return os.path.dirname(os.path.dirname(package_path))
+        
+        import AbstractAI
+        import ClassyFlaskDB
+        # Get the root directory of AbstractAI and ClassyFlaskDB
+        abstract_ai_root = get_package_root(AbstractAI)
+        classy_flask_db_root = get_package_root(ClassyFlaskDB)
+        
+        # Get all valid files from both packages, except those in _test_ResponseParsers_support
+        abstract_ai_files = self.get_files_with_extensions(abstract_ai_root, exclude_dir='_test_ResponseParsers_support')
+        classy_flask_db_files = self.get_files_with_extensions(classy_flask_db_root)
+
+        all_files = abstract_ai_files + classy_flask_db_files
+
+        TestExtractPathsAndCode.process_and_test_files(self, all_files)
+
+    def test_previous_whole_project_inception_failures(self):
+        current_file_path = inspect.getfile(inspect.currentframe())
+        support_folder = os.path.join(os.path.dirname(current_file_path), '_test_ResponseParsers_support')
+
+        support_files = self.get_files_with_extensions(support_folder)
+
+        TestExtractPathsAndCode.process_and_test_files(self, support_files)
 if __name__ == '__main__':
     unittest.main()
