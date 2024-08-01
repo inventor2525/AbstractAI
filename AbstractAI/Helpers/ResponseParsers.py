@@ -8,7 +8,7 @@ def extract_paths_and_code(text):
     code_start_pattern = r'^```\w+$'
     code_end_pattern = r'^```$'
     nested_code_start_pattern = r'(?<!`)```(?:python|rust|cpp|javascript|java|ruby|go|typescript|csharp|php|swift|kotlin|scala|haskell|r|matlab|sql|html|css|xml|json|yaml|toml|bash|sh|powershell)(?!`)'
-    nested_code_pattern = r'^(?!.*````.*$)```(?!`)'
+    nested_code_pattern = r'(?!````.*$)```(?!`)'
 
     path_and_codes = []
     depth = 0
