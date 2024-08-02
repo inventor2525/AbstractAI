@@ -270,13 +270,11 @@ class MessageView(BaseMessageView):
 	def reload_files_message(self):
 		source = self.message.source
 		if isinstance(source, EditSource):
-			source = source.original_source()
+			source = source.source
 		if not isinstance(source, FilesSource):
 			return
 		
-		items = ItemsModel(items=deepcopy(self.file_selector.items))
-		items.new_id()
-		new_source = FilesSource(items=items)
+		new_source = FilesSource.from_items(deepcopy(self.file_selector.items)) | Context.user_source
 		new_content = new_source.load()
 		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
 		self.message_changed.emit(self.message)

@@ -1,5 +1,6 @@
 from .UserSource import *
 from typing import List, Iterable, Tuple
+from copy import deepcopy
 import os
 import re
 
@@ -103,3 +104,9 @@ class FilesSource(UserSource):
 		new_source = FilesSource(items=self.items)
 		self.loaded = get_local_time()
 		return '\n'.join(new_content)
+	
+	@staticmethod
+	def from_items(items: Iterable[ItemModel]) -> 'FilesSource':
+		new_items = ItemsModel(items=deepcopy(list(items)))
+		new_items.new_id()
+		return FilesSource(items=new_items)
