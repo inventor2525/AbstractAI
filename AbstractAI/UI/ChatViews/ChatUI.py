@@ -214,6 +214,7 @@ class ChatUI(QWidget):
 		self.key_handler = KeyComboHandler(key_actions=[
 			KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
 			KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
+			KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_RIGHTCTRL', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
 			KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording)
 		])
 
