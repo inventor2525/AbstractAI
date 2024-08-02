@@ -1,6 +1,7 @@
 import re
+from typing import List, Tuple
 
-def extract_paths_and_code(text):
+def extract_paths_and_code(text: str) -> List[Tuple[str, str]]:
     '''
     Extracts code blocks prefaced by paths
     '''
