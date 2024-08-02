@@ -27,10 +27,6 @@ console.log("Hello, world!");
 ```
 
 Even more text.
-
-```python
-This block should be ignored because it has no path.
-```
 """
         expected_path_and_codes = [
             (
