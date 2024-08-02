@@ -21,8 +21,8 @@ class LLamaCPP_LLM(LLM):
 			verbose=self.settings.model.verbose
 		)
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, auto_append:bool=False) -> Union[LLM_Response, Iterator[LLM_Response]]:
-		wip_message, message_list = self._new_message(conversation, start_str, auto_append=auto_append)
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
+		wip_message, message_list = self._new_message(conversation, start_str)
 		
 		params = kwargs_from_instance(self.model.create_completion, self.settings.generate)
 		

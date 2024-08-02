@@ -6,8 +6,8 @@ class Groq_LLM(OpenAI_LLM):
 	def _load_model(self):
 		self.client = Groq(api_key=self.settings.api_key)
 	
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None, auto_append: bool = False) -> LLM_Response | Iterator[LLM_Response]:
-		ret = super().chat(conversation, start_str, stream, max_tokens, auto_append)
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
+		ret = super().chat(conversation, start_str, stream, max_tokens)
 		if stream:
 			for r in ret:
 				try:

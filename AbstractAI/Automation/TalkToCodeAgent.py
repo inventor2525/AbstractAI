@@ -23,14 +23,14 @@ class TalkToCodeAgent(Agent):
 		talk_to_code_conv + message
 		return talk_to_code_conv
 		
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None, auto_append: bool = False) -> LLM_Response | Iterator[LLM_Response]:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
 		additional_system_message = "That was additional info from the user, again, only respond with code."
 		
 		# make it so that message exists only ever at the end of the conversation:
 		conversation - additional_system_message
 		conversation + (additional_system_message, Role.System()) | CallerInfo.catch([0,1])
 		
-		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens, auto_append=auto_append)
+		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens)
 	
 	def process_response(self, conversation: Conversation):
 		message = conversation[-1]

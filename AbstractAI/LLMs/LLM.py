@@ -1,6 +1,7 @@
 from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.merge_dictionaries import *
 from .LLM_Response import LLM_Response
+from AbstractAI.Conversable import Conversable
 
 from datetime import datetime
 from typing import Any, Union, Dict, List, Iterator, Tuple, Optional
@@ -11,7 +12,7 @@ from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 
 default_start_request_prompt = r"""Please begin your response with:<|start_str|>"""
 
-class LLM():
+class LLM(Conversable):
 	def __init__(self, settings:LLMSettings):
 		self.settings = settings
 		self.started = False
@@ -28,7 +29,7 @@ class LLM():
 		'''Load the model into memory.'''
 		pass
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, auto_append:bool=False) -> Union[LLM_Response, Iterator[LLM_Response]]:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
 		'''
 		Prompts the model with a Conversation and starts it's answer with
 		start_str using a blocking method and creates a LLM_RawResponse
@@ -102,7 +103,7 @@ class LLM():
 			prev_role = role
 		return chat
 		
-	def _new_message(self, input:Union[str,Conversation]=None, start_str:str="", start_request_prompt:str=None, auto_append=False) -> Tuple[Message, Optional[List[Dict[str,str]]]]:
+	def _new_message(self, input:Union[str,Conversation]=None, start_str:str="", start_request_prompt:str=None) -> Tuple[Message, Optional[List[Dict[str,str]]]]:
 		'''
 		Creates a new message that the model will fill in.
 		
@@ -135,8 +136,6 @@ class LLM():
 			except:
 				if source.prompt is None:
 					source.prompt = json.dumps(message_list, indent=4)
-			if auto_append:
-				input.add_message(new_message)
 				
 		elif isinstance(input, str):
 			source.prompt = input

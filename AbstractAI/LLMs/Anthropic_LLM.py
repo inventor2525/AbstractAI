@@ -8,8 +8,8 @@ class Anthropic_LLM(LLM):
 		self.client = None
 		super().__init__(settings)
 	
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None, auto_append: bool = False) -> LLM_Response | Iterator[LLM_Response]:
-		wip_message, message_list = self._new_message(conversation, start_str, default_start_request_prompt, auto_append)
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
+		wip_message, message_list = self._new_message(conversation, start_str, default_start_request_prompt)
 		
 		completion = self.client.messages.create(
 			model=self.settings.model_name,

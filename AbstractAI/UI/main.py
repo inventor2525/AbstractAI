@@ -400,7 +400,8 @@ class Application(QMainWindow):
 		max_tokens = self.chatUI.max_tokens
 			
 		def chat():
-			responses = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens, auto_append=True)
+			responses = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
+			conversation.add_message(responses.message)
 			for response in responses:
 				if not self._should_generate:
 					response.stop()

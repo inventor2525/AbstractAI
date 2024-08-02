@@ -24,14 +24,14 @@ class ReplacementAgent(Agent):
 
 		return replacerConv
 
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None, auto_append: bool = False) -> LLM_Response | Iterator[LLM_Response]:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
 		reminder_message = ReplacementAgent.reminder_template.render()
 		
 		# make it so that message exists only ever at the end of the conversation:
 		conversation - reminder_message
 		conversation + (reminder_message, Role.System()) | CallerInfo.catch([0,1])
 		
-		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens, auto_append=auto_append)
+		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens)
 	
 	def process_response(self, conversation: Conversation):
 		new_message = conversation[-1]

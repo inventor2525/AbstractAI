@@ -38,8 +38,8 @@ class HuggingFaceLLM(LLM):
 			attn_implementation='eager'
 		)
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, auto_append:bool=False) -> Union[LLM_Response, Iterator[LLM_Response]]:
-		wip_message, message_list = self._new_message(conversation, start_str, auto_append=auto_append)
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
+		wip_message, message_list = self._new_message(conversation, start_str)
 		
 		replace_parameters = {}
 		if max_tokens is not None:
