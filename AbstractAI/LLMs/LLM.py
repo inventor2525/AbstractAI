@@ -96,7 +96,7 @@ class LLM(Conversable):
 				else:
 					append_msg(message, role)
 			else:
-				if role == prev_role and (not include_names or user_name == prev_user_name):
+				if role.type == getattr(prev_role, 'type',None) and (role.name == getattr(prev_role, 'name',None) or not include_names):
 					chat[-1]["content"] += "\n\n" + message.content
 				else:
 					append_msg(message, role)

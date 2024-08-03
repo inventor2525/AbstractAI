@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from LLMs.LLM_Response import LLM_Response #TODO: remove
+from AbstractAI.LLMs.LLM_Response import LLM_Response #TODO: remove
 from AbstractAI.Model.Converse import *
 from AbstractAI.Tool import Tool
 
