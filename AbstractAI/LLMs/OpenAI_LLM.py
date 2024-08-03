@@ -1,20 +1,22 @@
-from .LLM import *
-from AbstractAI.Helpers.dict_from_obj import dict_from_obj
+from AbstractAI.LLMs.LLM import LLM
+from AbstractAI.Model.Converse import Conversation, Message, Role
+from AbstractAI.Model.Settings.OpenAI_LLMSettings import OpenAI_LLMSettings
+from AbstractAI.Model.Converse.MessageSources import ModelSource
 import tiktoken
 from openai import OpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from openai._streaming import Stream
 import json
 import os
-from AbstractAI.Model.Settings.OpenAI_LLMSettings import OpenAI_LLMSettings
+from typing import List, Dict, Any
 
 class OpenAI_LLM(LLM):
 	def __init__(self, settings:OpenAI_LLMSettings):
 		self.client = None
 		super().__init__(settings)
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
-		wip_message, message_list = self._new_message(conversation, start_str, default_start_request_prompt)
+	def chat(self, conversation: Conversation, start_str:str="", stream:bool=False, max_tokens:int=None) -> Message:
+		wip_message, message_list = self._new_message(conversation, start_str)
 		
 		completion:ChatCompletion|Stream[ChatCompletionChunk] = self.client.chat.completions.create(
 			model=self.settings.model_name,
@@ -25,25 +27,36 @@ class OpenAI_LLM(LLM):
 		)
 		
 		if stream:
-			response = LLM_Response(wip_message, completion.close)
-			yield response
-			
-			for i, chunk in enumerate(completion):
-				if response.message.append(chunk.choices[0].delta.content):
-					response.source.out_token_count += 1
-				self._log_chunk(dict_from_obj(chunk), wip_message)
-				response.source.finished = chunk.choices[0].finish_reason == 'stop'
-				yield response
-			response.source.generating = False
+			chunk_iterator = iter(completion)
+
+			def continue_function():
+				try:
+					chunk = next(chunk_iterator)
+					if chunk.choices[0].delta.content:
+						if wip_message.append(chunk.choices[0].delta.content):
+							wip_message.source.out_token_count += 1
+					self._log_chunk(self._dict_from_obj(chunk), wip_message)
+					wip_message.source.finished = chunk.choices[0].finish_reason == 'stop'
+					return True
+				except StopIteration:
+					wip_message.source.generating = False
+					wip_message.source.finished = True
+					return False
+
+			wip_message.source.continue_function = continue_function
+			wip_message.source.stop_function = completion.close
 		else:
-			response.source.finished = completion.choices[0].finish_reason == 'stop'
-			response.message.content = completion.choices[0].message.content
-			response.source.in_token_count = completion.usage.prompt_tokens
-			response.source.out_token_count = completion.usage.completion_tokens
-			response.source.serialized_raw_output = dict_from_obj(completion)
-			response.source.generating = False
-		
-		return response
+			wip_message.content = completion.choices[0].message.content
+			wip_message.source.finished = completion.choices[0].finish_reason == 'stop'
+			wip_message.source.serialized_raw_output = self._dict_from_obj(completion)
+			
+			if completion.usage:
+				wip_message.source.in_token_count = completion.usage.prompt_tokens
+				wip_message.source.out_token_count = completion.usage.completion_tokens
+
+			wip_message.source.generating = False
+
+		return wip_message
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		if start_str is not None and len(start_str) > 0:

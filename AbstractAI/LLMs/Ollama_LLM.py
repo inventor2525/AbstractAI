@@ -1,14 +1,17 @@
 from AbstractAI.LLMs.LLM import *
+from AbstractAI.Model.Converse import Conversation, Message, Role
 from AbstractAI.Model.Settings.Ollama_LLMSettings import Ollama_LLMSettings
+from AbstractAI.Model.Converse.MessageSources import ModelSource
 import ollama
+from typing import List, Dict, Any
 
 class Ollama_LLM(LLM):
 	def __init__(self, settings:Ollama_LLMSettings):
 		self.client = None
 		super().__init__(settings)
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
-		wip_message, message_list = self._new_message(conversation, start_str, default_start_request_prompt)
+	def chat(self, conversation: Conversation, start_str:str="", stream:bool=False, max_tokens:int=None) -> Message:
+		wip_message, message_list = self._new_message(conversation, start_str)
 		
 		completion = ollama.chat(
 			model=self.settings.model_name,
@@ -17,24 +20,30 @@ class Ollama_LLM(LLM):
 		)
 		
 		if stream:
-			response = LLM_Response(wip_message, completion.close)
-			yield response
-			
-			for i, chunk in enumerate(completion):
-				if i > max_tokens-1:
-					response.stop()
-					break
-				if response.message.append(chunk['message']['content']):
-					response.source.out_token_count += 1
-				self._log_chunk(chunk, wip_message)
-				response.source.finished = chunk.get('done_reason', None) == 'stop'
-				yield response
-			response.source.generating = False
+			chunk_iterator = iter(completion)
+
+			def continue_function():
+				try:
+					chunk = next(chunk_iterator)
+					if wip_message.source.out_token_count > max_tokens-1:
+						self.stop_message(wip_message)
+					if wip_message.append(chunk['message']['content']):
+						wip_message.source.out_token_count += 1
+					self._log_chunk(chunk, wip_message)
+					wip_message.source.finished = chunk.get('done_reason', False)
+					return True
+				except StopIteration:
+					wip_message.source.generating = False
+					wip_message.source.finished = True
+					return False
+
+			wip_message.source.continue_function = continue_function
+			wip_message.source.stop_function = lambda: None  # Ollama doesn't provide a stop function
 		else:
-			response.source.finished = completion['done_reason'] == 'stop'
-			response.message.content = completion['message']['content']
-			response.source.out_token_count = completion['eval_count']
-			response.source.serialized_raw_output = completion
-			response.source.generating = False
-		
-		return response
+			wip_message.content = completion['message']['content']
+			wip_message.source.finished = True
+			wip_message.source.serialized_raw_output = completion
+			wip_message.source.out_token_count = completion.get('eval_count', 0)
+			wip_message.source.generating = False
+
+		return wip_message

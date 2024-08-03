@@ -1,6 +1,5 @@
 from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.merge_dictionaries import *
-from .LLM_Response import LLM_Response
 from AbstractAI.Conversable import Conversable
 
 from datetime import datetime
@@ -29,20 +28,12 @@ class LLM(Conversable):
 		'''Load the model into memory.'''
 		pass
 	
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Message:
 		'''
-		Prompts the model with a Conversation and starts it's answer with
-		start_str using a blocking method and creates a LLM_RawResponse
-		from what it returns.
+		Prompts the model with a Conversation and starts its answer with
+		start_str using a blocking method and creates a Message from what it returns.
 		'''
 		raise NotImplementedError("This model's implementation does not support chat.")
-	
-	def complete_str(self, text:str, stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
-		'''
-		Similar to prompt, but allows passing raw strings to the model
-		without any additional formatting being added.
-		'''
-		raise NotImplementedError("This model's implementation does not support simple text completion.")
 	
 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
@@ -58,7 +49,8 @@ class LLM(Conversable):
 		role_mapping  = {
 			Role.System().type: self.settings.roles.System,
 			Role.User().type: self.settings.roles.User,
-			Role.Assistant().type: self.settings.roles.Assistant
+			Role.Assistant().type: self.settings.roles.Assistant,
+			Role.Tool().type: self.settings.roles.Tool
 		}
 		should_merge = self.settings.roles.merge_consecutive_messages_by_same_role
 		
@@ -69,6 +61,8 @@ class LLM(Conversable):
 			}
 			if role.name is not None and include_names:
 				m["name"] = role.name
+			if role.type == Role.Tool().type:
+				m["tool_call_id"] = message.source.tool_call_id
 			chat.append(m)
 		def append_empty(role:str):
 			chat.append({"role":role, "content":""})
@@ -76,7 +70,7 @@ class LLM(Conversable):
 		for message in conversation.message_sequence.messages:
 			role:Role = message.role
 			if not self.settings.roles.accepts_system_messages:
-				if role.type == System.type:
+				if role.type == Role.System().type:
 					role = Role.User()
 			
 			if self.settings.roles.must_alternate:
@@ -89,7 +83,7 @@ class LLM(Conversable):
 						chat[-1]["content"] += "\n\n" + message.content
 					else:
 						if role.type == Role.Assistant().type:
-							append_empty(User.type)
+							append_empty(Role.User())
 						else:
 							append_empty(Role.Assistant().type)
 						append_msg(message, role)
@@ -126,7 +120,7 @@ class LLM(Conversable):
 			
 			if start_request_prompt and start_str and len(start_str)>0:
 				start_request_prompt = start_request_prompt.replace("<|start_str|>", start_str)
-				if message_list[-1]["role"] is not "user":
+				if message_list[-1]["role"] != "user":
 					message_list.append({"role":"user", "content":start_request_prompt})
 				else:
 					message_list[-1]["content"] = f"{message_list[-1]['content']}\n\n{start_request_prompt}"
@@ -152,3 +146,17 @@ class LLM(Conversable):
 		if "Chunks" not in message.source.serialized_raw_output:
 			message.source.serialized_raw_output["Chunks"] = []
 		message.source.serialized_raw_output["Chunks"].append(chunk)
+	
+	def _dict_from_obj(self, obj):
+		'''
+		Helper method that converts a object based
+		return from many api's into a dictionary.
+		'''
+		if hasattr(obj, "__dict__"):
+			return {k: self._dict_from_obj(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
+		elif isinstance(obj, (list, tuple)):
+			return [self._dict_from_obj(item) for item in obj]
+		elif isinstance(obj, dict):
+			return {k: self._dict_from_obj(v) for k, v in obj.items()}
+		else:
+			return obj

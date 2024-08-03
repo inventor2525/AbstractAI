@@ -1,23 +1,27 @@
 from dataclasses import dataclass, field
+from ClassyFlaskDB.DefaultModel import *
+from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
 from typing import Callable, Dict, List, Optional, Union, Any, get_args, get_origin
 from inspect import signature, getdoc, Parameter
 from datetime import datetime
 
 TOOL_MISSING = object()
 
+@DATA(excluded_fields=["default"])
 @dataclass
-class Tool:
-	@dataclass
-	class ParameterInfo:
-		name: str
-		type: str
-		description: str
-		default: Any = TOOL_MISSING
+class ToolParameterInfo:
+	name: str
+	type: str
+	description: str
+	default: Any = TOOL_MISSING
 
+@DATA(excluded_fields=["function"])
+@dataclass
+class Tool(Object):
 	name: str
 	description: str
-	parameters: Dict[str, ParameterInfo]
-	return_info: Optional[ParameterInfo]
+	parameters: Dict[str, ToolParameterInfo]
+	return_info: ToolParameterInfo
 	function: Callable
 
 	def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -45,7 +49,7 @@ class Tool:
 		parameters = {}
 
 		for param_name, param in sig.parameters.items():
-			param_info = cls.ParameterInfo(
+			param_info = ToolParameterInfo(
 				name=param_name,
 				type=cls._get_full_type_name(param.annotation),
 				description=docstring_params.get(param_name, ""),
@@ -63,7 +67,7 @@ class Tool:
 
 		return_info = None
 		if sig.return_annotation is not Parameter.empty and sig.return_annotation is not None:
-			return_info = cls.ParameterInfo(
+			return_info = ToolParameterInfo(
 				name="return",
 				type=cls._get_full_type_name(sig.return_annotation),
 				description=docstring_params.get('return', ""),
@@ -81,7 +85,7 @@ class Tool:
 			parameters=parameters,
 			return_info=return_info,
 			function=function,
-		)
+		) | CallerInfo.catch([1])
 
 	@staticmethod
 	def _parse_docstring(docstring: Optional[str]) -> Dict[str, str]:
@@ -170,6 +174,7 @@ class Tool:
 		return "".join(descriptions)
 
 if __name__ == "__main__":
+	DATA.finalize()
 	from typing import List, Dict, Optional
 	from datetime import datetime, timedelta
 	import ipaddress

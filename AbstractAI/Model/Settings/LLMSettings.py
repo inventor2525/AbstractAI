@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import List
 from typing import Dict
 
-@DATA(id_type=ID_Type.HASHID)
+@DATA(id_type=ID_Type.HASHID, excluded_fields=['Tool'])
 @dataclass
 class RolesSettings(Object):
 	accepts_system_messages:bool = True
@@ -14,6 +14,7 @@ class RolesSettings(Object):
 	System:str = "system"
 	User:str = "user"
 	Assistant:str = "assistant"
+	Tool:str = "tool"
 
 @DATA(id_type=ID_Type.HASHID)
 @dataclass

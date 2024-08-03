@@ -1,13 +1,33 @@
 from abc import ABC, abstractmethod
-from AbstractAI.LLMs.LLM_Response import LLM_Response #TODO: remove
-from AbstractAI.Model.Converse import *
+from AbstractAI.Model.Converse import Conversation, Message
+from typing import List, Optional
 from AbstractAI.Tool import Tool
 
 class Conversable(ABC):
-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
-		...
+	@abstractmethod
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Message:
+		pass
+
+	@staticmethod
+	def continue_message(message: Message) -> bool:
+		if hasattr(message.source, 'continue_function'):
+			return message.source.continue_function()
+		return False
+
+	@staticmethod
+	def stop_message(message: Message):
+		if hasattr(message.source, 'stop_function'):
+			message.source.stop_function()
 
 class ToolUser(Conversable):
 	@abstractmethod
-	def chat(self, conversation, start_string: str, stream: bool = False, max_tokens: int = 100, tools: List[Tool] = []):
-		...
+	def there_is_tool_call(self, message: Message) -> bool:
+		pass
+
+	@abstractmethod
+	def call_tools(self, message: Message, tools: List[Tool]) -> List[Message]:
+		pass
+
+	@abstractmethod
+	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, tools: List[Tool] = []) -> Message:
+		pass

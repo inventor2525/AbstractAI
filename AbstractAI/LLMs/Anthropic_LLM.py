@@ -1,42 +1,60 @@
-from .LLM import *
+from AbstractAI.LLMs.LLM import LLM
+from AbstractAI.Model.Converse import Conversation, Message, Role
 from AbstractAI.Model.Settings.Anthropic_LLMSettings import Anthropic_LLMSettings
+from AbstractAI.Model.Converse.MessageSources import ModelSource
 from anthropic import Anthropic
 import json
+from typing import List, Dict, Any
 
 class Anthropic_LLM(LLM):
 	def __init__(self, settings: Anthropic_LLMSettings):
 		self.client = None
 		super().__init__(settings)
 	
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
-		wip_message, message_list = self._new_message(conversation, start_str, default_start_request_prompt)
+	def chat(self, conversation: Conversation, start_str: str = "", stream: bool = False, max_tokens: int = None) -> Message:
+		wip_message, message_list = self._new_message(conversation, start_str)
 		
 		completion = self.client.messages.create(
 			model=self.settings.model_name,
-			max_tokens=max_tokens if max_tokens is not None else 1024,
 			messages=message_list,
+			max_tokens=max_tokens if max_tokens is not None else 1024,
 			stream=stream
 		)
-		
+
 		if stream:
-			response = LLM_Response(wip_message, completion.close)
-			yield response
-			
-			for chunk in completion:
-				if chunk.type == "message_start":
-					response.input_token_count = chunk.message.usage.input_tokens
-				elif chunk.type == "content_block_delta":
-					response.message.append(chunk.delta.text)
-					self._log_chunk(chunk.model_dump_json(indent=2), wip_message)
-					response.source.out_token_count += 1
-				elif chunk.type == "message_stop":
-					response.source.finished = True
-				yield response
-			response.source.generating = False
+			chunk_iterator = iter(completion)
+
+			def continue_function():
+				try:
+					chunk = next(chunk_iterator)
+					if chunk.type == "message_start":
+						wip_message.source.in_token_count = chunk.message.usage.input_tokens
+					elif chunk.type == "content_block_delta":
+						if wip_message.append(chunk.delta.text):
+							wip_message.source.out_token_count += 1
+					elif chunk.type == "message_stop":
+						wip_message.source.finished = True
+					self._log_chunk(self._dict_from_obj(chunk), wip_message)
+					return True
+				except StopIteration:
+					wip_message.source.generating = False
+					wip_message.source.finished = True
+					return False
+
+			wip_message.source.continue_function = continue_function
+			wip_message.source.stop_function = completion.close
 		else:
-			raise NotImplemented()
-		return response
-	
+			wip_message.content = completion.content[0].text
+			wip_message.source.finished = True
+			wip_message.source.serialized_raw_output = self._dict_from_obj(completion)
+			
+			wip_message.source.in_token_count = completion.usage.input_tokens
+			wip_message.source.out_token_count = completion.usage.output_tokens
+
+			wip_message.source.generating = False
+
+		return wip_message
+
 	def _apply_chat_template(self, chat: List[Dict[str, str]], start_str: str = "") -> str:
 		if start_str is not None and len(start_str) > 0:
 			raise Exception("Start string not supported by Anthropic")

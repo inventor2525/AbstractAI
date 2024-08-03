@@ -1,0 +1,583 @@
+diff --git a/AbstractAI/Conversable.py b/AbstractAI/Conversable.py
+index babf8a6..f8cfda7 100644
+--- a/AbstractAI/Conversable.py
++++ b/AbstractAI/Conversable.py
+@@ -1,13 +1,33 @@
+ from abc import ABC, abstractmethod
+-from AbstractAI.LLMs.LLM_Response import LLM_Response #TODO: remove
+-from AbstractAI.Model.Converse import *
++from AbstractAI.Model.Converse import Conversation, Message
++from typing import List, Optional
+ from AbstractAI.Tool import Tool
+ 
+ class Conversable(ABC):
+-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
+-		...
++	@abstractmethod
++	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Message:
++		pass
++
++	@staticmethod
++	def continue_message(message: Message) -> bool:
++		if hasattr(message.source, 'continue_function'):
++			return message.source.continue_function()
++		return False
++
++	@staticmethod
++	def stop_message(message: Message):
++		if hasattr(message.source, 'stop_function'):
++			message.source.stop_function()
+ 
+ class ToolUser(Conversable):
+ 	@abstractmethod
+-	def chat(self, conversation, start_string: str, stream: bool = False, max_tokens: int = 100, tools: List[Tool] = []):
+-		...
+\ No newline at end of file
++	def there_is_tool_call(self, message: Message) -> bool:
++		pass
++
++	@abstractmethod
++	def call_tools(self, message: Message, tools: List[Tool]) -> List[Message]:
++		pass
++
++	@abstractmethod
++	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None, tools: List[Tool] = []) -> Message:
++		pass
+\ No newline at end of file
+diff --git a/AbstractAI/LLMs/Groq_LLM.py b/AbstractAI/LLMs/Groq_LLM.py
+index f4be824..48857af 100644
+--- a/AbstractAI/LLMs/Groq_LLM.py
++++ b/AbstractAI/LLMs/Groq_LLM.py
+@@ -1,10 +1,12 @@
+-from AbstractAI.LLMs.LLM import LLM, Conversation, Iterator, LLM_Response, Union
++from AbstractAI.LLMs.LLM import LLM
+ from AbstractAI.Conversable import ToolUser
++from AbstractAI.Model.Converse import Conversation, Message, Role
+ from AbstractAI.Tool import Tool, TOOL_MISSING
+-from groq import Groq
++from AbstractAI.Model.Settings.Groq_LLMSettings import Groq_LLMSettings
++from AbstractAI.Model.Converse.MessageSources import ModelSource, ToolSource
++from groq import Groq, NOT_GIVEN
+ import json
+ from typing import List, Dict, Any
+-from AbstractAI.Model.Settings.Groq_LLMSettings import Groq_LLMSettings
+ 
+ class Groq_LLM(ToolUser, LLM):
+ 	def __init__(self, settings: Groq_LLMSettings):
+@@ -14,7 +16,7 @@ class Groq_LLM(ToolUser, LLM):
+ 	def _load_model(self):
+ 		self.client = Groq(api_key=self.settings.api_key)
+ 
+-	def chat(self, conversation: Conversation, start_str: str = "", stream: bool = False, max_tokens: int = None, tools: List[Tool] = []) -> Union[LLM_Response, Iterator[LLM_Response]]:
++	def chat(self, conversation: Conversation, start_str: str = "", stream: bool = False, max_tokens: int = None, tools: List[Tool] = []) -> Message:
+ 		wip_message, message_list = self._new_message(conversation, start_str)
+ 
+ 		tools_list = [self._tool_to_dict(tool) for tool in tools]
+@@ -24,69 +26,82 @@ class Groq_LLM(ToolUser, LLM):
+ 			messages=message_list,
+ 			max_tokens=max_tokens,
+ 			stream=stream,
+-			tools=tools_list,
+-			tool_choice="auto" if tools else "none"
++			tools=tools_list if len(tools)>0 else NOT_GIVEN,
++			tool_choice="auto" if tools else NOT_GIVEN
+ 		)
+ 
+ 		if stream:
+-			response = LLM_Response(wip_message, completion.close)
+-			yield response
+-
+-			for chunk in completion:
+-				if response.message.append(chunk.choices[0].delta.content):
+-					response.source.out_token_count += 1
+-				self._log_chunk(self._dict_from_obj(chunk), wip_message)
+-				response.source.finished = chunk.choices[0].finish_reason == 'stop'
+-				
+-				# Update token counts from x_groq usage
++			chunk_iterator = iter(completion)
++
++			def continue_function():
+ 				try:
+-					usage = chunk.x_groq.usage
+-					response.source.in_token_count = usage.get("prompt_tokens", response.source.in_token_count)
+-					response.source.out_token_count = usage.get("completion_tokens", response.source.out_token_count)
+-				except:
+-					pass
+-				
+-				yield response
+-
+-			response.source.generating = False
++					chunk = next(chunk_iterator)
++					if wip_message.append(chunk.choices[0].delta.content):
++						wip_message.source.out_token_count += 1
++					self._log_chunk(self._dict_from_obj(chunk), wip_message)
++					wip_message.source.finished = chunk.choices[0].finish_reason == 'stop'
++					
++					try:
++						if chunk.x_groq and chunk.x_groq.usage:
++							usage = chunk.x_groq.usage
++							wip_message.source.in_token_count = usage.get("prompt_tokens", wip_message.source.in_token_count)
++							wip_message.source.out_token_count = usage.get("completion_tokens", wip_message.source.out_token_count)
++					except AttributeError:
++						pass
++
++					return True
++				except StopIteration:
++					wip_message.source.generating = False
++					wip_message.source.finished = True
++					return False
++
++			wip_message.source.continue_function = continue_function
++			wip_message.source.stop_function = completion.close
+ 		else:
+-			response = LLM_Response(wip_message)
+-			response.source.finished = completion.choices[0].finish_reason == 'stop'
+-			response.message.content = completion.choices[0].message.content
+-			response.source.serialized_raw_output = self._dict_from_obj(completion)
++			wip_message.content = completion.choices[0].message.content
++			wip_message.source.finished = completion.choices[0].finish_reason == 'stop'
++			wip_message.source.serialized_raw_output = self._dict_from_obj(completion)
+ 			
+ 			if completion.usage:
+-				response.source.in_token_count = completion.usage.prompt_tokens
+-				response.source.out_token_count = completion.usage.completion_tokens
+-			
+-			# Handle tool calls
+-			tool_calls = completion.choices[0].message.tool_calls
+-			if tool_calls:
+-				for tool_call in tool_calls:
+-					tool_response = self._execute_tool(tools, tool_call)
+-					message_list.append({
+-						"tool_call_id": tool_call.id,
+-						"role": "tool",
+-						"name": tool_call.function.name,
+-						"content": json.dumps(tool_response)
+-					})
+-				
+-				# Get the final response after tool use
+-				final_completion = self.client.chat.completions.create(
+-					model=self.settings.model_name,
+-					messages=message_list
+-				)
+-				response.message.content = final_completion.choices[0].message.content
+-				
+-				# Update token counts for the final response
+-				try:
+-					final_usage = final_completion.x_groq.usage
+-					response.source.out_token_count += final_usage.get("completion_tokens", 0)
+-				except:
+-					pass
++				wip_message.source.in_token_count = completion.usage.prompt_tokens
++				wip_message.source.out_token_count = completion.usage.completion_tokens
+ 
+-		response.source.generating = False
+-		return response
++			wip_message.source.generating = False
++
++		return wip_message
++
++	def there_is_tool_call(self, message: Message) -> bool:
++		try:
++			raw_output = message.source.serialized_raw_output
++			return bool(raw_output['choices'][0]['message'].get('tool_calls'))
++		except Exception as e:
++			return False
++
++	def call_tools(self, message: Message, tools: List[Tool]) -> List[Message]:
++		raw_output = message.source.serialized_raw_output
++		tool_calls = raw_output['choices'][0]['message']['tool_calls']
++		tool_messages = []
++
++		for tool_call in tool_calls:
++			for tool in tools:
++				if tool.name == tool_call['function']['name']:
++					args = json.loads(tool_call['function']['arguments'])
++					result = tool(**args)
++					tool_message = Message(
++						content=json.dumps(result),
++						role=Role("Tool", tool.name)
++					)
++					tool_message.source = ToolSource(
++						tool=tool,
++						tool_call_id=tool_call['id'],
++						function_name=tool_call['function']['name'],
++						function_args=args,
++						result=result
++					)
++					tool_messages.append(tool_message)
++					break
++
++		return tool_messages
+ 
+ 	def _tool_to_dict(self, tool: Tool) -> Dict[str, Any]:
+ 		return {
+@@ -100,27 +115,4 @@ class Groq_LLM(ToolUser, LLM):
+ 					"required": [param.name for param in tool.parameters.values() if param.default is TOOL_MISSING]
+ 				}
+ 			}
+-		}
+-
+-	def _execute_tool(self, tools: List[Tool], tool_call) -> Any:
+-		for tool in tools:
+-			if tool.name == tool_call.function.name:
+-				args = json.loads(tool_call.function.arguments)
+-				return tool(**args)
+-		raise ValueError(f"Tool '{tool_call.function.name}' not found")
+-
+-	def _dict_from_obj(self, obj):
+-		if hasattr(obj, "__dict__"):
+-			return {k: self._dict_from_obj(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
+-		elif isinstance(obj, (list, tuple)):
+-			return [self._dict_from_obj(item) for item in obj]
+-		elif isinstance(obj, dict):
+-			return {k: self._dict_from_obj(v) for k, v in obj.items()}
+-		else:
+-			return obj
+-
+-	def _apply_chat_template(self, chat: List[Dict[str, str]], start_str: str = "") -> str:
+-		prompt_pieces = []
+-		for message in chat:
+-			prompt_pieces.append(f"#{message['role']}:\n{message['content']}")
+-		return "\n\n".join(prompt_pieces)
+\ No newline at end of file
++		}
+\ No newline at end of file
+diff --git a/AbstractAI/LLMs/LLM.py b/AbstractAI/LLMs/LLM.py
+index abaf840..2c24390 100644
+--- a/AbstractAI/LLMs/LLM.py
++++ b/AbstractAI/LLMs/LLM.py
+@@ -1,6 +1,5 @@
+ from AbstractAI.Model.Converse import *
+ from AbstractAI.Helpers.merge_dictionaries import *
+-from .LLM_Response import LLM_Response
+ from AbstractAI.Conversable import Conversable
+ 
+ from datetime import datetime
+@@ -29,21 +28,13 @@ class LLM(Conversable):
+ 		'''Load the model into memory.'''
+ 		pass
+ 	
+-	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
++	def chat(self, conversation: Conversation, start_str:str="", stream=False, max_tokens:int=None) -> Message:
+ 		'''
+-		Prompts the model with a Conversation and starts it's answer with
+-		start_str using a blocking method and creates a LLM_RawResponse
+-		from what it returns.
++		Prompts the model with a Conversation and starts its answer with
++		start_str using a blocking method and creates a Message from what it returns.
+ 		'''
+ 		raise NotImplementedError("This model's implementation does not support chat.")
+ 	
+-	def complete_str(self, text:str, stream=False, max_tokens:int=None) -> Union[LLM_Response, Iterator[LLM_Response]]:
+-		'''
+-		Similar to prompt, but allows passing raw strings to the model
+-		without any additional formatting being added.
+-		'''
+-		raise NotImplementedError("This model's implementation does not support simple text completion.")
+-	
+ 	def _apply_chat_template(self, chat: List[Dict[str,str]], start_str:str="") -> str:
+ 		'''Generate a string prompt for the passed conversation in this LLM's preferred format.'''
+ 		raise NotImplementedError("This LLM does not expose it's chat format.")
+@@ -58,7 +49,8 @@ class LLM(Conversable):
+ 		role_mapping  = {
+ 			Role.System().type: self.settings.roles.System,
+ 			Role.User().type: self.settings.roles.User,
+-			Role.Assistant().type: self.settings.roles.Assistant
++			Role.Assistant().type: self.settings.roles.Assistant,
++			Role.Tool().type: self.settings.roles.Tool
+ 		}
+ 		should_merge = self.settings.roles.merge_consecutive_messages_by_same_role
+ 		
+@@ -69,6 +61,8 @@ class LLM(Conversable):
+ 			}
+ 			if role.name is not None and include_names:
+ 				m["name"] = role.name
++			if role.type == Role.Tool().type:
++				m["tool_call_id"] = message.source.tool_call_id
+ 			chat.append(m)
+ 		def append_empty(role:str):
+ 			chat.append({"role":role, "content":""})
+@@ -76,7 +70,7 @@ class LLM(Conversable):
+ 		for message in conversation.message_sequence.messages:
+ 			role:Role = message.role
+ 			if not self.settings.roles.accepts_system_messages:
+-				if role.type == System.type:
++				if role.type == Role.System().type:
+ 					role = Role.User()
+ 			
+ 			if self.settings.roles.must_alternate:
+@@ -89,7 +83,7 @@ class LLM(Conversable):
+ 						chat[-1]["content"] += "\n\n" + message.content
+ 					else:
+ 						if role.type == Role.Assistant().type:
+-							append_empty(User.type)
++							append_empty(Role.User())
+ 						else:
+ 							append_empty(Role.Assistant().type)
+ 						append_msg(message, role)
+@@ -126,7 +120,7 @@ class LLM(Conversable):
+ 			
+ 			if start_request_prompt and start_str and len(start_str)>0:
+ 				start_request_prompt = start_request_prompt.replace("<|start_str|>", start_str)
+-				if message_list[-1]["role"] is not "user":
++				if message_list[-1]["role"] != "user":
+ 					message_list.append({"role":"user", "content":start_request_prompt})
+ 				else:
+ 					message_list[-1]["content"] = f"{message_list[-1]['content']}\n\n{start_request_prompt}"
+@@ -151,4 +145,18 @@ class LLM(Conversable):
+ 	def _log_chunk(self, chunk:Dict[str,Any], message:Message):
+ 		if "Chunks" not in message.source.serialized_raw_output:
+ 			message.source.serialized_raw_output["Chunks"] = []
+-		message.source.serialized_raw_output["Chunks"].append(chunk)
+\ No newline at end of file
++		message.source.serialized_raw_output["Chunks"].append(chunk)
++	
++	def _dict_from_obj(self, obj):
++		'''
++		Helper method that converts a object based
++		return from many api's into a dictionary.
++		'''
++		if hasattr(obj, "__dict__"):
++			return {k: self._dict_from_obj(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
++		elif isinstance(obj, (list, tuple)):
++			return [self._dict_from_obj(item) for item in obj]
++		elif isinstance(obj, dict):
++			return {k: self._dict_from_obj(v) for k, v in obj.items()}
++		else:
++			return obj
+\ No newline at end of file
+diff --git a/AbstractAI/Model/Converse/MessageSources/__init__.py b/AbstractAI/Model/Converse/MessageSources/__init__.py
+index e3f16de..8f2f024 100644
+--- a/AbstractAI/Model/Converse/MessageSources/__init__.py
++++ b/AbstractAI/Model/Converse/MessageSources/__init__.py
+@@ -2,4 +2,5 @@ from ClassyFlaskDB.DefaultModel import Object, EditSource
+ from .UserSource import UserSource
+ from .ModelSource import ModelSource
+ from .FilesSource import FilesSource, ItemsModel, FolderModel
+-from .CallerInfo import CallerInfo
+\ No newline at end of file
++from .CallerInfo import CallerInfo
++from .ToolSource import ToolSource
+\ No newline at end of file
+diff --git a/AbstractAI/Model/Converse/Role.py b/AbstractAI/Model/Converse/Role.py
+index a9aa7b6..a8b33d0 100644
+--- a/AbstractAI/Model/Converse/Role.py
++++ b/AbstractAI/Model/Converse/Role.py
+@@ -36,6 +36,11 @@ class Role(Object):
+ 	def Assistant() -> "Role":
+ 		return Role("Assistant")
+ 	
++	@singleton
++	@staticmethod
++	def Tool() -> "Role":
++		return Role("Tool")
++	
+ 	def __str__(self) -> str:
+ 		if self.name:
+ 			return f"{self.type} ({self.name})"
+diff --git a/AbstractAI/Model/Settings/LLMSettings.py b/AbstractAI/Model/Settings/LLMSettings.py
+index 7ceb99f..3247007 100644
+--- a/AbstractAI/Model/Settings/LLMSettings.py
++++ b/AbstractAI/Model/Settings/LLMSettings.py
+@@ -4,7 +4,7 @@ from copy import deepcopy
+ from typing import List
+ from typing import Dict
+ 
+-@DATA(id_type=ID_Type.HASHID)
++@DATA(id_type=ID_Type.HASHID, excluded_fields=['Tool'])
+ @dataclass
+ class RolesSettings(Object):
+ 	accepts_system_messages:bool = True
+@@ -14,6 +14,7 @@ class RolesSettings(Object):
+ 	System:str = "system"
+ 	User:str = "user"
+ 	Assistant:str = "assistant"
++	Tool:str = "tool"
+ 
+ @DATA(id_type=ID_Type.HASHID)
+ @dataclass
+diff --git a/AbstractAI/Tool.py b/AbstractAI/Tool.py
+index bbc2cea..eb89647 100644
+--- a/AbstractAI/Tool.py
++++ b/AbstractAI/Tool.py
+@@ -1,23 +1,27 @@
+ from dataclasses import dataclass, field
++from ClassyFlaskDB.DefaultModel import *
++from AbstractAI.Model.Converse.MessageSources.CallerInfo import CallerInfo
+ from typing import Callable, Dict, List, Optional, Union, Any, get_args, get_origin
+ from inspect import signature, getdoc, Parameter
+ from datetime import datetime
+ 
+ TOOL_MISSING = object()
+ 
++@DATA(excluded_fields=["default"])
+ @dataclass
+-class Tool:
+-	@dataclass
+-	class ParameterInfo:
+-		name: str
+-		type: str
+-		description: str
+-		default: Any = TOOL_MISSING
++class ToolParameterInfo:
++	name: str
++	type: str
++	description: str
++	default: Any = TOOL_MISSING
+ 
++@DATA(excluded_fields=["function"])
++@dataclass
++class Tool(Object):
+ 	name: str
+ 	description: str
+-	parameters: Dict[str, ParameterInfo]
+-	return_info: Optional[ParameterInfo]
++	parameters: Dict[str, ToolParameterInfo]
++	return_info: ToolParameterInfo
+ 	function: Callable
+ 
+ 	def __call__(self, *args: Any, **kwargs: Any) -> Any:
+@@ -45,7 +49,7 @@ class Tool:
+ 		parameters = {}
+ 
+ 		for param_name, param in sig.parameters.items():
+-			param_info = cls.ParameterInfo(
++			param_info = ToolParameterInfo(
+ 				name=param_name,
+ 				type=cls._get_full_type_name(param.annotation),
+ 				description=docstring_params.get(param_name, ""),
+@@ -63,7 +67,7 @@ class Tool:
+ 
+ 		return_info = None
+ 		if sig.return_annotation is not Parameter.empty and sig.return_annotation is not None:
+-			return_info = cls.ParameterInfo(
++			return_info = ToolParameterInfo(
+ 				name="return",
+ 				type=cls._get_full_type_name(sig.return_annotation),
+ 				description=docstring_params.get('return', ""),
+@@ -81,7 +85,7 @@ class Tool:
+ 			parameters=parameters,
+ 			return_info=return_info,
+ 			function=function,
+-		)
++		) | CallerInfo.catch([1])
+ 
+ 	@staticmethod
+ 	def _parse_docstring(docstring: Optional[str]) -> Dict[str, str]:
+@@ -170,6 +174,7 @@ class Tool:
+ 		return "".join(descriptions)
+ 
+ if __name__ == "__main__":
++	DATA.finalize()
+ 	from typing import List, Dict, Optional
+ 	from datetime import datetime, timedelta
+ 	import ipaddress
+diff --git a/AbstractAI/UI/main.py b/AbstractAI/UI/main.py
+index b5f8ec5..a9f4153 100644
+--- a/AbstractAI/UI/main.py
++++ b/AbstractAI/UI/main.py
+@@ -400,12 +400,13 @@ class Application(QMainWindow):
+ 		max_tokens = self.chatUI.max_tokens
+ 			
+ 		def chat():
+-			responses = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
+-			conversation.add_message(responses.message)
+-			for response in responses:
++			response = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
++			conversation.add_message(response)
++			while self.llm.continue_message(response):
++				response.emit_changed()
+ 				if not self._should_generate:
+-					response.stop()
+-				response.message.emit_changed()
++					self.llm.stop_message(response)
++					break
+ 		
+ 		self.task = BackgroundTask(chat)
+ 		
+diff --git a/AbstractAI/examples/groq_tool_use.py b/AbstractAI/examples/groq_tool_use.py
+index dc85cdf..d2166f4 100644
+--- a/AbstractAI/examples/groq_tool_use.py
++++ b/AbstractAI/examples/groq_tool_use.py
+@@ -8,16 +8,23 @@ import os
+ 
+ # Function to get user's name
+ def get_user_name() -> str:
+-    return "Charlie"
++	'''
++	This function will return my name.
++	'''
++	return "Charlie"
+ 
+ # Function to get current date and time
+ def get_current_datetime() -> str:
+-    from datetime import datetime
+-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
++	'''
++	This function will tell you what date and time it is.
++	'''
++	from datetime import datetime
++	return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 
+ # Create Tool instances
+ name_tool = Tool.from_function(get_user_name)
+ datetime_tool = Tool.from_function(get_current_datetime)
++tools = [name_tool, datetime_tool]
+ 
+ # Initialize the database
+ engine = SQLStorageEngine(f"sqlite:///new_engine_test1.db", DATA)
+@@ -26,8 +33,8 @@ engine = SQLStorageEngine(f"sqlite:///new_engine_test1.db", DATA)
+ groq_settings = next(engine.query(Groq_LLMSettings).all(where="user_model_name = 'llama ToolUser'"))
+ 
+ if groq_settings is None:
+-    print("Groq settings not found in the database.")
+-    exit(1)
++	print("Groq settings not found in the database.")
++	exit(1)
+ 
+ # Load the LLM
+ llm = groq_settings.load()
+@@ -43,11 +50,18 @@ user_message.source = user
+ conversation.add_message(user_message)
+ 
+ # Generate AI response
+-response = llm.chat(conversation, tools=[name_tool, datetime_tool])
+-
++response = llm.chat(conversation, tools=tools)
++conversation.add_message(response)
++if llm.there_is_tool_call(response):
++	print("There is tools!")
++	conversation.add_messages(
++		llm.call_tools(response, tools=tools)
++	)
++	response = llm.chat(conversation, tools=tools)
++	conversation.add_message(response)
+ # Print the response
+ print("AI Response:")
+-print(response.message.content)
++print(response.content)
+ 
+ # Add another user message
+ user_message = Message("What date and time is it?", Role.User())
+@@ -55,11 +69,19 @@ user_message.source = user
+ conversation.add_message(user_message)
+ 
+ # Generate another AI response
+-response = llm.chat(conversation, tools=[name_tool, datetime_tool])
++response = llm.chat(conversation, tools=tools)
++conversation.add_message(response)
++if llm.there_is_tool_call(response):
++	print("There is tools!")
++	conversation.add_messages(
++		llm.call_tools(response, tools=tools)
++	)
++	response = llm.chat(conversation, tools=tools)
++	conversation.add_message(response)
+ 
+ # Print the response
+ print("AI Response:")
+-print(response.message.content)
++print(response.content)
+ 
+ # Save the conversation to the database
+ conversation_collection = ConversationCollection.all_from_engine(engine)

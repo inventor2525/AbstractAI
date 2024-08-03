@@ -36,6 +36,11 @@ class Role(Object):
 	def Assistant() -> "Role":
 		return Role("Assistant")
 	
+	@singleton
+	@staticmethod
+	def Tool() -> "Role":
+		return Role("Tool")
+	
 	def __str__(self) -> str:
 		if self.name:
 			return f"{self.type} ({self.name})"
