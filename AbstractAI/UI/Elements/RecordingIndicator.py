@@ -45,6 +45,7 @@ class RecordingIndicator(QWidget):
             self.dot_color = QColor(int(math.sin(datetime.now().timestamp() * 3) * 30 + 225), 0, 0)
         else:
             self.dot_color = QColor(0, 255, 0)
+        self._positionOnPrimaryMonitor()
         self.update()
 
     def mousePressEvent(self, event: QMouseEvent):
