@@ -317,7 +317,7 @@ class Application(QMainWindow):
 		name = self.new_conversation_name.text()
 		if name == "":
 			name = "New Conversation"
-		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}") | Context.user_source
 		self.conversations.append(conv)
 		Context.conversation = conv
 		Context.context_changed()
