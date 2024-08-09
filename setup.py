@@ -27,7 +27,7 @@ setup(
 		'datasets',
 		'soundfile',
 		'nltk',
-		'PyQt5',
+		'PyQt5', #Note: may need to be run like this, to handle the case where stuck when installing (happened on pinephone) and can't accept license even in verbose:   pip install pyqt5 --config-settings --confirm-license= --verbose
 		'sounddevice',
 		'pydub',
 		'evdev',
