@@ -5,7 +5,7 @@ class TalkToCodeAgent(Agent):
 	def __call__(self, message:Message) -> Conversation:
 		stack_trace = CallerInfo.catch([0,1])
 		
-		talk_to_code_conv = Conversation("Talk to code", "A user speaking code to have it converted to text") | stack_trace
+		talk_to_code_conv = Conversation("Talk to code", "A user speaking code to have it converted to text") | self.config
 		talk_to_code_conv + (r"""You are a speech to code typing assistance device.
 					   
 		Your output results in typing on the users machine, as though it came from their keyboard. The user will say something which could be poorly transcribed from speech without the context of where they are typing, or it could be malformed or miss spelled. You should take what they say and type clear code as best you can.

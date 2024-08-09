@@ -8,7 +8,7 @@ class ReplacementAgent(Agent):
 		replacerConv = Conversation(
 			f"Message Replacer:{conversation.name}",
 			"A conversation about replacing a message in another conversation based on user feedback."
-		) | stack_trace
+		) | self.config
 		
 		#store some meta data on the conversation:
 		replacerConv.props.conversation_under_edit = conversation

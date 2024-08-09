@@ -19,7 +19,7 @@ class FileChangingAgent(Agent):
 		
 		files = FilesSource.from_items(all_file_items) | conversation.message_sequence
 		
-		file_changing_conv = Conversation("File changes", "Takes instructions from some other agent, and applies those instructions to files") | stack_trace
+		file_changing_conv = Conversation("File changes", "Takes instructions from some other agent, and applies those instructions to files") | self.config
 		file_changing_conv + (
 			FileChangingAgent.conversation_template.render(
 				files=files.load(),
