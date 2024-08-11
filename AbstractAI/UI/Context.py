@@ -21,6 +21,8 @@ class Context:
 	
 	user_source: UserSource = None
 	
+	active_conversations: List[Conversation] = field(default_factory=list)
+	
 	@staticmethod
 	def singleton() -> 'Context':
 		if not hasattr(Context, '_singleton'):
@@ -35,7 +37,14 @@ class Context:
 		if self.conversation != value:
 			prev_conversation = self.conversation
 			self._conversation = value
+			
+			added_to_active = False
+			if value not in self.active_conversations:
+				self.active_conversations.append(value)
+				added_to_active = True
 			self.conversation_selected(prev_conversation, value)
+			if added_to_active:
+				self.context_changed()
 		
 	def __post_init__(self):
 		Context.singleton = self

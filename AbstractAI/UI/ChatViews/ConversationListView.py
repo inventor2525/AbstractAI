@@ -100,6 +100,7 @@ class ConversationListView(QListWidget):
 		for item in self.selectedItems():
 			conversation = self.conversations.get_conversation(item.conversation)
 			self.conversations.ensure_loaded(conversation)
+			Context.active_conversations.clear()
 			Context.conversation = conversation
 			Context.context_changed()
 			break

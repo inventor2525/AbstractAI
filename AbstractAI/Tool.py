@@ -23,6 +23,7 @@ class Tool(Object):
 	parameters: Dict[str, ToolParameterInfo]
 	return_info: ToolParameterInfo
 	function: Callable
+	auto_run: bool = False
 
 	def __call__(self, *args: Any, **kwargs: Any) -> Any:
 		return self.function(*args, **kwargs)

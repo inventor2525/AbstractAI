@@ -319,6 +319,7 @@ class Application(QMainWindow):
 			name = "New Conversation"
 		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}") | Context.user_source
 		self.conversations.append(conv)
+		Context.active_conversations.clear()
 		Context.conversation = conv
 		Context.context_changed()
 		return conv

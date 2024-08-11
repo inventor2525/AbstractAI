@@ -2,6 +2,7 @@ from AbstractAI.UI.Elements.TextEdit import TextEdit
 from AbstractAI.UI.ChatViews.ConversationView import ConversationView
 from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationActionControl, ConversationAction
+from AbstractAI.UI.ChatViews.ConversationPicker import ConversationPicker
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse import *
@@ -222,6 +223,10 @@ class ChatUI(QWidget):
 		self.layout = QVBoxLayout()
 		self.layout.setContentsMargins(0, 0, 0, 0)
 		self.setLayout(self.layout)
+		
+		# Add the ConversationPicker
+		self.conversation_picker = ConversationPicker()
+		self.layout.addWidget(self.conversation_picker)
 		
 		# Create a list view to display the conversation:
 		self.conversation_view = ConversationView(conversation)
