@@ -22,6 +22,7 @@ from AbstractAI.Model.Settings.LLMSettings import *
 llm_settings_types = LLMSettings.load_subclasses()
 
 from AbstractAI.LLMs.LLM import LLM
+from AbstractAI.Automation.Agent import Agent, AgentConfig
 
 Stopwatch("DATAEngine", log_statistics=False)
 from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
@@ -409,12 +410,18 @@ class Application(QMainWindow):
 		max_tokens = self.chatUI.max_tokens
 			
 		def chat():
-			response = self.llm.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
+			#Determine if this conversation is with an agent,
+			#or the llm the user has chosen to chat with:
+			conversable = self.llm
+			if conversation.source is not None and isinstance(conversation.source, AgentConfig):
+				agent_config:AgentConfig = conversation.source
+				conversable = agent_config.agent
+			response = conversable.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
 			conversation.add_message(response)
-			while self.llm.continue_message(response):
+			while conversable.continue_message(response):
 				response.emit_changed()
 				if not self._should_generate:
-					self.llm.stop_message(response)
+					conversable.stop_message(response)
 					break
 		
 		self.task = BackgroundTask(chat)

@@ -4,12 +4,20 @@ from AbstractAI.Conversable import Conversable
 from AbstractAI.Tool import Tool
 from abc import abstractmethod
 
-@DATA
+@DATA(excluded_fields=["__agent__"])
 @dataclass
 class AgentConfig(Object):
 	llm_settings:LLMSettings
 	agent_class:str
 	tools:List[Tool]
+	__agent__:"Agent" = field(default=None, kw_only=True)
+	
+	@property
+	def agent(self) -> "Agent":
+		if self.__agent__ is None:
+			#TODO: load the agent from the saved fields
+			raise NotImplemented("agent loading from file not implemented")
+		return self.__agent__
 
 @dataclass
 class Agent(Conversable):
@@ -23,7 +31,8 @@ class Agent(Conversable):
 		self.__config__ = AgentConfig(
 			self.llm.settings,
 			ClassInfo.get_semi_qual_name(type(self)),
-			self.tools
+			self.tools,
+			__agent__=self
 		) | CallerInfo.catch([1,2])
 		return self.__config__
 	
