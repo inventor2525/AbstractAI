@@ -1,12 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QScrollArea, QSizePolicy
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QSize
 from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse import Conversation
 
 class ConversationTab(QWidget):
-	clicked = pyqtSignal(Conversation)
-	close_requested = pyqtSignal(Conversation)
-
 	def __init__(self, conversation: Conversation, height: int):
 		super().__init__()
 		self.conversation = conversation
@@ -18,30 +15,26 @@ class ConversationTab(QWidget):
 		layout.setContentsMargins(5, 0, 0, 0)
 		layout.setSpacing(0)
 
-		self.button = QPushButton(self.conversation.name)
-		self.button.setCheckable(True)
-		self.button.setFixedHeight(self.height)
-		self.button.clicked.connect(lambda: self.clicked.emit(self.conversation))
+		self.select_button = QPushButton(self.conversation.name)
+		self.select_button.setCheckable(True)
+		self.select_button.setFixedHeight(self.height)
 
-		close_button = QPushButton("×")
-		close_button.setFixedSize(self.height, self.height)
-		close_button.clicked.connect(lambda: self.close_requested.emit(self.conversation))
+		self.close_button = QPushButton("×")
+		self.close_button.setFixedSize(self.height, self.height)
 
-		layout.addWidget(self.button)
-		layout.addWidget(close_button)
+		layout.addWidget(self.select_button)
+		layout.addWidget(self.close_button)
 
 	def setChecked(self, checked: bool):
-		self.button.setChecked(checked)
+		self.select_button.setChecked(checked)
 
-class ConversationTabBar(QWidget):
-	conversation_selected = pyqtSignal(Conversation)
-	conversation_closed = pyqtSignal(Conversation)
-
+class ConversationPicker(QWidget):
 	def __init__(self, button_height: int = 25):
 		super().__init__()
 		self.button_height = button_height
 		self.init_ui()
 		Context.context_changed.connect(self.update_tabs)
+		self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
 	def init_ui(self):
 		self.layout = QHBoxLayout(self)
@@ -65,36 +58,40 @@ class ConversationTabBar(QWidget):
 
 	def update_tabs(self):
 		# Clear existing tabs
-		for i in reversed(range(self.scroll_layout.count())):
-			widget = self.scroll_layout.itemAt(i).widget()
-			if widget:
-				widget.deleteLater()
+		while self.scroll_layout.count():
+			child = self.scroll_layout.takeAt(0)
+			if child.widget():
+				child.widget().deleteLater()
 
 		# Create new tabs for each active conversation
 		for conversation in Context.active_conversations:
 			tab = ConversationTab(conversation, self.button_height)
-			tab.clicked.connect(self.on_tab_clicked)
-			tab.close_requested.connect(self.on_tab_close_requested)
+			tab.select_button.clicked.connect(lambda _, c=conversation: self.on_conversation_select(c))
+			tab.close_button.clicked.connect(lambda _, c=conversation: self.on_conversation_close(c))
 			tab.setChecked(conversation == Context.conversation)
 			self.scroll_layout.addWidget(tab)
 
 		self.scroll_layout.addStretch(1)
 		self.update()
 
-	def on_tab_clicked(self, conversation: Conversation):
+	def on_conversation_select(self, conversation: Conversation):
 		Context.conversation = conversation
-		self.conversation_selected.emit(conversation)
 		self.update_tabs()
 
-	def on_tab_close_requested(self, conversation: Conversation):
+	def on_conversation_close(self, conversation: Conversation):
 		if conversation in Context.active_conversations:
+			index = Context.active_conversations.index(conversation)
 			Context.active_conversations.remove(conversation)
+			
 			if conversation == Context.conversation:
 				if Context.active_conversations:
-					Context.conversation = Context.active_conversations[-1]
+					if index < len(Context.active_conversations):
+						Context.conversation = Context.active_conversations[index]
+					else:
+						Context.conversation = Context.active_conversations[index - 1]
 				else:
 					Context.conversation = None
-			self.conversation_closed.emit(conversation)
+			
 			Context.context_changed()
 
 	def resizeEvent(self, event):
@@ -106,7 +103,7 @@ class ConversationTabBar(QWidget):
 		height = self.button_height
 		if self.scroll_area.horizontalScrollBar().isVisible():
 			height += self.scroll_area.horizontalScrollBar().height()
-		return QSize(width, height+2)
+		return QSize(width, height + 2)
 
 	def minimumSizeHint(self):
 		return self.sizeHint()
@@ -126,8 +123,8 @@ if __name__ == "__main__":
 	class MainWindow(QMainWindow):
 		def __init__(self):
 			super().__init__()
-			self.tab_bar = ConversationTabBar()
-			self.setCentralWidget(self.tab_bar)
+			self.conversation_picker = ConversationPicker()
+			self.setCentralWidget(self.conversation_picker)
 
 			# Add some test conversations
 			for i in range(5):
