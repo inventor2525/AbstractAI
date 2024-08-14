@@ -87,8 +87,16 @@ class Application(QMainWindow):
 		
 		self.init_ui()
 		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
-			self.name_field.setText(new_conversation.name)
-			self.description_field.setText(new_conversation.description)
+			if new_conversation:
+				self.name_field.setEnabled(True)
+				self.description_field.setEnabled(True)
+				self.name_field.setText(new_conversation.name)
+				self.description_field.setText(new_conversation.description)
+			else:
+				self.name_field.setEnabled(False)
+				self.description_field.setEnabled(False)
+				self.name_field.setText("")
+				self.description_field.setText("")
 			self.chatUI.conversation = new_conversation
 		Context.conversation_selected.connect(conversation_selected)
 		Context.conversation = self.new_conversation()

@@ -60,7 +60,8 @@ class ConversationActionControl(QWidget):
 		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
 			if prev_conversation is not None:
 				prev_conversation.conversation_changed.disconnect(conversation_changed)
-			new_conversation.conversation_changed.connect(conversation_changed)
+			if new_conversation:
+				new_conversation.conversation_changed.connect(conversation_changed)
 			self.selected_messages = []
 		Context.conversation_selected.connect(conversation_selected)
 		Context.context_changed.connect(self.update_mode)
@@ -138,7 +139,9 @@ class ConversationActionControl(QWidget):
 				if Context.new_message_has_text:
 					self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=Context.llm_loaded)
 				else:
-					if len(Context.conversation) == 0:
+					if Context.conversation is None:
+						self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=False)
+					elif len(Context.conversation) == 0:
 						self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=Context.llm_loaded)
 					else:
 						msg_source = Context.conversation[-1].source

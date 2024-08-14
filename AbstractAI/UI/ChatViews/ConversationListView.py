@@ -107,7 +107,7 @@ class ConversationListView(QListWidget):
 		self._redrawing = False
 	
 	def set_selected(self, conversation:Conversation):
-		if conversation.auto_id in self.items_map:
+		if conversation and conversation.auto_id in self.items_map:
 			self.setCurrentItem(self.items_map[conversation.auto_id])
 		else:
 			self.setCurrentItem(None)

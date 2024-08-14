@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QScrollArea, QSiz
 from PyQt5.QtCore import Qt, QSize
 from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse import Conversation
+from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 
 class ConversationTab(QWidget):
 	def __init__(self, conversation: Conversation, height: int):
@@ -12,14 +13,14 @@ class ConversationTab(QWidget):
 
 	def init_ui(self):
 		layout = QHBoxLayout(self)
-		layout.setContentsMargins(5, 0, 0, 0)
+		layout.setContentsMargins(0, 0, 0, 0)
 		layout.setSpacing(0)
 
 		self.select_button = QPushButton(self.conversation.name)
 		self.select_button.setCheckable(True)
 		self.select_button.setFixedHeight(self.height)
 
-		self.close_button = QPushButton("×")
+		self.close_button = QPushButton("X")
 		self.close_button.setFixedSize(self.height, self.height)
 
 		layout.addWidget(self.select_button)
@@ -33,7 +34,7 @@ class ConversationPicker(QWidget):
 		super().__init__()
 		self.button_height = button_height
 		self.init_ui()
-		Context.context_changed.connect(self.update_tabs)
+		Context.context_changed.connect(self.on_context_changed)
 		self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
 	def init_ui(self):
@@ -55,7 +56,11 @@ class ConversationPicker(QWidget):
 
 		self.scroll_area.setWidget(self.scroll_content)
 		self.layout.addWidget(self.scroll_area)
-
+	
+	@run_in_main_thread
+	def on_context_changed(self):
+		self.update_tabs()
+		
 	def update_tabs(self):
 		# Clear existing tabs
 		while self.scroll_layout.count():
@@ -65,11 +70,14 @@ class ConversationPicker(QWidget):
 
 		# Create new tabs for each active conversation
 		for conversation in Context.active_conversations:
+			if conversation is None:
+				continue
 			tab = ConversationTab(conversation, self.button_height)
 			tab.select_button.clicked.connect(lambda _, c=conversation: self.on_conversation_select(c))
 			tab.close_button.clicked.connect(lambda _, c=conversation: self.on_conversation_close(c))
 			tab.setChecked(conversation == Context.conversation)
 			self.scroll_layout.addWidget(tab)
+			self.scroll_layout.addSpacing(5)
 
 		self.scroll_layout.addStretch(1)
 		self.update()
