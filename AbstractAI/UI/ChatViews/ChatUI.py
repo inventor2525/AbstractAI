@@ -243,7 +243,17 @@ class ChatUI(QWidget):
 		self.advanced_controls_layout.setContentsMargins(0, 0, 0, 0)
 		self.advanced_controls.setLayout(self.advanced_controls_layout)
 		self.layout.addWidget(self.advanced_controls)
-		self.advanced_controls_layout.addWidget(QLabel("Advanced Generation Controls:"))
+		
+		advanced_controls_header = QWidget()
+		advanced_controls_header_layout = QHBoxLayout(advanced_controls_header)
+		advanced_controls_header_layout.setContentsMargins(0, 0, 0, 0)
+		advanced_controls_header_layout.addWidget(QLabel("Advanced Generation Controls:"))
+		advanced_controls_header_layout.addStretch(1)
+		send_to_switchboard_button = QPushButton("Send to Switchboard")
+		send_to_switchboard_button.clicked.connect(self.send_to_switchboard)
+		advanced_controls_header_layout.addWidget(send_to_switchboard_button)
+		self.advanced_controls_layout.addWidget(advanced_controls_header)
+		
 		self.advanced_controls_layout.addWidget(QHLine())
 		
 		# Create a field to set the max tokens:
@@ -351,7 +361,13 @@ class ChatUI(QWidget):
 		self.timer = QTimer()
 		self.timer.timeout.connect(self.update_timer)
 		self.timer.start(100)  # Update every 100ms
-	
+		
+	def send_to_switchboard(self):
+		from AbstractAI.Automation.SwitchboardAgent import SwitchboardAgent
+		user_message = self.input_field.toPlainText()
+		SwitchboardAgent.call_switchboard(user_message)
+		self.input_field.clear()
+		
 	def toggle_recording(self):
 		self.transcription.toggle_recording()
 		if self.transcription.is_recording:

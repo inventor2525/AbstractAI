@@ -21,8 +21,23 @@ class AgentConfig(Object):
 
 @dataclass
 class Agent(Conversable):
-	llm:LLM
+	llm:LLM = field(default=None, kw_only=True)
 	tools: List[Tool] = None
+	
+	def __post_init__(self):
+		if self.llm is None:
+			self.llm = self.default_llm()
+	
+	@classmethod
+	def default_llm(cls) -> LLM:
+		from AbstractAI.UI.Context import Context
+		from AbstractAI.Model.Settings.Anthropic_LLMSettings import Anthropic_LLMSettings
+		llm_settings = next(Context.engine.query(Anthropic_LLMSettings).all(where="user_model_name = 'Sonnet 3.5'"))
+		if llm_settings is None:
+			raise ValueError("LLM settings not found in the database.")
+		llm = llm_settings.load()
+		llm.start()
+		return llm
 	
 	@property
 	def config(self) -> AgentConfig:

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from AbstractAI.Automation.Agent import Agent
 from AbstractAI.Model.Converse import Conversation, Message, Role
-from AbstractAI.Model.Settings.Groq_LLMSettings import Groq_LLMSettings
+from AbstractAI.LLMs.LLM import LLM
 from AbstractAI.Tool import Tool
 from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse.MessageSources import CallerInfo
@@ -9,13 +9,18 @@ from typing import List, Optional
 
 @dataclass
 class SwitchboardAgent(Agent):
+	@classmethod
+	def default_llm(cls) -> LLM:
+		from AbstractAI.Model.Settings.Groq_LLMSettings import Groq_LLMSettings
+		llm_settings = next(Context.engine.query(Groq_LLMSettings).all(where="user_model_name = 'llama ToolUser'"))
+		if llm_settings is None:
+			raise ValueError("LLM settings not found in the database.")
+		llm = llm_settings.load()
+		llm.start()
+		return llm
+	
 	def __post_init__(self):
-		if self.llm is None:
-			groq_settings = next(Context.engine.query(Groq_LLMSettings).all(where="user_model_name = 'llama ToolUser'"))
-			if groq_settings is None:
-				raise ValueError("Groq settings not found in the database.")
-			self.llm = groq_settings.load()
-			self.llm.start()
+		super().__post_init__()
 
 		self.tools = [
 			Tool.from_function(self._call_file_changing_agent),
@@ -41,7 +46,8 @@ Your job is to match the user's request with the most appropriate specialized ag
 	def chat(self, conversation: Conversation, start_str: str = "", stream: bool = False, max_tokens: int = None) -> Message:
 		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens, tools=self.tools)
 
-	def process_response(self, conversation: Conversation, response: Message):
+	def process_response(self, conversation: Conversation):
+		response = conversation[-1]
 		if self.llm.there_is_tool_call(response):
 			tool_messages = self.llm.call_tools(response, tools=self.tools)
 			conversation.add_messages(tool_messages)
@@ -52,9 +58,9 @@ Your job is to match the user's request with the most appropriate specialized ag
 		This agent is specialized in tasks related to file manipulation and code changes.
 		"""
 		from AbstractAI.Automation.FileChangingAgent import FileChangingAgent
-		agent = FileChangingAgent(self.llm)
+		agent = FileChangingAgent()
 		original_conv = Context.conversation.props.original_conversation
-		result_conv = agent(original_conv)
+		Context.conversation = agent(original_conv)
 		return "File Changing Agent has been called and completed its task."
 
 	def _call_replacement_agent(self) -> str:
@@ -63,9 +69,9 @@ Your job is to match the user's request with the most appropriate specialized ag
 		This agent is specialized in modifying existing text or content based on user specifications.
 		"""
 		from AbstractAI.Automation.ReplacementAgent import ReplacementAgent
-		agent = ReplacementAgent(self.llm)
+		agent = ReplacementAgent()
 		original_conv = Context.conversation.props.original_conversation
-		result_conv = agent(original_conv)
+		Context.conversation = agent(original_conv)
 		return "Replacement Agent has been called and completed its task."
 
 	def _call_talk_to_code_agent(self) -> str:
@@ -74,9 +80,9 @@ Your job is to match the user's request with the most appropriate specialized ag
 		This agent is specialized in understanding and generating code based on natural language input.
 		"""
 		from AbstractAI.Automation.TalkToCodeAgent import TalkToCodeAgent
-		agent = TalkToCodeAgent(self.llm)
+		agent = TalkToCodeAgent()
 		original_conv = Context.conversation.props.original_conversation
-		result_conv = agent(original_conv)
+		Context.conversation = agent(original_conv)
 		return "Talk to Code Agent has been called and completed its task."
 
 	@staticmethod
@@ -89,7 +95,3 @@ Your job is to match the user's request with the most appropriate specialized ag
 
 		response = agent.chat(new_conversation)
 		new_conversation.add_message(response)
-
-		agent.process_response(new_conversation, response)
-
-		Context.conversation = original_conversation
