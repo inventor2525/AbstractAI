@@ -71,7 +71,7 @@ Your job is to match the user's request with the most appropriate specialized ag
 		from AbstractAI.Automation.ReplacementAgent import ReplacementAgent
 		agent = ReplacementAgent()
 		original_conv = Context.conversation.props.original_conversation
-		Context.conversation = agent(original_conv)
+		Context.conversation = agent(original_conv, original_conv[-1])
 		return "Replacement Agent has been called and completed its task."
 
 	def _call_talk_to_code_agent(self) -> str:
