@@ -35,6 +35,7 @@ class ConversationListView(QListWidget):
 	def __init__(self, conversations: ConversationCollection):
 		super().__init__()
 		self._redrawing = False
+		self._getting_updated = False #hack
 		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
 			if self._redrawing:
 				return
@@ -97,17 +98,20 @@ class ConversationListView(QListWidget):
 			return
 		
 		self._redrawing = True
-		for item in self.selectedItems():
-			conversation = self.conversations.get_conversation(item.conversation)
-			self.conversations.ensure_loaded(conversation)
-			Context.active_conversations.clear()
-			Context.conversation = conversation
-			Context.context_changed()
-			break
+		if not self._getting_updated:
+			for item in self.selectedItems():
+				conversation = self.conversations.get_conversation(item.conversation)
+				self.conversations.ensure_loaded(conversation)
+				Context.active_conversations.clear()
+				Context.conversation = conversation
+				Context.context_changed()
+				break
 		self._redrawing = False
 	
 	def set_selected(self, conversation:Conversation):
+		self._getting_updated = True
 		if conversation and conversation.auto_id in self.items_map:
 			self.setCurrentItem(self.items_map[conversation.auto_id])
 		else:
 			self.setCurrentItem(None)
+		self._getting_updated = False
