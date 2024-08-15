@@ -1,4 +1,4 @@
-from AbstractAI.LLMs.LLM import Conversation, Iterator, LLM_Response, Union
+from AbstractAI.LLMs.LLM import Conversation, Iterator, Union
 from AbstractAI.Helpers.ResponseParsers import extract_paths_and_code
 from jinja2 import Template
 from copy import deepcopy
@@ -34,7 +34,7 @@ class FileChangingAgent(Agent):
 		file_changing_conv + ("Now, recite the new versions of the files it changed, in the same format as I just gave them to you.", Role.User()) | stack_trace
 		return file_changing_conv
 		
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> Message:
 		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens)
 	
 	def process_response(self, conversation: Conversation):

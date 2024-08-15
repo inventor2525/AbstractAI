@@ -1,4 +1,4 @@
-from AbstractAI.LLMs.LLM import Conversation, Iterator, LLM_Response, Union
+from AbstractAI.LLMs.LLM import Conversation, Iterator, Union
 from .Agent import *
 
 class TalkToCodeAgent(Agent):
@@ -23,7 +23,7 @@ class TalkToCodeAgent(Agent):
 		talk_to_code_conv + message
 		return talk_to_code_conv
 		
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> Message:
 		additional_system_message = "That was additional info from the user, again, only respond with code."
 		
 		# make it so that message exists only ever at the end of the conversation:

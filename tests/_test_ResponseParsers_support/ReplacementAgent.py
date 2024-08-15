@@ -1,5 +1,5 @@
-from AbstractAI.LLMs.LLM import Conversation, Iterator, LLM_Response, Union
-from .Agent import *
+from AbstractAI.LLMs.LLM import Conversation, Iterator, Union, Message 
+from AbstractAI.Automation.Agent import *
 from jinja2 import Template
 
 class ReplacementAgent(Agent):
@@ -24,7 +24,7 @@ class ReplacementAgent(Agent):
 
 		return replacerConv
 
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> LLM_Response | Iterator[LLM_Response]:
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> Message:
 		reminder_message = ReplacementAgent.reminder_template.render()
 		
 		# make it so that message exists only ever at the end of the conversation:
