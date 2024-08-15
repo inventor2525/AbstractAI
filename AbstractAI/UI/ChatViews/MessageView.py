@@ -307,7 +307,7 @@ class MessageView(BaseMessageView):
 		if isinstance(most_original, FilesSource):
 			self.text_edit.setVisible(False)
 			self.file_selector.setVisible(True)
-			files_source:FilesSource = value.source.source
+			files_source:FilesSource = value.source
 			self.file_selector.items = deepcopy(files_source.items.items)
 			self.file_selector.refresh()
 		else:
