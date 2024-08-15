@@ -18,6 +18,14 @@ class AgentConfig(Object):
 			#TODO: load the agent from the saved fields
 			raise NotImplemented("agent loading from file not implemented")
 		return self.__agent__
+	
+	@staticmethod
+	def get_agent(conversation:Conversation) -> Optional["Agent"]:
+		if conversation is None or conversation.source is None:
+			return None
+		if isinstance(conversation.source, AgentConfig):
+			return conversation.source.agent
+		return None
 
 @dataclass
 class Agent(Conversable):

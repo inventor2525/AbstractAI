@@ -8,6 +8,7 @@ from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse import *
 from AbstractAI.Model.Converse.MessageSources.FilesSource import ItemsModel
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
+from AbstractAI.Automation.Agent import Agent, AgentConfig
 from copy import deepcopy
 
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
@@ -441,7 +442,8 @@ class ChatUI(QWidget):
 		elif action == ConversationAction.Demo:
 			raise NotImplementedError("Demo not implemented")
 		elif action == ConversationAction.DoIt:
-			raise NotImplementedError("DoIt not implemented")
+			agent_config:AgentConfig = Context.conversation.source
+			agent_config.agent.process_response(Context.conversation)
 	
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:

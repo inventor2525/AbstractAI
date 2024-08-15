@@ -1,6 +1,7 @@
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.UI.Context import Context, UserSource, Conversation, Message, ModelSource, EditSource
+from AbstractAI.Automation.Agent import Agent, AgentConfig
 from enum import Enum
 
 class ConversationAction(Enum):
@@ -26,8 +27,8 @@ class ConversationActionControl(QWidget):
 		ConversationAction.Continue: "Continue >>",
 		ConversationAction.Reply: "Reply To",
 		ConversationAction.Insert: "Insert Above",
-		ConversationAction.DoIt: ":media-record:",
-		ConversationAction.Demo: ":media-playback-start:",
+		ConversationAction.DoIt: ":media-playback-start:",
+		ConversationAction.Demo: ":media-record:",
 		ConversationAction.Stop: "Stop!"
 	},
 	descriptions:Dict[ConversationAction, str] = {
@@ -52,7 +53,6 @@ class ConversationActionControl(QWidget):
 		self.instruction_tooltips = instruction_tooltips
 		
 		#Context Views:
-		self.has_instruction_agent = False
 		self.selected_messages = []
 		
 		def conversation_changed():
@@ -125,8 +125,16 @@ class ConversationActionControl(QWidget):
 		
 		def get_demo_do_it() -> Tuple[ConversationAction, bool]:
 			if self.should_auto_respond:
-				conversation_empty = Context.conversation is None or len(Context.conversation) == 0
-				return ConversationAction.DoIt, False#self.has_instruction_agent and not conversation_empty
+				def should_display_DoIt():
+					conv:Conversation = Context.conversation
+					if conv is None or conv.source is None:
+						return False
+					if len(conv) == 0:
+						return False
+					if not isinstance(conv.source, AgentConfig):
+						return False
+					return True
+				return ConversationAction.DoIt, should_display_DoIt()
 			else:
 				return ConversationAction.Demo, False#True
 		

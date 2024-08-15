@@ -412,10 +412,9 @@ class Application(QMainWindow):
 		def chat():
 			#Determine if this conversation is with an agent,
 			#or the llm the user has chosen to chat with:
-			conversable = self.llm
-			if conversation.source is not None and isinstance(conversation.source, AgentConfig):
-				agent_config:AgentConfig = conversation.source
-				conversable = agent_config.agent
+			conversable = AgentConfig.get_agent(conversation)
+			if conversable is None:
+				conversable = self.llm
 			response = conversable.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
 			conversation.add_message(response)
 			while conversable.continue_message(response):
