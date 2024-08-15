@@ -6,7 +6,7 @@ from AbstractAI.Model.Settings.Groq_LLMSettings import Groq_LLMSettings
 from AbstractAI.Model.Converse.MessageSources import ModelSource, ToolSource
 from groq import Groq, NOT_GIVEN
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Iterator
 
 class Groq_LLM(ToolUser, LLM):
 	def __init__(self, settings: Groq_LLMSettings):
@@ -72,17 +72,34 @@ class Groq_LLM(ToolUser, LLM):
 
 	def there_is_tool_call(self, message: Message) -> bool:
 		try:
-			raw_output = message.source.serialized_raw_output
-			return bool(raw_output['choices'][0]['message'].get('tool_calls'))
+			return len(list(self._tool_calls_from_message(message))) > 0
 		except Exception as e:
 			return False
-
+	
+	def _tool_calls_from_message(self, message:Message) -> Iterator[dict]:
+		try:
+			raw_output = message.source.serialized_raw_output
+			for tool_call in raw_output['choices'][0]['message']['tool_calls']:
+				yield tool_call
+		except Exception as e:
+			try:
+				raw_output = message.source.serialized_raw_output
+				for chunk in raw_output['Chunks']:
+					try:
+						tool_calls = chunk["choices"][0]["delta"]["tool_calls"]
+						if tool_calls is not None:
+							for tool_call in tool_calls:
+								yield tool_call
+					except Exception as e:
+						pass
+			except Exception as e:
+				pass
+		return
+	
 	def call_tools(self, message: Message, tools: List[Tool]) -> List[Message]:
-		raw_output = message.source.serialized_raw_output
-		tool_calls = raw_output['choices'][0]['message']['tool_calls']
 		tool_messages = []
 
-		for tool_call in tool_calls:
+		for tool_call in self._tool_calls_from_message(message):
 			for tool in tools:
 				if tool.name == tool_call['function']['name']:
 					args = json.loads(tool_call['function']['arguments'])
