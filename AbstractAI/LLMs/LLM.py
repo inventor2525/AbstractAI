@@ -43,58 +43,68 @@ class LLM(Conversable):
 		'''Count the number of tokens in the passed text.'''
 		raise NotImplementedError("This LLM does not support token counting.")
 	
-	def conversation_to_list(self, conversation: Conversation, include_names:bool=True) -> List[Dict[str,str]]:
-		chat = []
-		prev_role:Role = None
-		role_mapping  = {
+	def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
+		role_mapping = {
 			Role.System().type: self.settings.roles.System,
 			Role.User().type: self.settings.roles.User,
 			Role.Assistant().type: self.settings.roles.Assistant,
 			Role.Tool().type: self.settings.roles.Tool
 		}
-		should_merge = self.settings.roles.merge_consecutive_messages_by_same_role
-		
-		def append_msg(message:Message, role:Role):
-			m = {
-				"role":role_mapping[role.type],
-				"content":message.content
-			}
-			if role.name is not None and include_names:
-				m["name"] = role.name
-			if role.type == Role.Tool().type:
-				m["tool_call_id"] = message.source.tool_call_id
-			chat.append(m)
-		def append_empty(role:str):
-			chat.append({"role":role, "content":""})
-			
-		for message in conversation.message_sequence.messages:
-			role:Role = message.role
-			if not self.settings.roles.accepts_system_messages:
-				if role.type == Role.System().type:
-					role = Role.User()
-			
-			if self.settings.roles.must_alternate:
-				# Make sure roles alternate
-				if prev_role is None and role.type == Role.Assistant().type:
-					append_empty(Role.User().type)
-				
-				if role.type == prev_role.type:
-					if should_merge and role == prev_role: #names might not be ==
-						chat[-1]["content"] += "\n\n" + message.content
-					else:
-						if role.type == Role.Assistant().type:
-							append_empty(Role.User())
-						else:
-							append_empty(Role.Assistant().type)
-						append_msg(message, role)
+
+		# Step 1: Convert conversation to list of dicts
+		chat = []
+		for message in conversation:
+			role = role_mapping[message.role.type]
+			msg_dict = {"role": role, "content": message.content}
+			if self.settings.roles.include_names and message.role.name is not None:
+				msg_dict["name"] = message.role.name
+			chat.append(msg_dict)
+
+		# Step 2: Change system messages to user messages if not accepted
+		if not self.settings.roles.accepts_system_messages:
+			for msg in chat:
+				if msg["role"] == self.settings.roles.System:
+					msg["role"] = self.settings.roles.User
+					if self.settings.roles.include_names:
+						msg["name"] = "system"
+
+		# Step 3: Change mid-conversation system messages to user messages if not accepted
+		elif not self.settings.roles.accepts_mid_conversation_system_messages:
+			non_system_found = False
+			for msg in chat:
+				if msg["role"] != self.settings.roles.System:
+					non_system_found = True
+				elif non_system_found:
+					msg["role"] = self.settings.roles.User
+					if self.settings.roles.include_names:
+						msg["name"] = "system"
+
+		# Step 4: Merge consecutive messages
+		if self.settings.roles.merge_consecutive_messages_by_same_role:
+			merged_chat = []
+			for msg in chat:
+				if merged_chat and (merged_chat[-1]["role"], merged_chat[-1].get("name", None)) == (msg["role"], msg.get("name", None)):
+					merged_chat[-1]["content"] += f"\n\n{msg['content']}"
 				else:
-					append_msg(message, role)
-			else:
-				if role.type == getattr(prev_role, 'type',None) and (role.name == getattr(prev_role, 'name',None) or not include_names):
-					chat[-1]["content"] += "\n\n" + message.content
+					merged_chat.append(msg.copy())
+			chat = merged_chat
+
+		# Step 5: Ensure alternating messages if required
+		if self.settings.roles.must_alternate:
+			alternating_chat = []
+			prev_relevant_role = self.settings.roles.Assistant
+			for msg in chat:
+				if msg["role"] in [self.settings.roles.User, self.settings.roles.Assistant]:
+					if msg["role"] == prev_relevant_role:
+						opposite_role = self.settings.roles.User if msg["role"] == self.settings.roles.Assistant else self.settings.roles.Assistant
+						alternating_chat.append({"role": opposite_role, "content": ""})
+					alternating_chat.append(msg)
+					prev_relevant_role = msg["role"]
 				else:
-					append_msg(message, role)
-			prev_role = role
+					alternating_chat.append(msg)
+			
+			chat = alternating_chat
+
 		return chat
 		
 	def _new_message(self, input:Union[str,Conversation]=None, start_str:str="", start_request_prompt:str=None) -> Tuple[Message, Optional[List[Dict[str,str]]]]:

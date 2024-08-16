@@ -7,14 +7,25 @@ from typing import Dict
 @DATA(id_type=ID_Type.HASHID, excluded_fields=['Tool'])
 @dataclass
 class RolesSettings(Object):
-	accepts_system_messages:bool = True
-	must_alternate:bool = False
-	merge_consecutive_messages_by_same_role:bool = True
-	
-	System:str = "system"
-	User:str = "user"
-	Assistant:str = "assistant"
-	Tool:str = "tool"
+	accepts_system_messages: bool = True
+	"""Indicates if the model can consume messages with a 'system' role at all."""
+
+	accepts_mid_conversation_system_messages: bool = True
+	"""Indicates if the model can handle system messages after user, assistant, or tool messages."""
+
+	must_alternate: bool = False
+	"""Indicates if the model is restricted to a (system)>user>assistant>user>assistant>user>... pattern."""
+
+	merge_consecutive_messages_by_same_role: bool = True
+	"""Indicates that consecutive messages from the same role (and name, if applicable) should be merged."""
+
+	include_names: bool = True
+	"""Determines if 'name' should be included in the message dictionaries."""
+
+	System: str = "system"
+	User: str = "user"
+	Assistant: str = "assistant"
+	Tool: str = "tool"
 
 @DATA(id_type=ID_Type.HASHID)
 @dataclass
