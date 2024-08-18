@@ -38,7 +38,7 @@ class ReplacementAgent(Agent):
 		original_message:Message = conversation.props.msg_to_replace
 		edit = original_message & new_message | CallerInfo.catch([0,1])
 		
-		conversation.apply_edit(edit)
+		conversation.props.conversation_under_edit.apply_edit(edit)
 
 ReplacementAgent.conversation_template = Template("""
 I want you to replace a message in the following conversation given user feedback and things learned from that conversation as it continued to develop past the point of the message I want you to replace.
