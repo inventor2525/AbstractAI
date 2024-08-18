@@ -34,7 +34,7 @@ class ReplacementAgent(Agent):
 		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens)
 	
 	def process_response(self, conversation: Conversation):
-		new_message = conversation[-1]
+		new_message = Message(conversation[-1].content, conversation[-1].role, date_created=conversation[-1].date_created) | conversation[-1]
 		original_message:Message = conversation.props.msg_to_replace
 		edit = original_message & new_message | CallerInfo.catch([0,1])
 		
