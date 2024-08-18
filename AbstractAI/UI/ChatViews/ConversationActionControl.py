@@ -85,7 +85,7 @@ class ConversationActionControl(QWidget):
 		self.left_button.clicked.connect(self.onLeftButtonClicked)
 		self.left_button.setFixedHeight(self.left_button.fontMetrics().height() + 4)
 		self.left_button.setFixedWidth(self.left_button.height())
-		self.left_button.setStyleSheet("QPushButton {border: none; outline: none;}")
+		# self.left_button.setStyleSheet("QPushButton {border: none; outline: none;}")
 		self.layout.addWidget(self.left_button, alignment=Qt.AlignBottom)
 		
 		self.right_button = QPushButton("...")
