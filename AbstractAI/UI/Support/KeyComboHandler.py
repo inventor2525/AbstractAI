@@ -29,9 +29,12 @@ class KeyComboHandler:
 			self.key_actions_map[key_action.device_name].append(key_action)
 		self.devices = self._discover_devices({ka.device_name for ka in key_actions})
 		
-		self.timer = QTimer()
-		self.timer.timeout.connect(self.check_keys)
-		self.timer.start(10)
+		if self.devices:
+			self.timer = QTimer()
+			self.timer.timeout.connect(self.check_keys)
+			self.timer.start(10)
+		else:
+			print("Could not find any of the event numbers for the KeyComboHandler devices passed.")
 
 	def _discover_devices(self, target_device_names: set) -> List[evdev.InputDevice]:
 		discovered_devices = []
@@ -39,9 +42,6 @@ class KeyComboHandler:
 			if device.name in target_device_names:
 				discovered_devices.append(device)
 				print(f"Found the device: {device.name}")
-		if not discovered_devices:
-			print("Could not find event numbers for the devices")
-			raise RuntimeError("Target devices not found")
 		return discovered_devices
 
 	def check_keys(self):
