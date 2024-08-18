@@ -17,8 +17,11 @@ class ConversationView(QListWidget):
 		if getattr(self, "_conversation", None) is not None:
 			self._conversation.conversation_changed.disconnect(self.render_messages)
 			for message in self._conversation.message_sequence.messages:
-				del message._view
-				del message._item
+				try:
+					del message._view
+					del message._item
+				except Exception as e:
+					pass
 		self.clear()
 		
 		self._conversation = value
