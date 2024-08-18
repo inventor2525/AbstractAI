@@ -434,7 +434,7 @@ class SettingsWindow(QDialog):
 					_field = model_fields.get(field_name, None)
 					if _field:
 						def set_to_default(default, setting_model=setting_model, field_name=field_name, setting_item=setting_item):
-							setattr(setting_model, default)
+							setattr(setting_model, field_name, default)
 							self.settingsChanged.emit(f"{setting_item.path_format}.{field_name}")
 						if _field.default is not MISSING:
 							field_value = _field.default
