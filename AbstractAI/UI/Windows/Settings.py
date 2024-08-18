@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QStackedLayout, QVBoxLayout, QHBoxLayout, QPushButton, QFormLayout, QLabel, QLineEdit, QComboBox, QCheckBox,QScrollArea, QSplitter, QDialog
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, MISSING
 
 from abc import ABC, abstractmethod
 from typing import Any, Type, TypeVar, Dict, Generic, List, Tuple, Callable, Set
@@ -419,17 +419,29 @@ class SettingsWindow(QDialog):
 		item = self.treeModel.itemFromIndex(index)
 		setting_item:SettingItem = getattr(item, 'setting_item', None)
 		setting_model = getattr(item, 'setting_model', None)
-		
+		model_fields = {f.name:f for f in fields(setting_model)}
 		if setting_item is not None and setting_item.view_factory is not None:
 			self.formLayout.addRow(setting_item.view_factory())
 		elif setting_model is not None and hasattr(setting_model, "__annotations__"):
 			for field_name, field_type in all_annotations(setting_model.__class__).items():
 				if field_name in getattr(setting_item, "excluded_fields", set()):
 					continue
-				field_value = getattr(setting_model, field_name)
 				control_type = TypedControls.get_control(field_type)
 				if control_type is None:
 					continue
+				field_value = getattr(setting_model, field_name)
+				if field_value is None:
+					_field = model_fields.get(field_name, None)
+					if _field:
+						def set_to_default(default, setting_model=setting_model, field_name=field_name, setting_item=setting_item):
+							setattr(setting_model, default)
+							self.settingsChanged.emit(f"{setting_item.path_format}.{field_name}")
+						if _field.default is not MISSING:
+							field_value = _field.default
+							set_to_default(field_value)
+						elif _field.default_factory is not MISSING:
+							field_value = _field.default_factory()
+							set_to_default(field_value)
 				control = control_type(field_type)
 				control.value = field_value
 				value_updates_path = field_name in setting_item.path_format_fields
