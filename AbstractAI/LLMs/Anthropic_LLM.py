@@ -65,6 +65,3 @@ class Anthropic_LLM(LLM):
 	
 	def count_tokens(self, text: str) -> int:
 		return self.client.count_tokens(text)
-
-	def conversation_to_list(self, conversation: Conversation) -> List[Dict[str,str]]:
-		return super().conversation_to_list(conversation, False)
