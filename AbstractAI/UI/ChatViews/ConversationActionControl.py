@@ -27,7 +27,7 @@ class ConversationActionControl(QWidget):
 		ConversationAction.Continue: "Continue >>",
 		ConversationAction.Reply: "Reply To",
 		ConversationAction.Insert: "Insert Above",
-		ConversationAction.DoIt: ":media-playback-start:",
+		ConversationAction.DoIt: "Do it!",#":media-playback-start:",
 		ConversationAction.Demo: ":media-record:",
 		ConversationAction.Stop: "Stop!"
 	},
