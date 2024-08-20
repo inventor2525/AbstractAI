@@ -63,6 +63,9 @@ class Agent(Conversable):
 	def __call__(self, *args, **kwargs) -> Conversation:
 		pass
 	
+	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> Message:
+		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens)
+	
 	@abstractmethod
 	def process_response(self, conversation: Conversation):
 		pass

@@ -14,7 +14,7 @@ from AbstractAI.UI.ChatViews.ConversationView import *
 from AbstractAI.UI.ChatViews.ChatUI import *
 from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
-from AbstractAI.UI.Context import Context
+from AbstractAI.UI.Context import Context, MainAgent
 from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
 Stopwatch("Setting Models", log_statistics=False)
@@ -104,6 +104,8 @@ class Application(QMainWindow):
 		Context.context_changed()
 		
 		self.read_settings()
+		
+		Context.main_agent = MainAgent()
 		
 		Stopwatch.end_scope(log_statistics=False)
 	

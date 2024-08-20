@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from PyQt5.QtCore import QSettings
 from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.Signal import Signal
+from AbstractAI.Automation.MainAgent import MainAgent
 from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 from argparse import Namespace
 
@@ -15,6 +16,7 @@ class Context:
 	llm_loaded: bool = False
 	llm_generating: bool = False
 	new_message_has_text: bool = False
+	main_agent: MainAgent = None
 	
 	conversation_selected:Signal[[Conversation, Conversation],None] = Signal.field()
 	context_changed:Signal[[],None] = Signal.field()

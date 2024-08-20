@@ -363,6 +363,8 @@ class ChatUI(QWidget):
 		self.timer.timeout.connect(self.update_timer)
 		self.timer.start(100)  # Update every 100ms
 		
+		self.init_mobile_window()
+		
 	def send_to_switchboard(self):
 		from AbstractAI.Automation.SwitchboardAgent import SwitchboardAgent
 		user_message = self.input_field.toPlainText()
@@ -460,3 +462,16 @@ class ChatUI(QWidget):
 		
 		new_height = min(content_height, max_height) + content_margin_sum
 		text_field.setFixedHeight(int(new_height))
+		
+	# Add this to the ChatUI class
+	def init_mobile_window(self):
+		from AbstractAI.UI.Windows.MobileWindow import MobileWindow
+		self.mobile_window = MobileWindow(self)
+		mobile_window_button = QPushButton("Open Mobile Version")
+		mobile_window_button.clicked.connect(self.show_mobile_window)
+		self.advanced_controls_layout.insertWidget(1, mobile_window_button)
+
+	def show_mobile_window(self):
+		self.mobile_window.show()
+		self.mobile_window.raise_()
+		self.mobile_window.activateWindow()

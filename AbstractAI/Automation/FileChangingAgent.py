@@ -33,9 +33,6 @@ class FileChangingAgent(Agent):
 		
 		file_changing_conv + ("Now, recite the new versions of the files it changed, in the same format as I just gave them to you.", Role.User()) | stack_trace
 		return file_changing_conv
-		
-	def chat(self, conversation: Conversation, start_str: str = "", stream=False, max_tokens: int = None) -> Message:
-		return self.llm.chat(conversation, start_str=start_str, stream=stream, max_tokens=max_tokens)
 	
 	def process_response(self, conversation: Conversation):
 		message = conversation[-1]
