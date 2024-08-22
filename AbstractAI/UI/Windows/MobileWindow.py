@@ -39,7 +39,7 @@ class MobileWindow(QMainWindow):
         
         # Record button
         self.record_button = QPushButton("Start Recording")
-        self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)#TODO: do this for all the buttons
         self.record_button.clicked.connect(self.toggle_recording)
         controls_layout.addWidget(self.record_button)
         
@@ -65,7 +65,7 @@ class MobileWindow(QMainWindow):
         self.layout.addLayout(controls_layout)
 
     def init_text_view(self):
-        self.text_view = QTextEdit()
+        self.text_view = QTextEdit() #TODO:scroll bar needs to be very large
         self.text_view.setReadOnly(True)
         self.layout.addWidget(self.text_view)
 
@@ -88,26 +88,25 @@ class MobileWindow(QMainWindow):
         # Append the content of the main input field
         main_input_content = self.chat_ui.input_field.toPlainText()
         if main_input_content:
-            text += f"# User:\n{main_input_content}\n\n---\n\n"
+            text += f"# User:\n{main_input_content}"
 
         self.text_view.setPlainText(text)
 
     def toggle_recording(self):
+        self.chat_ui.toggle_recording()
         if self.chat_ui.transcription.is_recording:
-            self.chat_ui.transcription.stop_recording()
             self.record_button.setText("Start Recording")
         else:
-            self.chat_ui.transcription.start_recording()
             self.record_button.setText("Stop Recording")
 
     def send_message(self):
         if Context.conversation and Context.main_agent:
             llm = Context.main_agent.llm
-            llm.chat(Context.conversation)
+            llm.chat(Context.conversation) #this needs to use send in chat ui logic
 
     def send_message_with_tools(self):
         if Context.conversation and Context.main_agent:
-            Context.main_agent.chat(Context.conversation)
+            Context.main_agent.chat(Context.conversation)#same, but needs added message in chat
 
     def do_it(self):
         if Context.conversation and Context.main_agent:
@@ -147,6 +146,7 @@ class MobileWindow(QMainWindow):
                         output_file.write(line)
                 
                 process.wait()
+                #TODO: pause here waiting for user input to continue, also the output should go into the conversation optionally, buttons under text view?
             
             self.displaying_subprocess_output = False
             self.update_conversation_text()
