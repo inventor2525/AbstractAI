@@ -403,7 +403,7 @@ class Application(QMainWindow):
 	def stop_generating(self):
 		self._should_generate = False
 		
-	def generate_ai_response(self, conversation:Conversation):
+	def generate_ai_response(self, conversation:Conversation, conversable:Optional[Conversable] = None):
 		Context.llm_generating = True
 		Context.context_changed()
 		
@@ -414,9 +414,10 @@ class Application(QMainWindow):
 		def chat():
 			#Determine if this conversation is with an agent,
 			#or the llm the user has chosen to chat with:
-			conversable = AgentConfig.get_agent(conversation)
 			if conversable is None:
-				conversable = self.llm
+				conversable = AgentConfig.get_agent(conversation)
+				if conversable is None:
+					conversable = self.llm
 			response = conversable.chat(conversation, start_str=start_str, stream=True, max_tokens=max_tokens)
 			conversation.add_message(response)
 			while conversable.continue_message(response):

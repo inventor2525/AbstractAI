@@ -11,6 +11,7 @@ from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from AbstractAI.Automation.Agent import Agent, AgentConfig
 from copy import deepcopy
 
+from AbstractAI.Conversable import Conversable
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.UI.Elements.RecordingIndicator import RecordingIndicator
@@ -418,7 +419,7 @@ class ChatUI(QWidget):
 			self.input_field.clear()
 		
 	
-	def on_action(self, action:ConversationAction):
+	def on_action(self, action: ConversationAction, conversable: Optional[Conversable] = None):
 		if action == ConversationAction.Add:
 			self._add_message()
 		elif action == ConversationAction.Insert:

@@ -1,14 +1,13 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, 
-                             QTextEdit, QApplication, QSizePolicy, QScrollBar)
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QColor
+                             QTextEdit, QApplication, QSizePolicy, QScrollBar, QEventLoop)
+from PyQt5.QtCore import Qt
 from AbstractAI.UI.Context import Context
 from AbstractAI.UI.ChatViews.ChatUI import ChatUI
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.Model.Converse import Conversation, Message
 from AbstractAI.Automation.Agent import Agent
-from AbstractAI.Helpers.ResponseParsers import extract_code_blocks, MarkdownCodeBlockInfo
-import subprocess
+from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo
+from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationAction
 import os
 from datetime import datetime
 
@@ -87,7 +86,7 @@ class MobileWindow(QMainWindow):
         
         self.continue_button = QPushButton("Continue")
         self.continue_button.setEnabled(False)
-        self.continue_button.clicked.connect(self.continue_processing)
+        self.continue_button.clicked.connect(self.wait_for_continue)
         text_view_layout.addWidget(self.continue_button)
         
         self.layout.addLayout(text_view_layout)
@@ -123,40 +122,53 @@ class MobileWindow(QMainWindow):
             self.record_button.setText("Start Recording")
 
     def send_message(self):
-        self.chat_ui.on_action(ConversationAction.Send)
+        if Context.conversation and Context.main_agent:
+            self.chat_ui.on_action(ConversationAction.Send, Context.main_agent.llm)
 
     def send_message_with_tools(self):
-        # Implement this based on ChatUI's logic for sending with tools
-        pass
+        if Context.conversation and Context.main_agent:
+            self.chat_ui.on_action(ConversationAction.Send, Context.main_agent)
 
     def do_it(self):
         if Context.conversation and Context.main_agent:
             self.displaying_subprocess_output = True
             self.text_view.clear()
             
-            for code_block, process in Context.main_agent.process_response(Context.conversation):
-                self.text_view.append(f"Code block:\n{'-' * 40}\n{code_block.content}\n{'-' * 40}\n")
+            for code_block, process_getter in Context.main_agent.process_response(Context.conversation):
+                self.text_view.append(f"Code block:\n{code_block.content}\n")
+                self.text_view.append("-" * 40 + "\n")
                 
-                if process:
-                    self.text_view.append(f"Output:\n{'-' * 40}\n")
+                if callable(process_getter):
+                    process = process_getter()
+                    self.text_view.append("Output:\n")
                     for line in process.stdout:
                         self.text_view.append(line)
                     process.wait()
+                    self.text_view.append("-" * 40 + "\n")
+                elif code_block.path:
+                    timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]
+                    script_filename = f"{timestamp}_{code_block.path.replace('/', '_')}"
+                    script_path = os.path.expanduser(f"~/ai_scripts/{script_filename}")
                     
-                self.continue_button.setEnabled(True)
+                    os.makedirs(os.path.dirname(script_path), exist_ok=True)
+                    with open(script_path, 'w') as f:
+                        f.write(code_block.content)
+                    
+                    self.text_view.append(f"Saved to: {script_path}\n")
+                    self.text_view.append("-" * 40 + "\n")
+                
                 self.wait_for_continue()
             
             self.displaying_subprocess_output = False
             self.update_conversation_text()
 
     def wait_for_continue(self):
+        self.continue_button.setEnabled(True)
         loop = QEventLoop()
         self.continue_button.clicked.connect(loop.quit)
         loop.exec_()
+        self.continue_button.clicked.disconnect(loop.quit)
         self.continue_button.setEnabled(False)
-
-    def continue_processing(self):
-        pass  # This method is just a placeholder for the continue button
 
     def on_context_changed(self):
         self.update_conversation_text()
