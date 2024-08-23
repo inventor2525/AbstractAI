@@ -1,29 +1,46 @@
+from dataclasses import dataclass
+from typing import List, Optional
 import re
-from typing import List, Tuple
 
-def extract_paths_and_code(text: str) -> List[Tuple[str, str]]:
+@dataclass
+class MarkdownCodeBlockInfo:
+    language: str
+    content: str
+    path: Optional[str] = None
+
+def extract_code_blocks(text: str) -> List[MarkdownCodeBlockInfo]:
     '''
-    Extracts code blocks prefaced by paths
+    Extracts code blocks from markdown and any path they are prefaced by.
     '''
+    language_list = [
+        'python', 'bash', 'sh', 'rust', 'cpp', 'javascript', 'java', 'ruby', 'go',
+        'typescript', 'csharp', 'php', 'swift', 'kotlin', 'scala', 'haskell', 'r',
+        'matlab', 'sql', 'html', 'css', 'xml', 'json', 'yaml', 'toml', 'powershell',
+        'markdown', 'md', 'text', 'txt', 'vhdl'
+    ]
+    language_pattern = '|'.join(language_list)
+    
     path_pattern = r'^/[^\n]+$'
-    code_start_pattern = r'^```\w+$'
+    code_start_pattern = fr'^```((?:{language_pattern}))$'
     code_end_pattern = r'^```$'
-    nested_code_start_pattern = r'(?<!`)```(?:python|txt|rust|cpp|javascript|java|ruby|go|typescript|csharp|php|swift|kotlin|scala|haskell|r|matlab|sql|html|css|xml|json|yaml|toml|bash|sh|powershell|markdown)(?!`)'
+    nested_code_start_pattern = fr'(?<!`)```(?:{language_pattern})(?!`)'
     nested_code_pattern = r'(?!````.*$)```(?!`)'
 
-    path_and_codes = []
+    code_blocks = []
     depth = 0
     fuzzy_depth = 0
     path = None
     code = ""
+    language = ""
 
     lines = text.split('\n')
     for i, line in enumerate(lines):
         if depth == 0:
             if re.match(path_pattern, line):
                 path = line.strip()
-            elif path and re.match(code_start_pattern, line):
+            elif re.match(code_start_pattern, line):
                 depth = 1
+                language = re.match(code_start_pattern, line).group(1) or "text"
             else:
                 path = None
         elif depth >= 1:
@@ -37,11 +54,12 @@ def extract_paths_and_code(text: str) -> List[Tuple[str, str]]:
                         return True
                     return False
                 if could_this_be_the_end():
-                    path_and_codes.append((path, code.strip()))
+                    code_blocks.append(MarkdownCodeBlockInfo(language, code.strip(), path))
                     path = None
                     code = ""
                     depth = 0
                     fuzzy_depth = 0
+                    language = ""
                 else:
                     code += line + "\n"
             else:
@@ -58,4 +76,9 @@ def extract_paths_and_code(text: str) -> List[Tuple[str, str]]:
                 elif nested_end_matches:
                     fuzzy_depth += 1
 
-    return path_and_codes
+    return code_blocks
+
+def extract_paths_and_code(x):
+    '''Legacy method usage support'''
+    code_blocks = extract_code_blocks(x)
+    return [(code_block.path, code_block.content) for code_block in code_blocks if code_block.path]
