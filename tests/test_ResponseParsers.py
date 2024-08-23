@@ -223,9 +223,13 @@ End of the large markdown file.
         extracted_paths_and_code = extract_paths_and_code(rendered_markdown)
 
         # Assert that each extracted path and code matches the original
+        i = 1
         for (original_path, original_content), (extracted_path, extracted_content) in zip(file_contents, extracted_paths_and_code):
+            print(f"Attempting to parse markdown with `{original_path}`s content in it...")
             self.assertEqual(extracted_path, original_path)
             self.assertEqual(extracted_content.strip(), original_content.strip())
+            print(f"Parsed file {i} successfully!")
+            i += 1
             
         # Assert that we extracted the correct number of code blocks
         self.assertEqual(len(extracted_paths_and_code), len(file_contents))
