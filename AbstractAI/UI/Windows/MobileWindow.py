@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, 
-                             QTextEdit, QApplication, QSizePolicy)
+                             QTextEdit, QApplication, QSizePolicy, QScrollBar)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor
 from AbstractAI.UI.Context import Context
@@ -7,6 +7,7 @@ from AbstractAI.UI.ChatViews.ChatUI import ChatUI
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.Model.Converse import Conversation, Message
 from AbstractAI.Automation.Agent import Agent
+from AbstractAI.Helpers.ResponseParsers import extract_code_blocks, MarkdownCodeBlockInfo
 import subprocess
 import os
 from datetime import datetime
@@ -39,7 +40,7 @@ class MobileWindow(QMainWindow):
         
         # Record button
         self.record_button = QPushButton("Start Recording")
-        self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)#TODO: do this for all the buttons
+        self.record_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.record_button.clicked.connect(self.toggle_recording)
         controls_layout.addWidget(self.record_button)
         
@@ -47,10 +48,12 @@ class MobileWindow(QMainWindow):
         send_buttons_layout = QHBoxLayout()
         
         self.send_button = QPushButton("Send")
+        self.send_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.send_button.clicked.connect(self.send_message)
         send_buttons_layout.addWidget(self.send_button)
         
         self.send_with_tools_button = QPushButton("Send with Tools")
+        self.send_with_tools_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.send_with_tools_button.clicked.connect(self.send_message_with_tools)
         send_buttons_layout.addWidget(self.send_with_tools_button)
         
@@ -59,15 +62,35 @@ class MobileWindow(QMainWindow):
         # Do it button
         self.do_it_button = QPushButton("Do It!")
         self.do_it_button.setStyleSheet("background-color: red; color: white;")
+        self.do_it_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.do_it_button.clicked.connect(self.do_it)
         controls_layout.addWidget(self.do_it_button)
         
         self.layout.addLayout(controls_layout)
 
     def init_text_view(self):
-        self.text_view = QTextEdit() #TODO:scroll bar needs to be very large
+        text_view_layout = QVBoxLayout()
+        
+        self.text_view = QTextEdit()
         self.text_view.setReadOnly(True)
-        self.layout.addWidget(self.text_view)
+        
+        # Create a custom scroll bar
+        scroll_bar = QScrollBar(Qt.Vertical, self.text_view)
+        scroll_bar.setStyleSheet("""
+            QScrollBar:vertical {
+                width: 30px;
+            }
+        """)
+        self.text_view.setVerticalScrollBar(scroll_bar)
+        
+        text_view_layout.addWidget(self.text_view)
+        
+        self.continue_button = QPushButton("Continue")
+        self.continue_button.setEnabled(False)
+        self.continue_button.clicked.connect(self.continue_processing)
+        text_view_layout.addWidget(self.continue_button)
+        
+        self.layout.addLayout(text_view_layout)
 
     @run_in_main_thread
     def update_conversation_text(self):
@@ -95,85 +118,52 @@ class MobileWindow(QMainWindow):
     def toggle_recording(self):
         self.chat_ui.toggle_recording()
         if self.chat_ui.transcription.is_recording:
-            self.record_button.setText("Start Recording")
-        else:
             self.record_button.setText("Stop Recording")
+        else:
+            self.record_button.setText("Start Recording")
 
     def send_message(self):
-        if Context.conversation and Context.main_agent:
-            llm = Context.main_agent.llm
-            llm.chat(Context.conversation) #this needs to use send in chat ui logic
+        self.chat_ui.on_action(ConversationAction.Send)
 
     def send_message_with_tools(self):
-        if Context.conversation and Context.main_agent:
-            Context.main_agent.chat(Context.conversation)#same, but needs added message in chat
+        # Implement this based on ChatUI's logic for sending with tools
+        pass
 
     def do_it(self):
         if Context.conversation and Context.main_agent:
             self.displaying_subprocess_output = True
             self.text_view.clear()
             
-            last_message = Context.conversation[-1]
-            message_id = last_message.get_primary_key()
-            
-            # Extract and run bash blocks
-            bash_blocks = self.extract_bash_blocks(last_message.content)
-            for i, bash_block in enumerate(bash_blocks, 1):
-                timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]
-                script_filename = f"{timestamp}_{message_id}_{i}"
-                script_path = os.path.expanduser(f"~/ai_scripts/{script_filename}")
+            for code_block, process in Context.main_agent.process_response(Context.conversation):
+                self.text_view.append(f"Code block:\n{'-' * 40}\n{code_block.content}\n{'-' * 40}\n")
                 
-                os.makedirs(os.path.dirname(script_path), exist_ok=True)
-                
-                with open(script_path, 'w') as f:
-                    f.write(bash_block)
-                
-                output_filename = f"{script_filename}_output"
-                output_path = os.path.expanduser(f"~/ai_scripts/{output_filename}")
-                
-                self.text_view.append(f"Running bash block {i}:\n{'-' * 40}\n")
-                
-                process = subprocess.Popen(['bash', script_path], 
-                                           stdout=subprocess.PIPE, 
-                                           stderr=subprocess.STDOUT, 
-                                           text=True, 
-                                           bufsize=1, 
-                                           universal_newlines=True)
-                
-                with open(output_path, 'w') as output_file:
+                if process:
+                    self.text_view.append(f"Output:\n{'-' * 40}\n")
                     for line in process.stdout:
                         self.text_view.append(line)
-                        output_file.write(line)
-                
-                process.wait()
-                #TODO: pause here waiting for user input to continue, also the output should go into the conversation optionally, buttons under text view?
+                    process.wait()
+                    
+                self.continue_button.setEnabled(True)
+                self.wait_for_continue()
             
             self.displaying_subprocess_output = False
             self.update_conversation_text()
 
-    def extract_bash_blocks(self, content):
-        # This is a simple implementation. You might need to adjust it based on your exact markdown format.
-        bash_blocks = []
-        lines = content.split('\n')
-        in_bash_block = False
-        current_block = []
+    def wait_for_continue(self):
+        loop = QEventLoop()
+        self.continue_button.clicked.connect(loop.quit)
+        loop.exec_()
+        self.continue_button.setEnabled(False)
 
-        for line in lines:
-            if line.strip() == '```bash':
-                in_bash_block = True
-            elif line.strip() == '```' and in_bash_block:
-                in_bash_block = False
-                bash_blocks.append('\n'.join(current_block))
-                current_block = []
-            elif in_bash_block:
-                current_block.append(line)
-
-        return bash_blocks
+    def continue_processing(self):
+        pass  # This method is just a placeholder for the continue button
 
     def on_context_changed(self):
         self.update_conversation_text()
 
-    def on_conversation_changed(self, prev_conversation, new_conversation):
+    def on_conversation_changed(self, prev_conversation:Conversation, new_conversation:Conversation):
+        if prev_conversation:
+            prev_conversation.conversation_changed.disconnect(self.update_conversation_text)
         if new_conversation:
             new_conversation.conversation_changed.connect(self.update_conversation_text)
         self.update_conversation_text()
