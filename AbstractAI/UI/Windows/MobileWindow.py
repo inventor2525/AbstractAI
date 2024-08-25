@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, 
-                             QTextEdit, QApplication, QSizePolicy, QScrollBar, QEventLoop)
-from PyQt5.QtCore import Qt
+                             QTextEdit, QApplication, QSizePolicy, QScrollBar)
+from PyQt5.QtCore import Qt, QEventLoop
 from AbstractAI.UI.Context import Context
 from AbstractAI.UI.ChatViews.ChatUI import ChatUI
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
@@ -86,7 +86,6 @@ class MobileWindow(QMainWindow):
         
         self.continue_button = QPushButton("Continue")
         self.continue_button.setEnabled(False)
-        self.continue_button.clicked.connect(self.wait_for_continue)
         text_view_layout.addWidget(self.continue_button)
         
         self.layout.addLayout(text_view_layout)
@@ -113,6 +112,8 @@ class MobileWindow(QMainWindow):
             text += f"# User:\n{main_input_content}"
 
         self.text_view.setPlainText(text)
+        scroll_bar = self.text_view.verticalScrollBar()
+        scroll_bar.setValue(scroll_bar.maximum())
 
     def toggle_recording(self):
         self.chat_ui.toggle_recording()
@@ -122,11 +123,11 @@ class MobileWindow(QMainWindow):
             self.record_button.setText("Start Recording")
 
     def send_message(self):
-        if Context.conversation and Context.main_agent:
+        if Context.conversation is not None and Context.main_agent is not None:
             self.chat_ui.on_action(ConversationAction.Send, Context.main_agent.llm)
 
     def send_message_with_tools(self):
-        if Context.conversation and Context.main_agent:
+        if Context.conversation is not None and Context.main_agent is not None:
             self.chat_ui.on_action(ConversationAction.Send, Context.main_agent)
 
     def do_it(self):
@@ -134,28 +135,33 @@ class MobileWindow(QMainWindow):
             self.displaying_subprocess_output = True
             self.text_view.clear()
             
+            bash_script_count = 1
+            last_message = Context.conversation[-1]
+            
             for code_block, process_getter in Context.main_agent.process_response(Context.conversation):
-                self.text_view.append(f"Code block:\n{code_block.content}\n")
+                self.text_view.append(f"# Code block:\n{code_block.content}\n")
                 self.text_view.append("-" * 40 + "\n")
                 
-                if callable(process_getter):
-                    process = process_getter()
-                    self.text_view.append("Output:\n")
-                    for line in process.stdout:
-                        self.text_view.append(line)
-                    process.wait()
-                    self.text_view.append("-" * 40 + "\n")
-                elif code_block.path:
-                    timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]
-                    script_filename = f"{timestamp}_{code_block.path.replace('/', '_')}"
+                if process_getter is not None:
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S-%f")[:-3]
+                    script_filename = f"{timestamp}_{str(last_message.get_primary_key())}_{bash_script_count}"
                     script_path = os.path.expanduser(f"~/ai_scripts/{script_filename}")
                     
                     os.makedirs(os.path.dirname(script_path), exist_ok=True)
-                    with open(script_path, 'w') as f:
+                    with open(f"{script_path}.txt", 'w') as f:
                         f.write(code_block.content)
                     
-                    self.text_view.append(f"Saved to: {script_path}\n")
-                    self.text_view.append("-" * 40 + "\n")
+                    process = process_getter()
+                    
+                    with open(f"{script_path}_output.txt", 'w') as output_file:
+                        for line in process.stdout:
+                            self.text_view.append(line)
+                            output_file.write(line)
+                    
+                    process.wait()
+                    bash_script_count += 1
+                elif code_block.path is not None:
+                    self.text_view.append(f"Saving to file: {code_block.path}?\n")
                 
                 self.wait_for_continue()
             

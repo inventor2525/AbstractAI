@@ -16,6 +16,7 @@ from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.UI.Elements.RecordingIndicator import RecordingIndicator
 from AbstractAI.UI.Support.KeyComboHandler import KeyComboHandler, KeyAction, KeyEvent
+from AbstractAI.Helpers.Signal import Signal
 import os
 import time
 from datetime import datetime
@@ -163,7 +164,6 @@ class Transcription:
 			print("No recording to play. Record something first.")
 			
 class ChatUI(QWidget):
-	respond_to_conversation = pyqtSignal(Conversation)
 	stop_generating = pyqtSignal()
 	
 	@property
@@ -186,7 +186,8 @@ class ChatUI(QWidget):
 			None
 	
 	def __init__(self, conversation: Conversation = None, roles:List[str]=["Human", "Assistant", "System", "Files"], max_new_message_lines=10):
-		super().__init__()		
+		super().__init__()
+		self.respond_to_conversation = Signal[[Conversation, Conversable], None]()
 		self.roles = roles
 		self.roles_map = {
 			"Human":Role.User(),
@@ -430,14 +431,14 @@ class ChatUI(QWidget):
 		elif action == ConversationAction.Send:
 			Context.start_str = self.start_str
 			self._add_message()
-			self.respond_to_conversation.emit(self.conversation)
+			self.respond_to_conversation(self.conversation, conversable)
 		elif action == ConversationAction.Reply:
 			Context.start_str = self.start_str
-			self.respond_to_conversation.emit(self.conversation)
+			self.respond_to_conversation(self.conversation, conversable)
 		elif action == ConversationAction.Continue:
 			Context.start_str = self.conversation[-1].content
 			self.conversation.remove_message(self.conversation[-1], silent=True)
-			self.respond_to_conversation.emit(self.conversation)
+			self.respond_to_conversation(self.conversation, conversable)
 			
 		elif action == ConversationAction.Stop:
 			self.stop_generating.emit()

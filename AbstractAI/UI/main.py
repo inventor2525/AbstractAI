@@ -411,7 +411,7 @@ class Application(QMainWindow):
 		start_str = Context.start_str
 		max_tokens = self.chatUI.max_tokens
 			
-		def chat():
+		def chat(conversable:Conversable=conversable):
 			#Determine if this conversation is with an agent,
 			#or the llm the user has chosen to chat with:
 			if conversable is None:
