@@ -28,32 +28,12 @@ class MainAgent(Agent):
         
         return response
 
-    def process_response(self, conversation: Conversation) -> Iterator[Tuple[MarkdownCodeBlockInfo, Optional[Callable[[], subprocess.Popen]]]]:
+    def process_response(self, conversation: Conversation) -> Iterator[MarkdownCodeBlockInfo]:
         last_message = conversation[-1]
         code_blocks = extract_code_blocks(last_message.content)
         
         for code_block in code_blocks:
-            if code_block.path:
-                yield code_block, None
-                
-                # Save file
-                os.makedirs(os.path.dirname(code_block.path), exist_ok=True)
-                with open(code_block.path, 'w', encoding='utf-8') as file:
-                    file.write(code_block.content)
-            elif code_block.language == 'bash':
-                def get_process() -> subprocess.Popen:
-                    return subprocess.Popen(
-                        ['bash', '-c', code_block.content],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True,
-                        bufsize=1,
-                        universal_newlines=True
-                    )
-                yield code_block, get_process
-            else:
-                # Other code blocks (for future implementation)
-                yield code_block, None
+            yield code_block
 
 MainAgent.format_reminder = Template("""
 So... To help you do that, I'm going to attach you to a parser for a moment and I want you to respond in a certain format. You are now capable of modifying files and executing bash commands for me automatically.

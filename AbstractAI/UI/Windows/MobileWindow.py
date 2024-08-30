@@ -10,6 +10,7 @@ from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationAction
 import os
 from datetime import datetime
+import subprocess
 
 class MobileWindow(QMainWindow):
     def __init__(self, chat_ui: ChatUI):
@@ -35,7 +36,10 @@ class MobileWindow(QMainWindow):
         self.update_conversation_text()
 
     def init_controls(self):
-        controls_layout = QVBoxLayout()
+        controls_widget = QWidget()
+        controls_layout = QVBoxLayout(controls_widget)
+        controls_layout.setContentsMargins(0,0,0,0)
+        controls_widget.setFixedWidth(200)
         
         # Record button
         self.record_button = QPushButton("Start Recording")
@@ -51,7 +55,7 @@ class MobileWindow(QMainWindow):
         self.send_button.clicked.connect(self.send_message)
         send_buttons_layout.addWidget(self.send_button)
         
-        self.send_with_tools_button = QPushButton("Send with Tools")
+        self.send_with_tools_button = QPushButton("Send\n\\w\nTools")
         self.send_with_tools_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.send_with_tools_button.clicked.connect(self.send_message_with_tools)
         send_buttons_layout.addWidget(self.send_with_tools_button)
@@ -65,7 +69,7 @@ class MobileWindow(QMainWindow):
         self.do_it_button.clicked.connect(self.do_it)
         controls_layout.addWidget(self.do_it_button)
         
-        self.layout.addLayout(controls_layout)
+        self.layout.addWidget(controls_widget)
 
     def init_text_view(self):
         text_view_layout = QVBoxLayout()
@@ -84,9 +88,18 @@ class MobileWindow(QMainWindow):
         
         text_view_layout.addWidget(self.text_view)
         
-        self.continue_button = QPushButton("Continue")
-        self.continue_button.setEnabled(False)
-        text_view_layout.addWidget(self.continue_button)
+        # Create a horizontal layout for Confirm and Skip buttons
+        button_layout = QHBoxLayout()
+        
+        self.confirm_button = QPushButton("Confirm")
+        self.confirm_button.setEnabled(False)
+        button_layout.addWidget(self.confirm_button)
+        
+        self.skip_button = QPushButton("Skip")
+        self.skip_button.setEnabled(False)
+        button_layout.addWidget(self.skip_button)
+        
+        text_view_layout.addLayout(button_layout)
         
         self.layout.addLayout(text_view_layout)
 
@@ -137,10 +150,19 @@ class MobileWindow(QMainWindow):
             bash_script_count = 1
             last_message = Context.conversation[-1]
             
-            for code_block, process_getter in Context.main_agent.process_response(Context.conversation):
+            for code_block in Context.main_agent.process_response(Context.conversation):
                 self.text_view.clear()
                 
-                if process_getter is not None:
+                if code_block.path is not None:
+                    self.text_view.append(f"Saving:\n{code_block.content}\n")
+                    self.text_view.append("-" * 40 + "\n")
+                    self.text_view.append(f"to file: {code_block.path}?\nConfirm to save, or Skip.")
+                    
+                    if self.wait_for_confirmation():
+                        os.makedirs(os.path.dirname(code_block.path), exist_ok=True)
+                        with open(code_block.path, 'w', encoding='utf-8') as file:
+                            file.write(code_block.content)
+                elif code_block.language == 'bash':
                     timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S-%f")[:-3]
                     script_filename = f"{timestamp}_{str(last_message.get_primary_key())}_{bash_script_count}"
                     script_path = os.path.expanduser(f"~/ai_scripts/{script_filename}")
@@ -149,32 +171,59 @@ class MobileWindow(QMainWindow):
                     with open(f"{script_path}.txt", 'w') as f:
                         f.write(code_block.content)
                     
-                    self.wait_for_continue()
-                    process = process_getter()
-                    
-                    with open(f"{script_path}_output.txt", 'w') as output_file:
-                        for line in process.stdout:
-                            self.text_view.append(line)
-                            output_file.write(line)
-                    
-                    process.wait()
-                    bash_script_count += 1
-                elif code_block.path is not None:
-                    self.text_view.append(f"Saving:\n{code_block.content}\n")
+                    self.text_view.append(f"Execute bash script:\n{code_block.content}\n")
                     self.text_view.append("-" * 40 + "\n")
-                    self.text_view.append(f"to file: {code_block.path}?\nCorrect?")
-                    self.wait_for_continue()
+                    self.text_view.append("Proceed with execution?")
+                    
+                    if self.wait_for_confirmation():
+                        process = subprocess.Popen(
+                            ['bash', '-c', code_block.content],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                            bufsize=1,
+                            universal_newlines=True
+                        )
+                        
+                        with open(f"{script_path}_output.txt", 'w') as output_file:
+                            for line in process.stdout:
+                                self.text_view.append(line)
+                                output_file.write(line)
+                        
+                        process.wait()
+                    
+                    bash_script_count += 1
             
             self.displaying_subprocess_output = False
             self.update_conversation_text()
 
-    def wait_for_continue(self):
-        self.continue_button.setEnabled(True)
+    def wait_for_confirmation(self) -> bool:
+        self.confirm_button.setEnabled(True)
+        self.skip_button.setEnabled(True)
+        
         loop = QEventLoop()
-        self.continue_button.clicked.connect(loop.quit)
+        result = [False]
+        
+        def on_confirm():
+            result[0] = True
+            loop.quit()
+        
+        def on_skip():
+            result[0] = False
+            loop.quit()
+        
+        self.confirm_button.clicked.connect(on_confirm)
+        self.skip_button.clicked.connect(on_skip)
+        
         loop.exec_()
-        self.continue_button.clicked.disconnect(loop.quit)
-        self.continue_button.setEnabled(False)
+        
+        self.confirm_button.clicked.disconnect(on_confirm)
+        self.skip_button.clicked.disconnect(on_skip)
+        
+        self.confirm_button.setEnabled(False)
+        self.skip_button.setEnabled(False)
+        
+        return result[0]
 
     def on_context_changed(self):
         self.update_conversation_text()
