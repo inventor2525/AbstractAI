@@ -16,8 +16,8 @@ class MobileWindow(QMainWindow):
     def __init__(self, chat_ui: ChatUI):
         super().__init__()
         self.chat_ui = chat_ui
-        self.init_ui()
         self.displaying_subprocess_output = False
+        self.init_ui()
         
         Context.context_changed.connect(self.on_context_changed)
         Context.conversation_selected.connect(self.on_conversation_changed)
@@ -92,11 +92,13 @@ class MobileWindow(QMainWindow):
         button_layout = QHBoxLayout()
         
         self.confirm_button = QPushButton("Confirm")
-        self.confirm_button.setEnabled(False)
+        self.confirm_button.setFixedHeight(35)
+        self.confirm_button.setVisible(False)
         button_layout.addWidget(self.confirm_button)
         
         self.skip_button = QPushButton("Skip")
-        self.skip_button.setEnabled(False)
+        self.skip_button.setFixedHeight(35)
+        self.skip_button.setVisible(False)
         button_layout.addWidget(self.skip_button)
         
         text_view_layout.addLayout(button_layout)
@@ -191,6 +193,9 @@ class MobileWindow(QMainWindow):
                                 output_file.write(line)
                         
                         process.wait()
+                        self.text_view.append("-" * 40 + "\n")
+                        self.text_view.append("Done!")
+                        self.wait_for_continue()
                     
                     bash_script_count += 1
             
@@ -198,8 +203,9 @@ class MobileWindow(QMainWindow):
             self.update_conversation_text()
 
     def wait_for_confirmation(self) -> bool:
-        self.confirm_button.setEnabled(True)
-        self.skip_button.setEnabled(True)
+        self.confirm_button.setText("Confirm")
+        self.confirm_button.setVisible(True)
+        self.skip_button.setVisible(True)
         
         loop = QEventLoop()
         result = [False]
@@ -220,11 +226,21 @@ class MobileWindow(QMainWindow):
         self.confirm_button.clicked.disconnect(on_confirm)
         self.skip_button.clicked.disconnect(on_skip)
         
-        self.confirm_button.setEnabled(False)
-        self.skip_button.setEnabled(False)
+        self.confirm_button.setVisible(False)
+        self.skip_button.setVisible(False)
         
         return result[0]
-
+    
+    def wait_for_continue(self):
+        self.confirm_button.setText("Continue")
+        self.confirm_button.setVisible(True)
+        
+        loop = QEventLoop()
+        self.confirm_button.clicked.connect(loop.quit)
+        loop.exec_()
+        self.confirm_button.clicked.disconnect(loop.quit)
+        self.confirm_button.setVisible(False)
+        
     def on_context_changed(self):
         self.update_conversation_text()
 
