@@ -20,6 +20,7 @@ from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 Stopwatch("Setting Models", log_statistics=False)
 from AbstractAI.Model.Settings.LLMSettings import *
 llm_settings_types = LLMSettings.load_subclasses()
+from AbstractAI.UI.Windows.MobileWindow import MobileWindow, OpenAI_TTS_Settings
 
 from AbstractAI.LLMs.LLM import LLM
 from AbstractAI.Automation.Agent import Agent, AgentConfig
@@ -153,6 +154,13 @@ class Application(QMainWindow):
 			excluded_fields=["id", "models", "auto_id"]
 		))
 		
+		# Add OpenAI TTS settings
+		self.settings_window.addSettingItem(SettingItem(
+			MobileWindow.load_tts_settings(),
+			"OpenAI TTS Settings",
+			excluded_fields=["auto_id", "id"]
+		))
+	
 		for model in self.llmConfigs.models:
 			add_model(model)
 			
@@ -161,6 +169,7 @@ class Application(QMainWindow):
 				model.new_id(True)
 			Context.engine.merge(self.llmConfigs)
 			Context.engine.merge(self.chatUI.transcription.hacky_tts_settings)
+			Context.engine.merge(MobileWindow.load_tts_settings())
 		self.settings_window.settingsSaved.connect(save_settings)
 		
 	def init_ui(self):

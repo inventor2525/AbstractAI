@@ -4,13 +4,19 @@ from PyQt5.QtCore import Qt, QEventLoop
 from AbstractAI.UI.Context import Context
 from AbstractAI.UI.ChatViews.ChatUI import ChatUI
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
-from AbstractAI.Model.Converse import Conversation, Message
+from AbstractAI.Model.Converse import Conversation, Message, Role, CallerInfo
 from AbstractAI.Automation.Agent import Agent
 from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationAction
+from AbstractAI.Model.Settings.OpenAI_TTS_Settings import OpenAI_TTS_Settings
+from AbstractAI.Helpers.AudioPlayer import AudioPlayer
+from openai import OpenAI
+from pathlib import Path
+from pydub import AudioSegment
 import os
 from datetime import datetime
 import subprocess
+import re
 
 class MobileWindow(QMainWindow):
     def __init__(self, chat_ui: ChatUI):
@@ -21,6 +27,22 @@ class MobileWindow(QMainWindow):
         
         Context.context_changed.connect(self.on_context_changed)
         Context.conversation_selected.connect(self.on_conversation_changed)
+        
+        self.openai_client = OpenAI(api_key=MobileWindow.load_tts_settings().api_key)
+        self.audio_player = AudioPlayer()
+        
+        self.playback_override_getter = None
+
+    @staticmethod
+    def load_tts_settings() -> OpenAI_TTS_Settings:
+        if hasattr(MobileWindow, "tts_settings"):
+            return MobileWindow.tts_settings
+        settings = Context.engine.query(OpenAI_TTS_Settings).first()
+        if settings is None:
+            settings = OpenAI_TTS_Settings()
+            Context.engine.merge(settings)
+        MobileWindow.tts_settings = settings
+        return settings
 
     def init_ui(self):
         self.setWindowTitle("Mobile Chat")
@@ -101,6 +123,12 @@ class MobileWindow(QMainWindow):
         self.skip_button.setVisible(False)
         button_layout.addWidget(self.skip_button)
         
+        self.play_button = QPushButton("Play")
+        self.play_button.setFixedHeight(35)
+        self.play_button.setVisible(True)
+        self.play_button.clicked.connect(self.on_play_pressed)
+        button_layout.addWidget(self.play_button)
+        
         text_view_layout.addLayout(button_layout)
         
         self.layout.addLayout(text_view_layout)
@@ -160,6 +188,8 @@ class MobileWindow(QMainWindow):
                     self.text_view.append("-" * 40 + "\n")
                     self.text_view.append(f"to file: {code_block.path}?\nConfirm to save, or Skip.")
                     
+                    self.playback_override_getter = lambda path=code_block.path: f"Saving file to {self.format_path_for_speech(path)}"
+                    
                     if self.wait_for_confirmation():
                         os.makedirs(os.path.dirname(code_block.path), exist_ok=True)
                         with open(code_block.path, 'w', encoding='utf-8') as file:
@@ -177,6 +207,8 @@ class MobileWindow(QMainWindow):
                     self.text_view.append("-" * 40 + "\n")
                     self.text_view.append("Proceed with execution?")
                     
+                    self.playback_override_getter = lambda content=code_block.content: self.summarize_for_tts(f"Bash script to execute: {content}")
+                    
                     if self.wait_for_confirmation():
                         process = subprocess.Popen(
                             ['bash', '-c', code_block.content],
@@ -187,20 +219,26 @@ class MobileWindow(QMainWindow):
                             universal_newlines=True
                         )
                         
+                        output = []
                         with open(f"{script_path}_output.txt", 'w') as output_file:
                             for line in process.stdout:
                                 self.text_view.append(line)
                                 output_file.write(line)
+                                output.append(line)
                         
                         process.wait()
                         self.text_view.append("-" * 40 + "\n")
                         self.text_view.append("Done!")
+                        
+                        self.playback_override_getter = lambda content=code_block.content, output=output: self.summarize_for_tts(f"Bash script executed: {content}\nOutput: {''.join(output)}")
+                        
                         self.wait_for_continue()
                     
                     bash_script_count += 1
             
             self.displaying_subprocess_output = False
             self.update_conversation_text()
+            self.playback_override_getter = None
 
     def wait_for_confirmation(self) -> bool:
         self.confirm_button.setText("Confirm")
@@ -254,3 +292,36 @@ class MobileWindow(QMainWindow):
     def closeEvent(self, event):
         event.ignore()
         self.hide()
+
+    def on_play_pressed(self):
+        if self.playback_override_getter:
+            text = self.playback_override_getter()
+        else:
+            text = Context.conversation[-1].content if Context.conversation else ""
+        
+        self.speak(text)
+
+    def speak(self, text: str):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")[:-3]
+        speech_file_path = Path(os.path.join(os.path.dirname(__file__), f"speech {timestamp}.mp3"))
+        response = self.openai_client.audio.speech.create(
+            model=self.tts_settings.model,
+            voice=self.tts_settings.voice,
+            input=text
+        )
+        response.write_to_file(speech_file_path)
+        
+        audio_segment = AudioSegment.from_mp3(str(speech_file_path))
+        self.audio_player.play(audio_segment)
+
+    def summarize_for_tts(self, text: str) -> str:
+        conversation = Conversation("Summarizing for text-to-speech", "Summarize text for TTS") | CallerInfo.catch([0, 1])
+        conversation + ("Please summarize this text and say it in a way in plain English that's clear and understandable as to be spoken by a text-to-speech program:", Role.System())
+        conversation + (text, Role.User())
+        
+        response = Context.main_agent.llm.chat(conversation)
+        conversation + response
+        return response.content
+
+    def format_path_for_speech(self, path: str) -> str:
+        return path.replace(os.path.sep, " in ")
