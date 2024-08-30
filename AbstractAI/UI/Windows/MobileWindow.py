@@ -304,9 +304,16 @@ class MobileWindow(QMainWindow):
     def speak(self, text: str):
         timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")[:-3]
         speech_file_path = Path(os.path.join(os.path.dirname(__file__), f"speech {timestamp}.mp3"))
+        text_file_path = Path(os.path.join(os.path.dirname(__file__), f"speech {timestamp}.txt"))
+
+        # Save the text to a file
+        with open(text_file_path, 'w', encoding='utf-8') as text_file:
+            text_file.write(text)
+
+        # Generate and save the speech audio
         response = self.openai_client.audio.speech.create(
-            model=self.tts_settings.model,
-            voice=self.tts_settings.voice,
+            model=self.load_tts_settings().model,
+            voice=self.load_tts_settings().voice,
             input=text
         )
         response.write_to_file(speech_file_path)
