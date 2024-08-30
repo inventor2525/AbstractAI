@@ -133,14 +133,12 @@ class MobileWindow(QMainWindow):
     def do_it(self):
         if Context.conversation and Context.main_agent:
             self.displaying_subprocess_output = True
-            self.text_view.clear()
             
             bash_script_count = 1
             last_message = Context.conversation[-1]
             
             for code_block, process_getter in Context.main_agent.process_response(Context.conversation):
-                self.text_view.append(f"# Code block:\n{code_block.content}\n")
-                self.text_view.append("-" * 40 + "\n")
+                self.text_view.clear()
                 
                 if process_getter is not None:
                     timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S-%f")[:-3]
@@ -151,6 +149,7 @@ class MobileWindow(QMainWindow):
                     with open(f"{script_path}.txt", 'w') as f:
                         f.write(code_block.content)
                     
+                    self.wait_for_continue()
                     process = process_getter()
                     
                     with open(f"{script_path}_output.txt", 'w') as output_file:
@@ -161,9 +160,10 @@ class MobileWindow(QMainWindow):
                     process.wait()
                     bash_script_count += 1
                 elif code_block.path is not None:
-                    self.text_view.append(f"Saving to file: {code_block.path}?\n")
-                
-                self.wait_for_continue()
+                    self.text_view.append(f"Saving:\n{code_block.content}\n")
+                    self.text_view.append("-" * 40 + "\n")
+                    self.text_view.append(f"to file: {code_block.path}?\nCorrect?")
+                    self.wait_for_continue()
             
             self.displaying_subprocess_output = False
             self.update_conversation_text()

@@ -413,7 +413,8 @@ class ChatUI(QWidget):
 	
 	def _add_message(self):
 		new_message = self._create_message()
-		self.conversation.add_message(new_message)
+		if len(new_message.content) > 0:
+			self.conversation.add_message(new_message)
 		
 		selected_role = self.role_combobox.currentText()
 		if selected_role != "Files":
