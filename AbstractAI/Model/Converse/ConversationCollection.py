@@ -25,14 +25,14 @@ class ConversationCollection():
 			return
 		
 		def message_changed(message):
-			self.engine.merge(message, merge_depth_limit=2)
+			self.engine.merge(message, persist=True, merge_depth_limit=2)
 		def message_added(message):
-			self.engine.merge(message)
+			self.engine.merge(message, persist=True)
 			message.changed.connect(message_changed, auto_disconnect=True)
 		conversation.message_added.connect(message_added)
 		
 		def conversation_changed(conversation):
-			self.engine.merge(conversation)
+			self.engine.merge(conversation, persist=True)
 		conversation.conversation_changed.connect(lambda conversation=conversation: conversation_changed(conversation))
 			
 	def append(self, conversation:Conversation, should_notify=True) -> None:
