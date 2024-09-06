@@ -299,16 +299,15 @@ class MessageView(BaseMessageView):
 		
 		self.message_source_view.message_source = value.source
 		
-		most_original = value.source
+		source = value.source
 		if value.source is not None:
-			if isinstance(most_original, EditSource):
-				most_original = most_original.original_source()
+			if isinstance(source, EditSource):
+				source = source.source
 				
-		if isinstance(most_original, FilesSource):
+		if isinstance(source, FilesSource):
 			self.text_edit.setVisible(False)
 			self.file_selector.setVisible(True)
-			files_source:FilesSource = value.source
-			self.file_selector.items = deepcopy(files_source.items.items)
+			self.file_selector.items = deepcopy(source.items.items)
 			self.file_selector.refresh()
 		else:
 			self.text_edit.setVisible(True)
@@ -330,8 +329,8 @@ class MessageView(BaseMessageView):
 			else:
 				self.background_color = QColor(Qt.white)
 		
-		self.regenerate_button.setVisible(isinstance(most_original, ModelSource))
-		self.reload_btn.setVisible(isinstance(most_original, FilesSource))
+		self.regenerate_button.setVisible(isinstance(source, ModelSource))
+		self.reload_btn.setVisible(isinstance(source, FilesSource))
 		
 		self._compute_alternates()
 		self.update_text_edit_height()
