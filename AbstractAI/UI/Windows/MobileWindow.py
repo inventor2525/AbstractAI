@@ -17,12 +17,17 @@ import os
 from datetime import datetime
 import subprocess
 import re
+from typing import List, Tuple
 
 class MobileWindow(QMainWindow):
     def __init__(self, chat_ui: ChatUI):
         super().__init__()
         self.chat_ui = chat_ui
         self.displaying_subprocess_output = False
+        
+        self.bash_blocks_count: int = 0
+        self.current_bash_output: Tuple[int, str] = None
+        self.user_selected_bash_outputs: List[Tuple[int, str]] = []
         self.init_ui()
         
         Context.context_changed.connect(self.on_context_changed)
@@ -110,13 +115,19 @@ class MobileWindow(QMainWindow):
         
         text_view_layout.addWidget(self.text_view)
         
-        # Create a horizontal layout for Confirm and Skip buttons
+        # Create a horizontal layout for Confirm, Skip, Play, and Add Result buttons
         button_layout = QHBoxLayout()
         
         self.confirm_button = QPushButton("Confirm")
         self.confirm_button.setFixedHeight(35)
         self.confirm_button.setVisible(False)
         button_layout.addWidget(self.confirm_button)
+        
+        self.add_result_button = QPushButton("Add Result")
+        self.add_result_button.setFixedHeight(35)
+        self.add_result_button.setVisible(False)
+        self.add_result_button.clicked.connect(self.toggle_add_result)
+        button_layout.addWidget(self.add_result_button)
         
         self.skip_button = QPushButton("Skip")
         self.skip_button.setFixedHeight(35)
@@ -176,11 +187,13 @@ class MobileWindow(QMainWindow):
     def do_it(self):
         if Context.conversation and Context.main_agent:
             self.displaying_subprocess_output = True
+            self.user_selected_bash_outputs = []
             
             bash_script_count = 1
             last_message = Context.conversation[-1]
             
             for code_block in Context.main_agent.process_response(Context.conversation):
+                self.current_bash_output = None
                 self.text_view.clear()
                 
                 if code_block.path is not None:
@@ -227,19 +240,53 @@ class MobileWindow(QMainWindow):
                                 output.append(line)
                         
                         process.wait()
+                        self.current_bash_output = (bash_script_count, ''.join(output))
                         self.text_view.append("-" * 40 + "\n")
                         self.text_view.append("Done!")
                         
-                        self.playback_override_getter = lambda content=code_block.content, output=output: self.summarize_for_tts(f"Bash script executed: {content}\nOutput: {''.join(output)}")
+                        self.playback_override_getter = lambda content=code_block.content, output=output: self.summarize_for_tts(f"Bash script executed: {content}\nOutput: {self.current_bash_output[1]}")
                         
+                        self.add_result_button.setText("Add Result")
+                        self.add_result_button.setVisible(True)
                         self.wait_for_continue()
+                        self.add_result_button.setVisible(False)
                     
                     bash_script_count += 1
-            
+            self.current_bash_output = None
+            self.bash_blocks_count = bash_script_count-1
             self.displaying_subprocess_output = False
             self.update_conversation_text()
             self.playback_override_getter = None
+            
+            if self.user_selected_bash_outputs:
+                self.add_bash_outputs_to_conversation()
+                
+    def toggle_add_result(self):
+        if not self.current_bash_output:
+            return
 
+        if self.add_result_button.text() == "Add Result":
+            self.user_selected_bash_outputs.append(self.current_bash_output)
+            self.add_result_button.setText("Remove Result")
+        else:
+            self.user_selected_bash_outputs = [output for output in self.user_selected_bash_outputs if output[0] != self.current_bash_output[0]]
+            self.add_result_button.setText("Add Result")
+            
+    def add_bash_outputs_to_conversation(self):
+        if not self.user_selected_bash_outputs:
+            return
+        
+        content = None
+        if self.bash_blocks_count>1 and len(self.user_selected_bash_outputs)>0:
+            content = "This is the result of the bash scripts you ran (starting at block '1'):\n\n"
+            for count, output in self.user_selected_bash_outputs:
+                content += f"For block number {count}:\n```bash\n{output}\n```\n\n"
+        elif self.bash_blocks_count==1 and len(self.user_selected_bash_outputs)==1:
+            content = f"Your bash script returned:\n```bash\n{self.user_selected_bash_outputs[0][1]}```"
+        if content:
+            Context.conversation + (content, Role.System()) | CallerInfo.catch([0,1])
+            self.update_conversation_text()
+        
     def wait_for_confirmation(self) -> bool:
         self.confirm_button.setText("Confirm")
         self.confirm_button.setVisible(True)
