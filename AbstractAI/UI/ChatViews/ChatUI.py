@@ -247,15 +247,15 @@ class ChatUI(QWidget):
 		self.advanced_controls.setLayout(self.advanced_controls_layout)
 		self.layout.addWidget(self.advanced_controls)
 		
-		advanced_controls_header = QWidget()
-		advanced_controls_header_layout = QHBoxLayout(advanced_controls_header)
-		advanced_controls_header_layout.setContentsMargins(0, 0, 0, 0)
-		advanced_controls_header_layout.addWidget(QLabel("Advanced Generation Controls:"))
-		advanced_controls_header_layout.addStretch(1)
+		self.advanced_controls_header = QWidget()
+		self.advanced_controls_header_layout = QHBoxLayout(self.advanced_controls_header)
+		self.advanced_controls_header_layout.setContentsMargins(0, 0, 0, 0)
+		self.advanced_controls_header_layout.addWidget(QLabel("Advanced Generation Controls:"))
+		self.advanced_controls_header_layout.addStretch(1)
 		send_to_switchboard_button = QPushButton("Send to Switchboard")
 		send_to_switchboard_button.clicked.connect(self.send_to_switchboard)
-		advanced_controls_header_layout.addWidget(send_to_switchboard_button)
-		self.advanced_controls_layout.addWidget(advanced_controls_header)
+		self.advanced_controls_header_layout.addWidget(send_to_switchboard_button)
+		self.advanced_controls_layout.addWidget(self.advanced_controls_header)
 		
 		self.advanced_controls_layout.addWidget(QHLine())
 		
@@ -472,7 +472,7 @@ class ChatUI(QWidget):
 		self.mobile_window = MobileWindow(self)
 		mobile_window_button = QPushButton("Open Mobile Version")
 		mobile_window_button.clicked.connect(self.show_mobile_window)
-		self.advanced_controls_layout.insertWidget(1, mobile_window_button)
+		self.advanced_controls_header_layout.insertWidget(1, mobile_window_button)
 
 	def show_mobile_window(self):
 		self.mobile_window.show()
