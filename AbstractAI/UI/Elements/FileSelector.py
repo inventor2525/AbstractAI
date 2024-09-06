@@ -138,7 +138,7 @@ class FileSelectionWidget(QWidget):
     def addFolders(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
-            folder_model = FolderModel(path=folder)
+            folder_model = FolderModel(path=folder, extension_pattern='py')
             self._items.append(folder_model)
             self.tree_view.addItems([folder], isFolder=True, model=folder_model)
             self.refresh()
@@ -154,6 +154,7 @@ class FileSelectionWidget(QWidget):
                 folder_model.file_pattern = self.file_filter_widget.pattern_line_edit.text()
                 folder_model.folder_pattern = self.file_filter_widget.folder_pattern_line_edit.text()
                 folder_model.extension_pattern = self.file_filter_widget.extension_line_edit.text()
+                self.refresh()
                 
     def itemSelected(self):
         if len(self.tree_view.selectedIndexes()) != 1:
