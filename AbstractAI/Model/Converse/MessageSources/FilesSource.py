@@ -84,6 +84,7 @@ class FilesSource(UserSource):
 		}
 		for path in ItemModel.iterate_files(self.items.items):
 			extension = os.path.splitext(path)[1][1:]
+			name_extension = os.path.basename(path)
 			markdown = extension_md_map.get(extension, 'text')
 			
 			file_contents = None
@@ -98,7 +99,8 @@ class FilesSource(UserSource):
 			if file_contents is not None:
 				new_content.append(f"```{markdown}")
 				new_content.append(file_contents)
-				new_content.append("```\n")
+				new_content.append("```")
+				new_content.append(f"{name_extension}\n")
 			else:
 				new_content.append(f"File {path} could not be read because '{error}'\n")
 		new_source = FilesSource(items=self.items)
