@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Callable, Dict, Tuple, Optional, ClassVar
-from weakref import ref
+from weakref import ref, ReferenceType
 import time
 import traceback
 from threading import Thread, Lock, Event
@@ -49,7 +49,7 @@ class Job(Object):
     status_changed: Signal[[object, str, str], None] = Signal.field()
     # Signal emitted when the job's status changes
 
-    _jobs: Optional['Jobs'] = field(init=False, default=None)
+    _jobs: Optional[ReferenceType['Jobs']] = field(init=False, default=None)
     # Weak reference to the Jobs instance this job belongs to
 
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
@@ -209,12 +209,16 @@ class Jobs(Object):
         """
         Stop the job processing thread if it's running.
         """
+        thread_to_stop = None
         with self._lock:
             if self._thread and self._thread.is_alive():
                 self._stop_event.set()
-        if self._thread:
-            self._thread.join()
-        self._thread = None
+                thread_to_stop = self._thread
+                self._thread = None
+        
+        if thread_to_stop:
+            thread_to_stop.join()
+        self.thread_status_changed(False)
 
     def _run(self):
         """

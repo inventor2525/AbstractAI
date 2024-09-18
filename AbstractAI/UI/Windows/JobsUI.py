@@ -6,6 +6,7 @@ from AbstractAI.UI.Context import Context
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobPriority
 from ClassyFlaskDB.new.ClassInfo import ClassInfo
+from threading import Thread
 import time
 
 class JobsTableModel(QAbstractTableModel):
@@ -111,7 +112,7 @@ class JobsWindow(QWidget):
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.stop_button = QPushButton("Stop")
-        self.stop_button.clicked.connect(self.jobs.stop)
+        self.stop_button.clicked.connect(self.stop_jobs)
         layout.addWidget(self.stop_button)
 
         self.jobs.changed.connect(self.update_ui)
@@ -119,10 +120,18 @@ class JobsWindow(QWidget):
 
         self.update_ui()
 
-    def start_job(self, row):
+    def start_job(self, row: int):
         job = self.jobs.jobs[row]
         job.start(JobPriority.NEXT)
-
+    
+    def _stop_jobs_thread(self):
+        self.jobs.stop()
+        self.stop_button.setEnabled(True)
+        
+    def stop_jobs(self):
+        self.stop_button.setEnabled(False)
+        Thread(target=self._stop_jobs_thread).start()
+        
     @run_in_main_thread
     def update_ui(self):
         """
