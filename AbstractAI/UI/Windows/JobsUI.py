@@ -68,11 +68,13 @@ class JobsTableModel(QAbstractTableModel):
 class StartButtonDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.start_buttons = {}
 
     def createEditor(self, parent, option, index):
         if index.column() == 1:  # Start column
             button = QPushButton("Start", parent)
             button.clicked.connect(lambda: self.parent().start_job(index.row()))
+            self.start_buttons[index.row()] = button
             return button
         return None
 
@@ -101,7 +103,7 @@ class JobsWindow(QWidget):
         self.table_view = QTableView()
         self.model = JobsTableModel(self.jobs)
         self.table_view.setModel(self.model)
-        self.start_button_delegate = StartButtonDelegate(self.table_view)
+        self.start_button_delegate = StartButtonDelegate(self)
         self.table_view.setItemDelegateForColumn(1, self.start_button_delegate)
         self.table_view.setEditTriggers(QTableView.AllEditTriggers)
         layout.addWidget(self.table_view)
@@ -140,10 +142,8 @@ class JobsWindow(QWidget):
         :param is_running: Whether the job processing thread is running
         """
         self.stop_button.setEnabled(is_running)
-        for i in range(self.model.rowCount()):
-            editor = self.table_view.indexWidget(self.model.index(i, 1))
-            if isinstance(editor, QPushButton):
-                editor.setEnabled(not is_running)
+        for button in self.start_button_delegate.start_buttons.values():
+            button.setEnabled(not is_running)
 
     @run_in_main_thread
     def update_job_status(self, job, status, hover):
@@ -184,9 +184,7 @@ if __name__ == "__main__":
         print(f"Finished {job.name}")
     
     Jobs.register("Example Job", example_work, example_callback)
-    jobs.create("Example Job")
-    jobs.create("Example Job")
-    jobs.create("Example Job").start()
+    job = jobs.create("Example Job")
     
     window = JobsWindow(jobs)
     window.show()
