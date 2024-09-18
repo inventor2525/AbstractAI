@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Callable, Dict, Tuple, Optional, ClassVar
+from typing import List, Callable, Dict, Tuple, Optional, ClassVar, Type
 from weakref import ref, ReferenceType
 import time
 import traceback
@@ -19,14 +19,14 @@ class JobCallable:
     callback: Callable
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop"])
 @dataclass
 class Job(Object):
-    name: str
-    # Name of the job
-    
-    callback_name: str
-    # Name of the callback associated with this job
+    job_key: str
+    # Key to identify the job type and retrieve its callables
+
+    name: str = ""
+    # Optional descriptive name for the job instance
     
     done: bool = False
     # Indicates whether the job has completed
@@ -52,6 +52,9 @@ class Job(Object):
     _jobs: Optional[ReferenceType['Jobs']] = field(init=False, default=None)
     # Weak reference to the Jobs instance this job belongs to
 
+    should_stop: bool = field(default=False, init=False)
+    # Flag to indicate if the job should stop execution
+
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
         """
         Start the job with the specified priority.
@@ -59,10 +62,9 @@ class Job(Object):
         :param priority: The priority level for starting the job
         """
         self.failed_last_run = False
-        if self._jobs:
-            jobs = self._jobs()
-            if jobs:
-                jobs.start_job(self, priority)
+        jobs = self._jobs() if self._jobs else None
+        if jobs:
+            jobs.start_job(self, priority)
 
     def wait(self):
         """
@@ -87,13 +89,13 @@ class Job(Object):
         except Exception as e:
             self.status = f"Error: {str(e)}"
             job_traceback = traceback.format_exc()
-            creation_traceback = self._jobs().registry[self.callback_name].creation_traceback
+            creation_traceback = self._jobs().registry[self.job_key].creation_traceback
             self.status_hover = (
                 f"Error traceback:\n{job_traceback}\n\n"
                 f"Job registration traceback:\n{creation_traceback}"
             )
             self.status_changed(self, self.status, self.status_hover)
-            print(f"Error in job {self.name}: {e}")
+            print(f"Error in job {self.name or self.job_key}: {e}")
             self.failed_last_run = True
             return False
 
@@ -121,10 +123,13 @@ class Jobs(Object):
     _lock: Lock = field(default_factory=Lock, init=False)
     # Lock for thread-safe operations on the job list
 
+    current_job: Optional[Job] = field(default=None, init=False)
+    # The job that is currently running
+    
     def __post_init__(self):
         for job in self._jobs:
-            if job.callback_name in self.registry:
-                job_callable = self.registry[job.callback_name]
+            if job.job_key in self.registry:
+                job_callable = self.registry[job.job_key]
                 job.work, job.callback = job_callable.work, job_callable.callback
             job._jobs = ref(self)
 
@@ -141,30 +146,28 @@ class Jobs(Object):
             return self._jobs.copy()
 
     @staticmethod
-    def register(name: str, work: Callable, callback: Callable):
+    def register(job_key: str, work: Callable, callback: Callable):
         """
         Register a new job type with its work and callback functions.
 
-        :param name: The name of the job type
+        :param job_key: The key to identify the job type
         :param work: The work function for the job
         :param callback: The callback function for job completion
         """
         creation_traceback = traceback.format_stack()
-        Jobs.registry[name] = JobCallable(work, callback, ''.join(creation_traceback))
+        Jobs.registry[job_key] = JobCallable(work, callback, ''.join(creation_traceback))
 
-    def create(self, callback_name: str) -> Job:
+    def add(self, job: Job) -> Job:
         """
-        Create a new job instance.
+        Add a job to the jobs list and set its callables.
 
-        :param callback_name: The name of the registered job type
-        :return: A new Job instance
-        :raises ValueError: If the callback_name is not registered
+        :param job: The job to add
+        :return: The added job
         """
         with self._lock:
-            if callback_name not in self.registry:
-                raise ValueError(f"No registered callback named {callback_name}")
-            job = Job(name=callback_name, callback_name=callback_name)
-            job_callable = self.registry[callback_name]
+            if job.job_key not in self.registry:
+                raise ValueError(f"No registered job type with key: {job.job_key}")
+            job_callable = self.registry[job.job_key]
             job.work, job.callback = job_callable.work, job_callable.callback
             job._jobs = ref(self)
             self._jobs.append(job)
@@ -198,6 +201,8 @@ class Jobs(Object):
         Start the job processing thread if it's not already running.
         """
         with self._lock:
+            if self.current_job:
+                self.current_job.should_stop = False
             if self._thread and self._thread.is_alive():
                 return
             self._stop_event.clear()
@@ -213,6 +218,8 @@ class Jobs(Object):
         with self._lock:
             if self._thread and self._thread.is_alive():
                 self._stop_event.set()
+                if self.current_job:
+                    self.current_job.should_stop = True
                 thread_to_stop = self._thread
                 self._thread = None
         
@@ -226,29 +233,33 @@ class Jobs(Object):
         """
         print("Job processing thread started")
         while not self._stop_event.is_set():
-            job: Job = None
             with self._lock:
                 for j in self._jobs:
                     if not j.failed_last_run:
-                        job = j
+                        self.current_job = j
                         break
+                else:
+                    self.current_job = None
 
-            if job:
-                print(f"Starting job: {job.name}")
+            if self.current_job:
+                print(f"Starting job: {self.current_job.name or self.current_job.job_key}")
                 try:
-                    success = job()
+                    success = self.current_job()
                     changed = False
-                    if success:
-                        print(f"Job completed successfully: {job.name}")
-                        with self._lock:
-                            self._jobs.remove(job)
+                    with self._lock:
+                        if success:
+                            print(f"Job completed successfully: {self.current_job.name or self.current_job.job_key}")
+                            self._jobs.remove(self.current_job)
                             changed = True
-                    else:
-                        print(f"Job failed: {job.name}")
+                        else:
+                            print(f"Job failed: {self.current_job.name or self.current_job.job_key}")
+                        self.current_job.should_stop = False
+                        self.current_job = None
                     if changed:
                         self.changed()
                 except Exception as e:
-                    print(f"Error in job {job.name}: {e}. Moving to the next job.")
+                    print(f"Error in job {self.current_job.name or self.current_job.job_key}: {e}. Moving to the next job.")
+                    self.current_job = None
             else:
                 time.sleep(0.05)
 

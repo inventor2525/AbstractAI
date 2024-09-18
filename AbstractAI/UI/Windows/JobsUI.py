@@ -28,7 +28,7 @@ class JobsTableModel(QAbstractTableModel):
                 job_fields.update(field.name for field in ClassInfo.get(job.__class__).fields.values()
                                   if field.name not in ["callback", "work", "status_changed", "_jobs", "auto_id", "done", "failed_last_run", "source", "tags", "status", "status_hover"])
         
-        prioritized_fields = ["name", "date_created", "callback_name"]
+        prioritized_fields = ["job_key", "name", "date_created"]
         remaining_fields = sorted(job_fields - set(prioritized_fields))
         self.columns = ["Status", "Start"] + prioritized_fields + remaining_fields
         self.endResetModel()
@@ -190,11 +190,13 @@ if __name__ == "__main__":
     def example_work(job):
         import time
         for i in range(5):
+            if job.should_stop:
+                break
             job.status = f"Working... {i+1}/5"
             job.status_hover = f"Detailed progress for step {i+1}"
             job.status_changed(job, job.status, job.status_hover)
             time.sleep(1)
-        print(f"Doing work for {job.name}")
+        print(f"Doing work for {job.name or job.job_key}")
     
     def example_callback(job):
         job.status = "Finished"
@@ -205,6 +207,8 @@ if __name__ == "__main__":
     def long_running_work(job):
         import time
         for i in range(10):
+            if job.should_stop:
+                break
             job.status = f"Long running task... {i+1}/10"
             job.status_hover = f"This task takes longer to complete. Step {i+1}"
             job.status_changed(job, job.status, job.status_hover)
@@ -214,6 +218,8 @@ if __name__ == "__main__":
     def error_prone_work(job):
         import time, random
         for i in range(3):
+            if job.should_stop:
+                break
             job.status = f"Risky operation... {i+1}/3"
             job.status_hover = f"This task might fail. Attempt {i+1}"
             job.status_changed(job, job.status, job.status_hover)
@@ -226,9 +232,14 @@ if __name__ == "__main__":
     Jobs.register("Long Running Job", long_running_work, example_callback)
     Jobs.register("Error Prone Job", error_prone_work, example_callback)
     
-    jobs.create("Example Job")
-    jobs.create("Long Running Job")
-    jobs.create("Error Prone Job")
+    # Create and add jobs
+    job1 = Job(job_key="Example Job", name="Example Job 1")
+    job2 = Job(job_key="Long Running Job", name="Long Job 1")
+    job3 = Job(job_key="Error Prone Job", name="Risky Job 1")
+    
+    jobs.add(job1)
+    jobs.add(job2)
+    jobs.add(job3)
     
     window = JobsWindow(jobs)
     window.show()
