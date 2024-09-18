@@ -1,17 +1,18 @@
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Callable, Dict, Tuple, Optional, ClassVar
+from weakref import ref
+import time
+import traceback
+from threading import Thread, Lock, Event, Condition
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableView, QPushButton, QHeaderView, QStyledItemDelegate
+from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PyQt5.QtGui import QColor
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
-from typing import List, Callable, Dict, Tuple, Optional, ClassVar
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableView, QPushButton, QHeaderView, QStyledItemDelegate
-from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex
-from PyQt5.QtGui import QColor
-from threading import Thread, Lock, Event, Condition
-from enum import Enum
-from weakref import ref
-import time
-import traceback
-from dataclasses import dataclass, field
+from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 
 class JobPriority(Enum):
     WHENEVER = 0
@@ -28,16 +29,34 @@ class JobCallable:
 @dataclass
 class Job(Object):
     name: str
+    # Name of the job
+    
     callback_name: str
+    # Name of the callback associated with this job
+    
     done: bool = False
+    # Indicates whether the job has completed
+    
     status: str = ""
+    # Current status of the job
+    
     status_hover: str = ""
-    #Extra description (comment better than this more stuff like this)
+    # Detailed status information for hover tooltip
+    
+    failed_last_run: bool = False
+    # Indicates if the job failed in its last execution
 
     callback: Callable = field(init=False)
+    # Callback function to be called when the job is done
+
     work: Callable = field(init=False)
+    # The main work function of the job
+
     status_changed: Signal[[object, str, str], None] = Signal.field()
+    # Signal emitted when the job's status changes
+
     _jobs: Optional['Jobs'] = field(init=False, default=None)
+    # Weak reference to the Jobs instance this job belongs to
 
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
         """
@@ -45,6 +64,7 @@ class Job(Object):
 
         :param priority: The priority level for starting the job
         """
+        self.failed_last_run = False
         if self._jobs:
             jobs = self._jobs()
             if jobs:
@@ -57,39 +77,58 @@ class Job(Object):
         while not self.done:
             time.sleep(0.05)
 
-    def __call__(self):
+    def __call__(self) -> bool:
         """
         Execute the job's work function and handle its completion or failure.
-        """
-        if self.work:
-            try:
-                self.work(self)
-                self.done = True
-                if self.callback:
-                    self.callback(self)
-            except Exception as e:
-                self.status = f"Error: {str(e)}"
-                job_traceback = traceback.format_exc()
-                creation_traceback = self._jobs().registry[self.callback_name].creation_traceback
-                self.status_hover = (
-                    f"Error traceback:\n{job_traceback}\n\n"
-                    f"Job registration traceback:\n{creation_traceback}"
-                )
-                self.status_changed(self, self.status, self.status_hover)
-                print(f"Error in job {self.name}: {e}")
 
-@DATA(excluded_fields=["changed", "status_changed"])
+        :return: True if the job completed successfully, False otherwise
+        """
+        try:
+            if self.work:
+                self.work(self)
+            if self.callback:
+                self.callback(self)
+            self.done = True
+            return True
+        except Exception as e:
+            self.status = f"Error: {str(e)}"
+            job_traceback = traceback.format_exc()
+            creation_traceback = self._jobs().registry[self.callback_name].creation_traceback
+            self.status_hover = (
+                f"Error traceback:\n{job_traceback}\n\n"
+                f"Job registration traceback:\n{creation_traceback}"
+            )
+            self.status_changed(self, self.status, self.status_hover)
+            print(f"Error in job {self.name}: {e}")
+            self.failed_last_run = True
+            return False
+
+@DATA(excluded_fields=["changed", "thread_status_changed"])
 @dataclass
 class Jobs(Object):
     _jobs: List[Job] = field(default_factory=list)
+    # List of jobs to be executed
+
     changed: Signal[[], None] = Signal.field()
-    status_changed: Signal[[], None] = Signal.field()
+    # Signal emitted when the job list changes
+
+    thread_status_changed: Signal[[bool], None] = Signal.field()
+    # Signal emitted when the thread running status changes
 
     registry: ClassVar[Dict[str, JobCallable]] = {}
+    # Class-level registry of job types
+
     _thread: Thread = field(default=None, init=False)
+    # Thread for running jobs
+
     _stop_event: Event = field(default_factory=Event, init=False)
+    # Event for signaling the thread to stop
+
     _lock: Lock = field(default_factory=Lock, init=False)
+    # Lock for thread-safe operations on the job list
+
     _condition: Condition = field(init=False)
+    # Condition variable for thread synchronization
 
     def __post_init__(self):
         self._condition = Condition(self._lock)
@@ -150,7 +189,7 @@ class Jobs(Object):
         :param priority: The priority level for starting the job
         """
         with self._lock:
-            if job in self._jobs:
+            if priority != JobPriority.WHENEVER and job in self._jobs:
                 self._jobs.remove(job)
 
             if priority == JobPriority.NOW:
@@ -158,7 +197,7 @@ class Jobs(Object):
                 self._jobs.insert(0, job)
             elif priority == JobPriority.NEXT:
                 self._jobs.insert(0 if not self._thread else 1, job)
-            else:
+            elif job not in self._jobs:
                 self._jobs.append(job)
 
         self.start()
@@ -168,21 +207,27 @@ class Jobs(Object):
         """
         Start the job processing thread if it's not already running.
         """
-        if self._thread and self._thread.is_alive():
-            return
-        self._stop_event.clear()
-        self._thread = Thread(target=self._run)
-        self._thread.start()
+        with self._lock:
+            if self._thread and self._thread.is_alive():
+                return
+            self._stop_event.clear()
+            self._thread = Thread(target=self._run)
+            self._thread.start()
+        self.thread_status_changed(True)
 
     def stop(self):
         """
         Stop the job processing thread if it's running.
         """
-        if self._thread and self._thread.is_alive():
-            self._stop_event.set()
-            with self._condition:
-                self._condition.notify()
+        with self._lock:
+            if self._thread and self._thread.is_alive():
+                self._stop_event.set()
+                with self._condition:
+                    self._condition.notify()
+        if self._thread:
             self._thread.join()
+        self._thread = None
+        self.thread_status_changed(False)
 
     def _run(self):
         """
@@ -191,24 +236,23 @@ class Jobs(Object):
         while not self._stop_event.is_set():
             job = None
             with self._lock:
-                if self._jobs:
-                    job = self._jobs.pop(0)
+                for i, j in enumerate(self._jobs):
+                    if not j.failed_last_run:
+                        job = self._jobs.pop(i)
+                        break
 
             if job:
-                job()
-                self.changed()
-                self.status_changed()
+                success = job()
+                with self._lock:
+                    if success:
+                        self.changed()
+                    else:
+                        self._jobs.append(job)
             else:
                 with self._condition:
                     self._condition.wait(0.05)
 
-    def remove_done_jobs(self):
-        """
-        Remove all completed jobs from the job list.
-        """
-        with self._lock:
-            self._jobs = [job for job in self._jobs if not job.done]
-        self.changed()
+        self.thread_status_changed(False)
 
 class JobsTableModel(QAbstractTableModel):
     def __init__(self, jobs: Jobs):
@@ -225,8 +269,7 @@ class JobsTableModel(QAbstractTableModel):
         job_fields = set()
         for job in self.jobs.jobs:
             if not hasattr(job, 'view'):
-                job_fields.update(field.name for field in job.__class__.class_info().fields
-                                  if field.name not in ["callback", "work", "status_changed"])
+                job_fields.update(job.__class__.__class_info__.fields.keys())
         self.columns.extend(sorted(job_fields))
         self.endResetModel()
 
@@ -314,7 +357,7 @@ class JobsWindow(QWidget):
         layout.addWidget(self.stop_button)
 
         self.jobs.changed.connect(self.update_ui)
-        self.jobs.status_changed.connect(self.update_ui)
+        self.jobs.thread_status_changed.connect(self.update_thread_status)
 
         self.update_ui()
 
@@ -324,12 +367,21 @@ class JobsWindow(QWidget):
         Update the UI elements based on the current state of jobs.
         """
         self.model.update()
-        is_running = self.jobs._thread and self.jobs._thread.is_alive()
-        self.stop_button.setEnabled(is_running)
         for i, job in enumerate(self.jobs.jobs):
             if i in self.table_view.itemDelegate().start_buttons:
-                self.table_view.itemDelegate().start_buttons[i].setEnabled(not is_running)
+                self.table_view.itemDelegate().start_buttons[i].setEnabled(not job.failed_last_run)
             job.status_changed.connect(self.update_job_status)
+
+    @run_in_main_thread
+    def update_thread_status(self, is_running: bool):
+        """
+        Update the UI based on the thread running status.
+
+        :param is_running: Whether the job processing thread is running
+        """
+        self.stop_button.setEnabled(is_running)
+        for button in self.table_view.itemDelegate().start_buttons.values():
+            button.setEnabled(not is_running)
 
     @run_in_main_thread
     def update_job_status(self, job, status, hover):
