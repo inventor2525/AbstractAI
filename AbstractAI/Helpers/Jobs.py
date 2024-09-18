@@ -4,7 +4,7 @@ from typing import List, Callable, Dict, Tuple, Optional, ClassVar
 from weakref import ref
 import time
 import traceback
-from threading import Thread, Lock, Event, Condition
+from threading import Thread, Lock, Event
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal
 
@@ -220,25 +220,33 @@ class Jobs(Object):
         """
         The main job processing loop.
         """
+        print("Job processing thread started")
         while not self._stop_event.is_set():
-            job:Job = None
+            job: Job = None
             with self._lock:
-                for job in self._jobs:
-                    if not job.failed_last_run:
+                for j in self._jobs:
+                    if not j.failed_last_run:
+                        job = j
                         break
-                    job = None
 
             if job:
+                print(f"Starting job: {job.name}")
                 try:
                     success = job()
                     changed = False
                     if success:
+                        print(f"Job completed successfully: {job.name}")
                         with self._lock:
                             self._jobs.remove(job)
                             changed = True
+                    else:
+                        print(f"Job failed: {job.name}")
                     if changed:
                         self.changed()
-                except:
-                    print('... TODO: AI?: say the jobs name, and that youre moving onto next job?... or something')
+                except Exception as e:
+                    print(f"Error in job {job.name}: {e}. Moving to the next job.")
+            else:
+                time.sleep(0.05)
 
+        print("Job processing thread stopped")
         self.thread_status_changed(False)

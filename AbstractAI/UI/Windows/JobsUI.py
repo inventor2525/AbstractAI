@@ -28,7 +28,7 @@ class JobsTableModel(QAbstractTableModel):
         
         prioritized_fields = ["name", "date_created", "callback_name"]
         remaining_fields = sorted(job_fields - set(prioritized_fields))
-        self.columns.extend(prioritized_fields + remaining_fields)
+        self.columns = ["Status", "Start"] + prioritized_fields + remaining_fields
         self.endResetModel()
 
     def rowCount(self, parent=None):
@@ -90,7 +90,7 @@ class JobItemDelegate(QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 class JobsWindow(QWidget):
-    def __init__(self, jobs:Jobs):
+    def __init__(self, jobs: Jobs):
         super().__init__()
         self.jobs = jobs
         self.init_ui()
@@ -165,6 +165,7 @@ if __name__ == "__main__":
     jobs = Jobs()
     
     def example_work(job):
+        import time
         for i in range(5):
             job.status = f"Working... {i+1}/5"
             job.status_hover = f"Detailed progress for step {i+1}"
@@ -180,6 +181,8 @@ if __name__ == "__main__":
     
     Jobs.register("Example Job", example_work, example_callback)
     jobs.create("Example Job")
+    jobs.create("Example Job")
+    jobs.create("Example Job").start()
     
     window = JobsWindow(jobs)
     window.show()
