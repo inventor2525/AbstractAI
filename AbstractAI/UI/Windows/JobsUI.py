@@ -6,6 +6,7 @@ from AbstractAI.UI.Context import Context
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobPriority
 from ClassyFlaskDB.new.ClassInfo import ClassInfo
+import time
 
 class JobsTableModel(QAbstractTableModel):
     def __init__(self, jobs: Jobs):
@@ -49,14 +50,11 @@ class JobsTableModel(QAbstractTableModel):
             elif role == Qt.ToolTipRole:
                 return job.status_hover
         elif column == "Start":
-            return None  # This column will be handled by the delegate
+            return "Start"  # This will be used as button text
         elif hasattr(job, 'view'):
-            return None  # This will be handled by the delegate
+            return None
         elif role == Qt.DisplayRole:
             return str(getattr(job, column, "N/A"))
-        elif role == Qt.BackgroundRole:
-            if not hasattr(job, column):
-                return QColor(0, 0, 0)
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
@@ -64,20 +62,18 @@ class JobsTableModel(QAbstractTableModel):
             return self.columns[section]
         return None
 
-class JobItemDelegate(QStyledItemDelegate):
+    def flags(self, index):
+        return Qt.ItemIsEnabled
+
+class StartButtonDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.start_buttons = {}
 
     def createEditor(self, parent, option, index):
         if index.column() == 1:  # Start column
             button = QPushButton("Start", parent)
-            job = index.model().jobs.jobs[index.row()]
-            button.clicked.connect(lambda: job.start(JobPriority.NEXT))
-            self.start_buttons[index.row()] = button
+            button.clicked.connect(lambda: self.parent().start_job(index.row()))
             return button
-        elif hasattr(index.model().jobs.jobs[index.row()], 'view'):
-            return index.model().jobs.jobs[index.row()].view
         return None
 
     def setEditorData(self, editor, index):
@@ -105,7 +101,9 @@ class JobsWindow(QWidget):
         self.table_view = QTableView()
         self.model = JobsTableModel(self.jobs)
         self.table_view.setModel(self.model)
-        self.table_view.setItemDelegate(JobItemDelegate())
+        self.start_button_delegate = StartButtonDelegate(self.table_view)
+        self.table_view.setItemDelegateForColumn(1, self.start_button_delegate)
+        self.table_view.setEditTriggers(QTableView.AllEditTriggers)
         layout.addWidget(self.table_view)
 
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -119,15 +117,19 @@ class JobsWindow(QWidget):
 
         self.update_ui()
 
+    def start_job(self, row):
+        job = self.jobs.jobs[row]
+        job.start(JobPriority.NEXT)
+
     @run_in_main_thread
     def update_ui(self):
         """
         Update the UI elements based on the current state of jobs.
         """
         self.model.update()
-        for i, job in enumerate(self.jobs.jobs):
-            if i in self.table_view.itemDelegate().start_buttons:
-                self.table_view.itemDelegate().start_buttons[i].setEnabled(not job.failed_last_run)
+        for i in range(self.model.rowCount()):
+            self.table_view.openPersistentEditor(self.model.index(i, 1))
+        for job in self.jobs.jobs:
             job.status_changed.connect(self.update_job_status)
 
     @run_in_main_thread
@@ -138,8 +140,10 @@ class JobsWindow(QWidget):
         :param is_running: Whether the job processing thread is running
         """
         self.stop_button.setEnabled(is_running)
-        for button in self.table_view.itemDelegate().start_buttons.values():
-            button.setEnabled(not is_running)
+        for i in range(self.model.rowCount()):
+            editor = self.table_view.indexWidget(self.model.index(i, 1))
+            if isinstance(editor, QPushButton):
+                editor.setEnabled(not is_running)
 
     @run_in_main_thread
     def update_job_status(self, job, status, hover):
