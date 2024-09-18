@@ -133,6 +133,7 @@ class JobsWindow(QWidget):
             self.table_view.openPersistentEditor(self.model.index(i, 1))
         for job in self.jobs.jobs:
             job.status_changed.connect(self.update_job_status)
+        self.update_button_states()
 
     @run_in_main_thread
     def update_thread_status(self, is_running: bool):
@@ -142,8 +143,17 @@ class JobsWindow(QWidget):
         :param is_running: Whether the job processing thread is running
         """
         self.stop_button.setEnabled(is_running)
-        for button in self.start_button_delegate.start_buttons.values():
-            button.setEnabled(not is_running)
+        self.update_button_states()
+
+    def update_button_states(self):
+        """
+        Update the state of all start buttons based on the current thread status.
+        """
+        is_running = self.jobs._thread and self.jobs._thread.is_alive()
+        for i in range(self.model.rowCount()):
+            button = self.table_view.indexWidget(self.model.index(i, 1))
+            if isinstance(button, QPushButton):
+                button.setEnabled(not is_running)
 
     @run_in_main_thread
     def update_job_status(self, job, status, hover):
@@ -183,8 +193,33 @@ if __name__ == "__main__":
         job.status_changed(job, job.status, job.status_hover)
         print(f"Finished {job.name}")
     
+    def long_running_work(job):
+        import time
+        for i in range(10):
+            job.status = f"Long running task... {i+1}/10"
+            job.status_hover = f"This task takes longer to complete. Step {i+1}"
+            job.status_changed(job, job.status, job.status_hover)
+            time.sleep(2)
+        print(f"Completed long running task: {job.name}")
+    
+    def error_prone_work(job):
+        import time, random
+        for i in range(3):
+            job.status = f"Risky operation... {i+1}/3"
+            job.status_hover = f"This task might fail. Attempt {i+1}"
+            job.status_changed(job, job.status, job.status_hover)
+            time.sleep(1)
+            if random.random() < 0.5:
+                raise Exception("Random failure occurred")
+        print(f"Successfully completed risky job: {job.name}")
+    
     Jobs.register("Example Job", example_work, example_callback)
-    job = jobs.create("Example Job")
+    Jobs.register("Long Running Job", long_running_work, example_callback)
+    Jobs.register("Error Prone Job", error_prone_work, example_callback)
+    
+    jobs.create("Example Job")
+    jobs.create("Long Running Job")
+    jobs.create("Error Prone Job")
     
     window = JobsWindow(jobs)
     window.show()
