@@ -4,7 +4,7 @@ from PyQt5.QtGui import QColor
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
-from AbstractAI.Helpers.Jobs import Job, Jobs, JobPriority
+from AbstractAI.Helpers.Jobs import Job, Jobs, JobPriority, JobStatus
 from ClassyFlaskDB.new.ClassInfo import ClassInfo
 from threading import Thread
 import time
@@ -187,39 +187,41 @@ if __name__ == "__main__":
     
     jobs = Jobs()
     
-    def example_work(job):
+    def example_work(job: Job) -> JobStatus:
         import time
         for i in range(5):
             if job.should_stop:
-                break
+                return JobStatus.STOPPED
             job.status = f"Working... {i+1}/5"
             job.status_hover = f"Detailed progress for step {i+1}"
             job.status_changed(job, job.status, job.status_hover)
             time.sleep(1)
         print(f"Doing work for {job.name or job.job_key}")
+        return JobStatus.SUCCESS
     
-    def example_callback(job):
+    def example_callback(job: Job):
         job.status = "Finished"
         job.status_hover = "Job completed successfully"
         job.status_changed(job, job.status, job.status_hover)
         print(f"Finished {job.name}")
     
-    def long_running_work(job):
+    def long_running_work(job: Job) -> JobStatus:
         import time
         for i in range(10):
             if job.should_stop:
-                break
+                return JobStatus.STOPPED
             job.status = f"Long running task... {i+1}/10"
             job.status_hover = f"This task takes longer to complete. Step {i+1}"
             job.status_changed(job, job.status, job.status_hover)
             time.sleep(2)
         print(f"Completed long running task: {job.name}")
+        return JobStatus.SUCCESS
     
-    def error_prone_work(job):
+    def error_prone_work(job: Job) -> JobStatus:
         import time, random
         for i in range(3):
             if job.should_stop:
-                break
+                return JobStatus.STOPPED
             job.status = f"Risky operation... {i+1}/3"
             job.status_hover = f"This task might fail. Attempt {i+1}"
             job.status_changed(job, job.status, job.status_hover)
@@ -227,6 +229,7 @@ if __name__ == "__main__":
             if random.random() < 0.5:
                 raise Exception("Random failure occurred")
         print(f"Successfully completed risky job: {job.name}")
+        return JobStatus.SUCCESS
     
     Jobs.register("Example Job", example_work, example_callback)
     Jobs.register("Long Running Job", long_running_work, example_callback)

@@ -13,10 +13,15 @@ class JobPriority(Enum):
     NEXT = 1
     NOW = 2
 
+class JobStatus(Enum):
+    FAILED = 0
+    SUCCESS = 1
+    STOPPED = 2
+
 @dataclass
 class JobCallable:
-    work: Callable
-    callback: Callable
+    work: Callable[['Job'], JobStatus]
+    callback: Callable[['Job'], None]
     creation_traceback: str
 
 @DATA(excluded_fields=["callback", "work", "status_changed", "should_stop"])
@@ -40,11 +45,11 @@ class Job(Object):
     failed_last_run: bool = False
     # Indicates if the job failed in its last execution
 
-    callback: Callable = field(init=False)
-    # Callback function to be called when the job is done
-
-    work: Callable = field(init=False)
-    # The main work function of the job
+    work: Callable[['Job'], JobStatus] = field(init=False)
+    # The bulk of the work to be done by this job which should monitor should_stop and can return STOPPED 
+    
+    callback: Callable[['Job'], None] = field(init=False)
+    # A quick non-blocking function to be called when work is done
 
     status_changed: Signal[[object, str, str], None] = Signal.field()
     # Signal emitted when the job's status changes
@@ -73,19 +78,21 @@ class Job(Object):
         while not self.done:
             time.sleep(0.05)
 
-    def __call__(self) -> bool:
+    def __call__(self) -> JobStatus:
         """
         Execute the job's work function and handle its completion or failure.
 
         :return: True if the job completed successfully, False otherwise
         """
         try:
+            status = JobStatus.SUCCESS
             if self.work:
-                self.work(self)
+                status = self.work(self)
             if self.callback:
                 self.callback(self)
-            self.done = True
-            return True
+            if status == JobStatus.SUCCESS:
+                self.done = True
+            return status
         except Exception as e:
             self.status = f"Error: {str(e)}"
             job_traceback = traceback.format_exc()
@@ -97,7 +104,7 @@ class Job(Object):
             self.status_changed(self, self.status, self.status_hover)
             print(f"Error in job {self.name or self.job_key}: {e}")
             self.failed_last_run = True
-            return False
+            return JobStatus.FAILED
 
 @DATA(excluded_fields=["changed", "thread_status_changed"])
 @dataclass
@@ -146,13 +153,15 @@ class Jobs(Object):
             return self._jobs.copy()
 
     @staticmethod
-    def register(job_key: str, work: Callable, callback: Callable):
+    def register(job_key: str, work: Callable[['Job'], JobStatus], callback: Callable[['Job'], None]):
         """
         Register a new job type with its work and callback functions.
 
         :param job_key: The key to identify the job type
-        :param work: The work function for the job
-        :param callback: The callback function for job completion
+        :param work: The bulk of the work do be done by the job, this 
+        function should monitor job.should_stop and return STOPPED
+        :param callback: Called after the job is finished, this should be
+        quick and non-blocking.
         """
         creation_traceback = traceback.format_stack()
         Jobs.registry[job_key] = JobCallable(work, callback, ''.join(creation_traceback))
@@ -244,15 +253,17 @@ class Jobs(Object):
             if self.current_job:
                 print(f"Starting job: {self.current_job.name or self.current_job.job_key}")
                 try:
-                    success = self.current_job()
+                    status = self.current_job()
                     changed = False
                     with self._lock:
-                        if success:
+                        if status == JobStatus.SUCCESS:
                             print(f"Job completed successfully: {self.current_job.name or self.current_job.job_key}")
                             self._jobs.remove(self.current_job)
                             changed = True
-                        else:
+                        elif status == JobStatus.FAILED:
                             print(f"Job failed: {self.current_job.name or self.current_job.job_key}")
+                        elif status == JobStatus.STOPPED:
+                            print(f"Job stopped: {self.current_job.name or self.current_job.job_key}")
                         self.current_job.should_stop = False
                         self.current_job = None
                     if changed:
