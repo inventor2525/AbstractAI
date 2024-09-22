@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Callable, Dict, Tuple, Optional, ClassVar, Type
-from weakref import ref, ReferenceType
 import time
 import traceback
 from threading import Thread, Lock, Event
@@ -24,7 +23,7 @@ class JobCallable:
     callback: Callable[['Job'], None]
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs"])
 @dataclass
 class Job(Object):
     job_key: str
@@ -54,7 +53,7 @@ class Job(Object):
     status_changed: Signal[[object, str, str], None] = Signal.field()
     # Signal emitted when the job's status changes
 
-    _jobs: Optional[ReferenceType['Jobs']] = field(init=False, default=None)
+    jobs: 'Jobs' = field(init=False, default=None)
     # Weak reference to the Jobs instance this job belongs to
 
     should_stop: bool = field(default=False, init=False)
@@ -67,9 +66,8 @@ class Job(Object):
         :param priority: The priority level for starting the job
         """
         self.failed_last_run = False
-        jobs = self._jobs() if self._jobs else None
-        if jobs:
-            jobs.start_job(self, priority)
+        if self.jobs:
+            self.jobs.start_job(self, priority)
 
     def wait(self):
         """
@@ -96,7 +94,7 @@ class Job(Object):
         except Exception as e:
             self.status = f"Error: {str(e)}"
             job_traceback = traceback.format_exc()
-            creation_traceback = self._jobs().registry[self.job_key].creation_traceback
+            creation_traceback = self.jobs.registry[self.job_key].creation_traceback
             self.status_hover = (
                 f"Error traceback:\n{job_traceback}\n\n"
                 f"Job registration traceback:\n{creation_traceback}"
@@ -106,7 +104,7 @@ class Job(Object):
             self.failed_last_run = True
             return JobStatus.FAILED
 
-@DATA(excluded_fields=["changed", "thread_status_changed"])
+@DATA(included_fields=["_jobs"], excluded_fields=["changed", "thread_status_changed", "registry", "current_job"])
 @dataclass
 class Jobs(Object):
     _jobs: List[Job] = field(default_factory=list)
@@ -138,7 +136,7 @@ class Jobs(Object):
             if job.job_key in self.registry:
                 job_callable = self.registry[job.job_key]
                 job.work, job.callback = job_callable.work, job_callable.callback
-            job._jobs = ref(self)
+            job.jobs = self
 
     @property
     def jobs(self) -> List[Job]:
@@ -178,7 +176,7 @@ class Jobs(Object):
                 raise ValueError(f"No registered job type with key: {job.job_key}")
             job_callable = self.registry[job.job_key]
             job.work, job.callback = job_callable.work, job_callable.callback
-            job._jobs = ref(self)
+            job.jobs = self
             self._jobs.append(job)
         self.changed()
         return job
