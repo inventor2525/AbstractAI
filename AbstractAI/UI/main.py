@@ -72,7 +72,13 @@ class Application(QMainWindow):
 		Context.jobs = Context.engine.query(Jobs).first()
 		if Context.jobs is None:
 			Context.jobs = Jobs()
-			
+		
+		# Set up transcription
+		hacky_tts_settings = Context.engine.query(Hacky_Whisper_Settings).first()
+		if hacky_tts_settings is None:
+			hacky_tts_settings = Hacky_Whisper_Settings()
+		
+		Context.transcriber = Transcriber(hacky_tts_settings)
 		self.init_settings()
 		
 		# Create a user:
@@ -173,7 +179,7 @@ class Application(QMainWindow):
 			for model in self.llmConfigs.models:
 				model.new_id(True)
 			Context.engine.merge(self.llmConfigs)
-			Context.engine.merge(self.chatUI.transcription.hacky_tts_settings)
+			Context.engine.merge(Context.transcriber.hacky_tts_settings)
 			Context.engine.merge(MobileWindow.load_tts_settings())
 		self.settings_window.settingsSaved.connect(save_settings)
 		
@@ -282,7 +288,7 @@ class Application(QMainWindow):
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
 		
 		self.settings_window.addSettingItem(SettingItem(
-			self.chatUI.transcription.hacky_tts_settings,
+			Context.transcriber.hacky_tts_settings,
 			"TTS_Settings",
 			excluded_fields=["auto_id"]
 		))

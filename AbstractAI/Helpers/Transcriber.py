@@ -4,7 +4,7 @@ from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 from ClassyFlaskDB.DefaultModel import Object, DATA
 from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 from AbstractAI.UI.Context import Context
-from AbstractAI.Helpers.Jobs import Jobs, Job
+from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
 from pydub import AudioSegment
 from dataclasses import dataclass, field
 from typing import Optional
@@ -22,9 +22,18 @@ class Transcription(Object):
     raw_data: dict = field(default_factory=dict, init=False)
 
     def __str__(self):
+        if not self.audio_length:
+            return "No recording."
+        if not self.transcription_time:
+            return f"Un-Transcribed recording, {self.audio_length:.2f}s"
         return (f"Recording time: {self.audio_length:.2f}s | "
                 f"Transcription time: {self.transcription_time:.2f}s | "
                 f"Transcription rate: {self.transcription_rate:.2f}s/s")
+
+@DATA
+@dataclass
+class TranscriptionJob(Job):
+    transcription: Transcription = field(default=None)
 
 class Transcriber:
     def __init__(self, hacky_tts_settings: Hacky_Whisper_Settings):
@@ -39,8 +48,6 @@ class Transcriber:
             self._ensure_groq_loaded()
         else:
             self._ensure_local_model_loaded()
-
-        Jobs.register("transcription", self.work_transcription, self.callback_transcription)
 
     def _ensure_groq_loaded(self):
         if hasattr(self, "client"):
@@ -89,9 +96,6 @@ class Transcriber:
         transcription.audio_length = time.time() - self.start_time
 
         Context.engine.merge(transcription)
-        
-        job = Job(job_key="transcription", name=f"Transcription {transcription.auto_id}")
-        Context.jobs.add(job)
 
         return transcription
 
@@ -135,32 +139,13 @@ class Transcriber:
             segments_list = list(segments)
 
         transcription.raw_data = {
-            "language": info.language,
-            "language_probability": info.language_probability,
-            "segments": [
-                {
-                    "start": segment.start,
-                    "end": segment.end,
-                    "text": segment.text
-                } for segment in segments_list
-            ]
+            "segments": [dict(segment._asdict()) for segment in segments_list],
+            "info": dict(info._asdict())
         }
         transcription.transcription = " ".join([segment.text for segment in segments_list])
 
-    def play_last_recording(self, transcription: Transcription):
+    def play_transcription(self, transcription: Transcription):
         if transcription and transcription.audio_segment:
             self.player.play(transcription.audio_segment)
         else:
             print("No recording to play. Record something first.")
-
-    def work_transcription(self, job: Job) -> bool:
-        transcription = Context.engine.query(Transcription).filter_by_id(job.name.split()[-1])
-        if transcription:
-            self.transcribe(transcription)
-            return True
-        return False
-
-    def callback_transcription(self, job: Job):
-        transcription = Context.engine.query(Transcription).filter_by_id(job.name.split()[-1])
-        if transcription:
-            print(f"Transcription completed: {transcription}")

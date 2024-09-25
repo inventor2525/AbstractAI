@@ -12,157 +12,17 @@ from AbstractAI.Automation.Agent import Agent, AgentConfig
 from copy import deepcopy
 
 from AbstractAI.Conversable import Conversable
-from AbstractAI.Helpers.AudioRecorder import AudioRecorder
-from AbstractAI.Helpers.AudioPlayer import AudioPlayer
+from AbstractAI.Helpers.Jobs import Jobs, JobStatus
+from AbstractAI.Helpers.Transcriber import Transcriber, Transcription, TranscriptionJob
 from AbstractAI.UI.Elements.RecordingIndicator import RecordingIndicator
 from AbstractAI.UI.Support.KeyComboHandler import KeyComboHandler, KeyAction, KeyEvent
 from AbstractAI.Helpers.Signal import Signal
 import os
 import time
-from datetime import datetime
-import json
 
 import os
 from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 
-class Transcription:
-	def __init__(self, output_folder, hacky_tts_settings :Hacky_Whisper_Settings):
-		self.recorder = AudioRecorder()
-		self.player = AudioPlayer()
-		self.hacky_tts_settings = hacky_tts_settings
-		
-		if hacky_tts_settings.use_groq:
-			self._ensure_groq_loaded()
-		else:
-			self._ensure_local_model_loaded()
-			
-		self.output_folder = output_folder
-		self.is_recording = False
-		self.last_recording = None
-		self.last_file_name = None
-		
-		self.recording_indicator = None
-	
-	def _ensure_groq_loaded(self):
-		if hasattr(self, "client"):
-			return
-		from groq import Groq
-		try:
-			self.client = Groq(api_key=self.hacky_tts_settings.groq_api_key)
-		except Exception as e:
-			print("Error loading groq whisper {e}")
-		
-	def _ensure_local_model_loaded(self):
-		if hasattr(self, "model"):
-			return
-		from faster_whisper import WhisperModel
-		try:
-			self.model = WhisperModel(
-				self.hacky_tts_settings.model_name, 
-				device=self.hacky_tts_settings.device, 
-				compute_type=self.hacky_tts_settings.compute_type
-			)
-		except Exception as e:
-			print("Error loading local whisper {e}")
-		
-	def toggle_recording(self):
-		if self.is_recording:
-			self.stop_recording()
-		else:
-			self.start_recording()
-
-	def start_recording(self):
-		if self.recording_indicator:
-			self.recording_indicator.is_recording = True
-		self.recorder.start_recording()
-		self.start_time = time.time()
-		self.is_recording = True
-
-	def stop_recording(self):
-		if self.recording_indicator:
-			self.recording_indicator.is_recording = False
-		self.last_recording = self.recorder.stop_recording()
-		self.is_recording = False
-		
-		self.last_file_name = f"{datetime.now().strftime('%Y-%m-%d %H-%M-%S.%f')[:-3]}"
-		audio_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.mp3")
-		self.last_recording.export(audio_file_path, format="mp3")
-
-	def transcribe_last_recording(self):
-		if self.last_file_name is None:
-			print("No recording to transcribe.")
-			return
-		if self.recording_indicator:
-			self.recording_indicator.is_processing = True
-		audio_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.mp3")
-		audio_length = self.last_recording.duration_seconds
-		
-		start_time = time.time()
-		try:
-			self._ensure_groq_loaded()
-			with open(audio_file_path, "rb") as file:
-				transcription = dict(self.client.audio.transcriptions.create(
-				file=(audio_file_path, file.read()),
-				model="whisper-large-v3",
-				prompt="Specify context or spelling",  # Optional
-				response_format="verbose_json",  # Optional
-				language="en",  # Optional
-				temperature=0.0  # Optional
-				))
-				end_time = time.time()
-				
-				transcription_time = end_time - start_time
-				transcription_rate = transcription_time / audio_length
-
-				full_text = transcription['text']
-
-				transcription_data = {
-					"raw":transcription,
-					"full_text": full_text,
-					"audio_length": audio_length,
-					"transcription_time": transcription_time,
-					"transcription_rate": transcription_rate
-				}
-		except:
-			self._ensure_local_model_loaded()
-			segments, info = self.model.transcribe(audio_file_path, beam_size=5)
-			segments_list = list(segments)
-			end_time = time.time()
-			
-			transcription_time = end_time - start_time
-			transcription_rate = transcription_time / audio_length
-
-			full_text = " ".join([segment.text for segment in segments_list])
-
-			transcription_data = {
-				"language": info.language,
-				"language_probability": info.language_probability,
-				"segments": [
-					{
-						"start": segment.start,
-						"end": segment.end,
-						"text": segment.text
-					} for segment in segments_list
-				],
-				"full_text": full_text,
-				"audio_length": audio_length,
-				"transcription_time": transcription_time,
-				"transcription_rate": transcription_rate
-			}
-
-		json_file_path = os.path.join(self.output_folder, f"{self.last_file_name}.json")
-		with open(json_file_path, 'w', encoding='utf-8') as f:
-			json.dump(transcription_data, f, ensure_ascii=False, indent=4)
-		if self.recording_indicator:
-			self.recording_indicator.is_processing = False
-		return full_text, audio_length, transcription_time, transcription_rate
-
-	def play_last_recording(self):
-		if self.last_recording is not None:
-			self.player.play(self.last_recording)
-		else:
-			print("No recording to play. Record something first.")
-			
 class ChatUI(QWidget):
 	stop_generating = pyqtSignal()
 	
@@ -199,21 +59,10 @@ class ChatUI(QWidget):
 		self.caller = CallerInfo.catch([0,1])
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
-		
-		# Set up transcription
-		hacky_tts_settings = Context.engine.query(Hacky_Whisper_Settings).first()
-		if hacky_tts_settings is None:
-			hacky_tts_settings = Hacky_Whisper_Settings()
-			
-		db_path = Context.settings.value("main/storage_location", "")
-		db_dir = os.path.dirname(db_path)
-		self.recordings_folder = os.path.join(db_dir, "recordings")
-		os.makedirs(self.recordings_folder, exist_ok=True)
-		self.transcription = Transcription(self.recordings_folder, hacky_tts_settings)
-		
+
 		self.init_ui(conversation)
-		self.transcription.recording_indicator = self.recording_indicator
-		
+		Context.transcriber.recording_indicator = self.recording_indicator
+
 		# Set up key handler
 		self.key_handler = KeyComboHandler(key_actions=[
 			KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
@@ -221,6 +70,9 @@ class ChatUI(QWidget):
 			KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_RIGHTCTRL', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
 			KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording)
 		])
+
+		# Register jobs
+		Jobs.register("Transcribe", self.transcription_work, self.transcription_callback)
 
 	def init_ui(self, conversation:Conversation = None):
 		self.layout = QVBoxLayout()
@@ -373,19 +225,22 @@ class ChatUI(QWidget):
 		SwitchboardAgent.call_switchboard(user_message)
 		self.input_field.clear()
 		
+	def transcription_work(self, job: TranscriptionJob) -> bool:
+		if job.transcription:
+			Context.transcriber.transcribe(job.transcription)
+			return True
+		return False
+
+	def transcription_callback(self, job: TranscriptionJob):
+		if job.transcription:
+			self.timer_label.setText(str(job.transcription))
+			self.input_field.append(job.transcription.transcription)
+
 	def toggle_recording(self):
-		self.transcription.toggle_recording()
-		if self.transcription.is_recording:
-			self.toggle_recording_button.setText("Stop Recording")
-		else:
-			self.play_button.setEnabled(True)
-			self.toggle_recording_button.setText("Start Recording")
-			full_text, audio_length, transcription_time, transcription_rate = self.transcription.transcribe_last_recording()
-			stats_text = f"Recording time: {audio_length:.2f}s | "
-			stats_text += f"Transcription time: {transcription_time:.2f}s | "
-			stats_text += f"Transcription rate: {transcription_rate:.2f}s/s"
-			self.timer_label.setText(stats_text)
-			self.input_field.append(full_text)
+		transcription = Context.transcriber.toggle_recording()
+		if transcription:
+			job = TranscriptionJob(job_key="Transcribe", name=f"Transcription {transcription.auto_id[-4:]}", transcription=transcription)
+			Context.jobs.add(job)
 			
 	def update_timer(self):
 		if self.transcription.is_recording:

@@ -131,12 +131,25 @@ class Jobs(Object):
     current_job: Optional[Job] = field(default=None, init=False)
     # The job that is currently running
     
+    _un_registered_jobs: List[Job] = field(default_factory=list)
+    # temp list of jobs that were loaded by the orm that might not have had their callable's registered yet
+    
     def __post_init__(self):
-        for job in self._jobs:
+        self._un_registered_jobs = list(self._jobs)
+        with self._lock:
+            self._ensure_loaded_jobs_registered()
+        
+    def _ensure_loaded_jobs_registered(self):
+        new_urj = []
+        for job in self._un_registered_jobs:
+            job.jobs = self
+            
             if job.job_key in self.registry:
                 job_callable = self.registry[job.job_key]
                 job.work, job.callback = job_callable.work, job_callable.callback
-            job.jobs = self
+            else:
+                new_urj.append(job)
+        self._un_registered_jobs = new_urj
 
     @property
     def jobs(self) -> List[Job]:
@@ -187,7 +200,7 @@ class Jobs(Object):
 
         :param job: The job to start
         :param priority: The priority level for starting the job
-        """
+        """New Conversation
         with self._lock:
             if priority != JobPriority.WHENEVER and job in self._jobs:
                 self._jobs.remove(job)
@@ -242,7 +255,7 @@ class Jobs(Object):
         while not self._stop_event.is_set():
             with self._lock:
                 for j in self._jobs:
-                    if not j.failed_last_run:
+                    if not j.failed_last_run and (j.work or j.callback):
                         self.current_job = j
                         break
                 else:
