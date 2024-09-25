@@ -20,6 +20,7 @@ from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 Stopwatch("Setting Models", log_statistics=False)
 from AbstractAI.Model.Settings.LLMSettings import *
 llm_settings_types = LLMSettings.load_subclasses()
+from AbstractAI.Helpers.Jobs import *
 from AbstractAI.UI.Windows.MobileWindow import MobileWindow, OpenAI_TTS_Settings
 
 from AbstractAI.LLMs.LLM import LLM
@@ -67,6 +68,10 @@ class Application(QMainWindow):
 			
 		if self.llmConfigs is None:
 			self.llmConfigs = LLMConfigs()
+		
+		Context.jobs = Context.engine.query(Jobs).first()
+		if Context.jobs is None:
+			Context.jobs = Jobs()
 			
 		self.init_settings()
 		
