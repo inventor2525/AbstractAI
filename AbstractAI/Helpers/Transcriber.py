@@ -30,7 +30,7 @@ class Transcription(Object):
                 f"Transcription time: {self.transcription_time:.2f}s | "
                 f"Transcription rate: {self.transcription_rate:.2f}s/s")
 
-@DATA
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs"])
 @dataclass
 class TranscriptionJob(Job):
     transcription: Transcription = field(default=None)
@@ -43,6 +43,7 @@ class Transcriber:
         self.is_recording = False
         self.recording_indicator = None
         self.start_time = None
+        self.last_transcription:Transcription = None
 
         if hacky_tts_settings.use_groq:
             self._ensure_groq_loaded()
@@ -94,7 +95,8 @@ class Transcriber:
         transcription = Transcription()
         transcription.audio_segment = audio_segment
         transcription.audio_length = time.time() - self.start_time
-
+        self.last_transcription = transcription
+        
         Context.engine.merge(transcription)
 
         return transcription
@@ -149,3 +151,6 @@ class Transcriber:
             self.player.play(transcription.audio_segment)
         else:
             print("No recording to play. Record something first.")
+    
+    def play_last_recording(self):
+        self.play_transcription(self.last_transcription)

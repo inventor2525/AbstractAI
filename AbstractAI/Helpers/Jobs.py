@@ -200,7 +200,7 @@ class Jobs(Object):
 
         :param job: The job to start
         :param priority: The priority level for starting the job
-        """New Conversation
+        """
         with self._lock:
             if priority != JobPriority.WHENEVER and job in self._jobs:
                 self._jobs.remove(job)

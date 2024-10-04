@@ -7,6 +7,7 @@ from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.UI.Context import Context
 from AbstractAI.Model.Converse import *
 from AbstractAI.Model.Converse.MessageSources.FilesSource import ItemsModel
+from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from AbstractAI.Automation.Agent import Agent, AgentConfig
 from copy import deepcopy
@@ -205,7 +206,7 @@ class ChatUI(QWidget):
 		# Add play last recording button
 		self.play_button = QPushButton("Play Last Recording")
 		self.play_button.setEnabled(False)
-		self.play_button.clicked.connect(self.transcription.play_last_recording)
+		self.play_button.clicked.connect(Context.transcriber.play_last_recording)
 		self.recording_buttons_layout.addWidget(self.play_button, alignment=Qt.AlignBottom)
 
 		# Add timer label
@@ -225,12 +226,14 @@ class ChatUI(QWidget):
 		SwitchboardAgent.call_switchboard(user_message)
 		self.input_field.clear()
 		
-	def transcription_work(self, job: TranscriptionJob) -> bool:
+	def transcription_work(self, job: TranscriptionJob) -> JobStatus:
 		if job.transcription:
 			Context.transcriber.transcribe(job.transcription)
-			return True
-		return False
+			return JobStatus.SUCCESS
+		job.status_hover = "No transcription object supplied."
+		return JobStatus.FAILED
 
+	@run_in_main_thread
 	def transcription_callback(self, job: TranscriptionJob):
 		if job.transcription:
 			self.timer_label.setText(str(job.transcription))
@@ -243,8 +246,8 @@ class ChatUI(QWidget):
 			Context.jobs.add(job)
 			
 	def update_timer(self):
-		if self.transcription.is_recording:
-			elapsed_time = time.time() - self.transcription.start_time
+		if Context.transcriber.is_recording:
+			elapsed_time = time.time() - Context.transcriber.start_time
 			self.timer_label.setText(f"Time: {elapsed_time:.1f}s")
 	
 	def clear_selection(self):

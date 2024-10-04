@@ -20,7 +20,9 @@ from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 Stopwatch("Setting Models", log_statistics=False)
 from AbstractAI.Model.Settings.LLMSettings import *
 llm_settings_types = LLMSettings.load_subclasses()
+from ClassyFlaskDB.new.AudioTranscoder import AudioTranscoder
 from AbstractAI.Helpers.Jobs import *
+from AbstractAI.UI.Windows.JobsUI import *
 from AbstractAI.UI.Windows.MobileWindow import MobileWindow, OpenAI_TTS_Settings
 
 from AbstractAI.LLMs.LLM import LLM
@@ -65,13 +67,9 @@ class Application(QMainWindow):
 		Context.engine = SQLStorageEngine(f"sqlite:///new_engine_test1.db", DATA)#{Context.args.storage_location}", DATA)
 		
 		self.llmConfigs = Context.engine.query(LLMConfigs).first()
-			
+		
 		if self.llmConfigs is None:
 			self.llmConfigs = LLMConfigs()
-		
-		Context.jobs = Context.engine.query(Jobs).first()
-		if Context.jobs is None:
-			Context.jobs = Jobs()
 		
 		# Set up transcription
 		hacky_tts_settings = Context.engine.query(Hacky_Whisper_Settings).first()
@@ -119,8 +117,25 @@ class Application(QMainWindow):
 		
 		Context.main_agent = MainAgent()
 		
+		Context.jobs = Context.engine.query(Jobs).first()
+		if Context.jobs is None:
+			Context.jobs = Jobs()
+		def save_jobs():
+			with Context.jobs._lock:
+				Context.engine.merge(Context.jobs)
+		self.app.aboutToQuit.connect(save_jobs)
+		Context.jobs.changed.connect(save_jobs)
+		
 		Stopwatch.end_scope(log_statistics=False)
+		
+		self.jobs_window = JobsWindow(Context.jobs)
+		jobs_window_button = QPushButton("Open Jobs List")
+		jobs_window_button.clicked.connect(self.open_jobs_list)
+		self.chatUI.advanced_controls_header_layout.insertWidget(2, jobs_window_button)
 	
+	def open_jobs_list(self):
+		self.jobs_window.show()
+		
 	def init_settings(self):
 		def settings_changed(path:str):
 			if "Models/" in path:

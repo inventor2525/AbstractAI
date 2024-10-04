@@ -4,7 +4,6 @@ from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.Signal import Signal
 from AbstractAI.Automation.MainAgent import MainAgent
 from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
-from AbstractAI.Helpers.Transcriber import Transcriber
 from AbstractAI.Helpers.Jobs import Jobs
 from argparse import Namespace
 
@@ -13,7 +12,7 @@ class Context:
 	args:Namespace = None
 	settings: QSettings = None
 	engine:SQLStorageEngine = None
-	transcriber: Transcriber = None
+	transcriber: 'Transcriber' = None
 	jobs:Jobs = None
 	start_str: str = ""
 	
@@ -59,3 +58,5 @@ class Context:
 		return self.llm_loaded
 
 Context = Context.singleton()
+
+from AbstractAI.Helpers.Transcriber import Transcriber
