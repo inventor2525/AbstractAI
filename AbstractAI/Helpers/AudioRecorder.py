@@ -7,23 +7,19 @@ import threading
 class AudioRecorder:
 	def __init__(self):
 		devices = sd.query_devices()
-		input_device_index = None
-		sample_rate = 0
-		for i, device in enumerate(devices):
-			if device['max_input_channels'] > 0:
-				input_device_index = i
-				self.sample_rate = device['default_samplerate']
-				break
-		if input_device_index is None:
+		input_devices = [(index,device) for index,device in enumerate(devices) if device['max_input_channels'] > 0]
+		if len(input_devices) == 0:
 			raise ValueError("No input devices found.")
-		self.stream = sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='float32', device=input_device_index)
+		self.input_device_index, self.device = input_devices[0]
+		self.sample_rate = self.device['default_samplerate']
+		
 		self.recording_thread = self.RecordingThread(self)
 		self.lock = threading.Lock()
-		self.buffers = [[]]  # Initialize with an empty list
+		self.buffers = [[]]
 		self.recording_thread.start()
 
 	class RecordingThread(threading.Thread):
-		def __init__(self, recorder):
+		def __init__(self, recorder:'AudioRecorder'):
 			super().__init__(daemon=True)
 			self.listen = True
 			self.record = False
@@ -32,10 +28,15 @@ class AudioRecorder:
 
 		def run(self):
 			print("Starting recorder thread.")
-			self.recorder.stream.start()
+			self.stream = sd.InputStream(
+				samplerate=self.recorder.sample_rate,
+				channels=1, dtype='float32', 
+				device=self.recorder.input_device_index
+			)
+			self.stream.start()
 			try:
 				while self.listen:
-					data, _ = self.recorder.stream.read(1024)
+					data, _ = self.stream.read(1024)
 					if self.record:
 						with self.recorder.lock:
 							self.recorder.buffers[-1].append(data.copy())
@@ -43,7 +44,9 @@ class AudioRecorder:
 						self.temporary_buffer = data
 			except Exception as e:
 				print("Stopping recorder thread.")
-			self.recorder.stream.stop()
+			self.stream.stop()
+			self.stream.close()
+			del self.stream
 	
 	def start_recording(self) -> bool:
 		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant record when not listening."
