@@ -25,6 +25,7 @@ class AudioRecorder:
 	class RecordingThread(threading.Thread):
 		def __init__(self, recorder):
 			super().__init__(daemon=True)
+			self.listen = True
 			self.record = False
 			self.recorder = recorder
 			self.temporary_buffer = np.array([], dtype='float32')
@@ -33,19 +34,19 @@ class AudioRecorder:
 			print("Starting recorder thread.")
 			self.recorder.stream.start()
 			try:
-				while True:
+				while self.listen:
 					data, _ = self.recorder.stream.read(1024)
 					if self.record:
 						with self.recorder.lock:
 							self.recorder.buffers[-1].append(data.copy())
 					else:
 						self.temporary_buffer = data
-			except KeyboardInterrupt:
+			except Exception as e:
 				print("Stopping recorder thread.")
-				self.recorder.stream.stop()
-				return
-
+			self.recorder.stream.stop()
+	
 	def start_recording(self) -> bool:
+		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant record when not listening."
 		with self.lock:
 			Stopwatch.singleton.start("Recording")
 			if self.recording_thread.record:
@@ -55,6 +56,7 @@ class AudioRecorder:
 			return True
 
 	def stop_recording(self):
+		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant stop recording after listening stops."
 		with self.lock:
 			self.last_record_time = Stopwatch.singleton.stop("Recording")["last"]
 			
@@ -73,6 +75,7 @@ class AudioRecorder:
 
 	def peak(self):
 		peak_buffer = None
+		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant peak recordings when not listening."
 		with self.lock:
 			if self.buffers[-1]:
 				peak_buffer = np.concatenate(self.buffers[-1])
@@ -88,3 +91,16 @@ class AudioRecorder:
 			)
 		else:
 			return AudioSegment.empty()
+	
+	def stop_listening(self):
+		'''
+		There is a background thread that pulls the
+		audio stream from the device so it can be
+		recorded. This shuts that down before app
+		close, and blocks until it's quickly closed.
+		'''
+		if self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen:
+			print("Stopping recorder...")
+			self.recording_thread.listen = False
+			self.recording_thread.join()
+			print("Recorder terminated!")

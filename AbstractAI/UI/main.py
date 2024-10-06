@@ -124,6 +124,8 @@ class Application(QMainWindow):
 			with Context.jobs._lock:
 				Context.engine.merge(Context.jobs)
 		self.app.aboutToQuit.connect(save_jobs)
+		self.app.aboutToQuit.connect(Context.transcriber.recorder.stop_listening)
+		self.app.aboutToQuit.connect(Context.jobs.stop)
 		Context.jobs.changed.connect(save_jobs)
 		
 		Stopwatch.end_scope(log_statistics=False)
@@ -431,10 +433,6 @@ class Application(QMainWindow):
 	def write_settings(self):
 		Context.settings.setValue("geometry", self.saveGeometry())
 	
-	def closeEvent(self, event):
-		self.write_settings()
-		super().closeEvent(event)
-	
 	def stop_generating(self):
 		self._should_generate = False
 		
@@ -540,6 +538,8 @@ class Application(QMainWindow):
 		self.task.start()
 		
 	def closeEvent(self, event):
+		Context.transcriber.recorder.stop_listening()
+		self.write_settings()
 		QApplication.quit()
 		
 Stopwatch.end_scope(log_statistics=False)
