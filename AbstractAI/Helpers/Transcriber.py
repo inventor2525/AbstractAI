@@ -110,17 +110,6 @@ class Transcriber:
         if self.recording_indicator:
             self.recording_indicator.is_processing = True
         
-        #TODO: Why do I have to pre-read these for them to not get set none immediately 
-        #after setting them, some sort of weird race condition, probably from it still
-        #loading from the db, for some reason, after having complete the set operation
-        #in specifically the condition that I create a transcription that is then
-        #fulfilled AFTER a app restart:
-        transcription.raw_data
-        transcription.transcription
-        transcription.audio_length
-        transcription.transcription_time
-        transcription.transcription_rate
-        
         start_time = time.time()
         try:
             self._transcribe_with_groq(transcription)
