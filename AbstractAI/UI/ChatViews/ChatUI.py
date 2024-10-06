@@ -242,8 +242,11 @@ class ChatUI(QWidget):
 	def toggle_recording(self):
 		transcription = Context.transcriber.toggle_recording()
 		if transcription:
+			self.toggle_recording_button.setText("Start Recording")
 			job = TranscriptionJob(job_key="Transcribe", name=f"Transcription {transcription.auto_id[-4:]}", transcription=transcription)
 			Context.jobs.add(job)
+		else:
+			self.toggle_recording_button.setText("Stop Recording")
 			
 	def update_timer(self):
 		if Context.transcriber.is_recording:

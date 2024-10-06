@@ -26,9 +26,14 @@ class Transcription(Object):
             return "No recording."
         if not self.transcription_time:
             return f"Un-Transcribed recording, {self.audio_length:.2f}s"
-        return (f"Recording time: {self.audio_length:.2f}s | "
-                f"Transcription time: {self.transcription_time:.2f}s | "
-                f"Transcription rate: {self.transcription_rate:.2f}s/s")
+        try:
+            return (f"Recording time: {self.audio_length:.2f}s | "
+                    f"Transcription time: {self.transcription_time:.2f}s | "
+                    f"Transcription rate: {self.transcription_rate:.2f}s/s")
+        except Exception as e:
+            return (f"Recording time: {self.audio_length}s | "
+                    f"Transcription time: {self.transcription_time}s | "
+                    f"Transcription rate: {self.transcription_rate}s/s")
 
 @DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs"])
 @dataclass
@@ -104,7 +109,18 @@ class Transcriber:
     def transcribe(self, transcription: Transcription) -> Transcription:
         if self.recording_indicator:
             self.recording_indicator.is_processing = True
-
+        
+        #TODO: Why do I have to pre-read these for them to not get set none immediately 
+        #after setting them, some sort of weird race condition, probably from it still
+        #loading from the db, for some reason, after having complete the set operation
+        #in specifically the condition that I create a transcription that is then
+        #fulfilled AFTER a app restart:
+        transcription.raw_data
+        transcription.transcription
+        transcription.audio_length
+        transcription.transcription_time
+        transcription.transcription_rate
+        
         start_time = time.time()
         try:
             self._transcribe_with_groq(transcription)
@@ -122,23 +138,26 @@ class Transcriber:
 
     def _transcribe_with_groq(self, transcription: Transcription):
         self._ensure_groq_loaded()
-        audio_data = transcription.audio_segment.export(format="mp3").read()
-        result = self.client.audio.transcriptions.create(
-            file=("audio.mp3", audio_data),
-            model="whisper-large-v3",
-            prompt="Specify context or spelling",
-            response_format="verbose_json",
-            language="en",
-            temperature=0.0
-        )
-        transcription.raw_data = dict(result)
+        audio_path = Context.engine.get_binary_path(transcription.audio_segment)
+        data = None
+        with open(audio_path, "rb") as audio_file:
+            result = self.client.audio.transcriptions.create(
+                file=(audio_path, audio_file.read()),
+                model="whisper-large-v3",
+                prompt="Specify context or spelling",
+                response_format="verbose_json",
+                language="en",
+                temperature=0.0
+            )
+            data = result.to_dict()
+        transcription.raw_data = data
         transcription.transcription = transcription.raw_data['text']
 
     def _transcribe_with_local_model(self, transcription: Transcription):
         self._ensure_local_model_loaded()
-        with transcription.audio_segment.export(format="wav") as audio_file:
-            segments, info = self.model.transcribe(audio_file.name, beam_size=5)
-            segments_list = list(segments)
+        audio_path = Context.engine.get_binary_path(transcription.audio_segment)
+        segments, info = self.model.transcribe(audio_path, beam_size=5)
+        segments_list = list(segments)
 
         transcription.raw_data = {
             "segments": [dict(segment._asdict()) for segment in segments_list],
