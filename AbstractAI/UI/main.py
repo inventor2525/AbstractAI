@@ -134,9 +134,12 @@ class Application(QMainWindow):
 		jobs_window_button = QPushButton("Open Jobs List")
 		jobs_window_button.clicked.connect(self.open_jobs_list)
 		self.chatUI.advanced_controls_header_layout.insertWidget(2, jobs_window_button)
+		Context.jobs.start()
 	
 	def open_jobs_list(self):
 		self.jobs_window.show()
+		self.jobs_window.raise_()
+		self.jobs_window.activateWindow()
 		
 	def init_settings(self):
 		def settings_changed(path:str):
