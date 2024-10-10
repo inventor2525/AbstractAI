@@ -134,6 +134,9 @@ class Jobs(Object):
     _un_registered_jobs: List[Job] = field(default_factory=list)
     # temp list of jobs that were loaded by the orm that might not have had their callable's registered yet
     
+    should_save_job: ClassVar[Signal[[Job],None]] = Signal[[Job],None]()
+    # Called after the job is run so it can be saved to a db, along with it's data
+    
     def __post_init__(self):
         self._un_registered_jobs = list(self._jobs)
         with self._lock:
@@ -276,12 +279,13 @@ class Jobs(Object):
                         elif status == JobStatus.STOPPED:
                             print(f"Job stopped: {self.current_job.name or self.current_job.job_key}")
                         self.current_job.should_stop = False
-                        self.current_job = None
                     if changed:
                         self.changed()
                 except Exception as e:
                     print(f"Error in job {self.current_job.name or self.current_job.job_key}: {e}. Moving to the next job.")
-                    self.current_job = None
+                
+                Jobs.should_save_job(self.current_job)
+                self.current_job = None
             else:
                 time.sleep(0.05)
 

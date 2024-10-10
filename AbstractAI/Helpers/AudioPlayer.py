@@ -10,10 +10,11 @@ class AudioPlayer:
         self.thread = threading.Thread(target=self.run)
 
     def play(self, audio:AudioSegment) -> None:
-        self.queue.put(audio)
-        if not self.playing:
-            self.thread = threading.Thread(target=self.run)
-            self.thread.start()
+        if audio:
+            self.queue.put(audio)
+            if not self.playing:
+                self.thread = threading.Thread(target=self.run)
+                self.thread.start()
 
     def run(self):
         self.playing = True

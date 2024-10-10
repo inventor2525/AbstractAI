@@ -9,6 +9,7 @@ from AbstractAI.Automation.Agent import Agent
 from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationAction
 from AbstractAI.Model.Settings.OpenAI_TTS_Settings import OpenAI_TTS_Settings
+from AbstractAI.TextToSpeech.TTS import OpenAI_TTS, TTSJob
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from openai import OpenAI
 from pathlib import Path
@@ -33,7 +34,8 @@ class MobileWindow(QMainWindow):
         Context.context_changed.connect(self.on_context_changed)
         Context.conversation_selected.connect(self.on_conversation_changed)
         
-        self.openai_client = OpenAI(api_key=MobileWindow.load_tts_settings().api_key)
+        tts_settings = MobileWindow.load_tts_settings()
+        self.tts = OpenAI_TTS(self.tts_complete, tts_settings)
         self.audio_player = AudioPlayer()
         
         self.playback_override_getter = None
@@ -171,7 +173,7 @@ class MobileWindow(QMainWindow):
 
     def toggle_recording(self):
         self.chat_ui.toggle_recording()
-        if self.chat_ui.transcription.is_recording:
+        if Context.transcriber.is_recording:
             self.record_button.setText("Stop Recording")
         else:
             self.record_button.setText("Start Recording")
@@ -344,30 +346,15 @@ class MobileWindow(QMainWindow):
         if self.playback_override_getter:
             text = self.playback_override_getter()
         else:
-            text = Context.conversation[-1].content if Context.conversation else ""
+            text = Context.conversation[-1].content if Context.conversation else self.chat_ui.input_field.toPlainText()
         
-        self.speak(text)
+        if len(text)>0:
+            self.tts.speak(text)
 
-    def speak(self, text: str):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S.%f")[:-3]
-        speech_file_path = Path(os.path.join(os.path.dirname(__file__), f"speech {timestamp}.mp3"))
-        text_file_path = Path(os.path.join(os.path.dirname(__file__), f"speech {timestamp}.txt"))
-
-        # Save the text to a file
-        with open(text_file_path, 'w', encoding='utf-8') as text_file:
-            text_file.write(text)
-
-        # Generate and save the speech audio
-        response = self.openai_client.audio.speech.create(
-            model=self.load_tts_settings().model,
-            voice=self.load_tts_settings().voice,
-            input=text
-        )
-        response.write_to_file(speech_file_path)
+    @run_in_main_thread
+    def tts_complete(self, job:TTSJob):
+        self.audio_player.play(job.data.speech)
         
-        audio_segment = AudioSegment.from_mp3(str(speech_file_path))
-        self.audio_player.play(audio_segment)
-
     def summarize_for_tts(self, text: str) -> str:
         conversation = Conversation("Summarizing for text-to-speech", "Summarize text for TTS") | CallerInfo.catch([0, 1])
         conversation + ("Please summarize this text and say it in a way in plain English that's clear and understandable as to be spoken by a text-to-speech program:", Role.System())

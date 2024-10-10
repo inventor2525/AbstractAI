@@ -120,6 +120,8 @@ class Application(QMainWindow):
 		Context.jobs = Context.engine.query(Jobs).first()
 		if Context.jobs is None:
 			Context.jobs = Jobs()
+		Context.jobs.should_save_job.connect(self.save_job)
+		
 		def save_jobs():
 			with Context.jobs._lock:
 				Context.engine.merge(Context.jobs)
@@ -136,6 +138,10 @@ class Application(QMainWindow):
 		self.chatUI.advanced_controls_header_layout.insertWidget(2, jobs_window_button)
 		Context.jobs.start()
 	
+	@run_in_main_thread
+	def save_job(self, job:Job):
+		Context.engine.merge(job)
+		
 	def open_jobs_list(self):
 		self.jobs_window.show()
 		self.jobs_window.raise_()
