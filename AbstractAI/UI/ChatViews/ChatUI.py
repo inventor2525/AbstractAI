@@ -308,8 +308,9 @@ class ChatUI(QWidget):
 		elif action == ConversationAction.Demo:
 			raise NotImplementedError("Demo not implemented")
 		elif action == ConversationAction.DoIt:
-			agent_config:AgentConfig = Context.conversation.source
-			agent_config.agent.process_response(Context.conversation)
+			agent_config = Context.conversation.get_source(AgentConfig)
+			if agent_config:
+				agent_config.agent.process_response(Context.conversation)
 	
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:

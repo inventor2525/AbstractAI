@@ -78,7 +78,7 @@ class Groq_LLM(ToolUser, LLM):
 	
 	def _tool_calls_from_message(self, message:Message) -> Iterator[dict]:
 		try:
-			raw_output = message.source.serialized_raw_output
+			raw_output = message.get_source(ModelSource).serialized_raw_output
 			for tool_call in raw_output['choices'][0]['message']['tool_calls']:
 				yield tool_call
 		except Exception as e:

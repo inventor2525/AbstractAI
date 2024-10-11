@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from AbstractAI.Model.Converse import Conversation, Message
+from AbstractAI.Model.Converse import Conversation, Message, ModelSource
 from typing import List, Optional
 from AbstractAI.Tool import Tool
 
@@ -10,14 +10,16 @@ class Conversable(ABC):
 
 	@staticmethod
 	def continue_message(message: Message) -> bool:
-		if hasattr(message.source, 'continue_function'):
-			return message.source.continue_function()
+		model_source = message.get_source(ModelSource)
+		if model_source and hasattr(model_source, 'continue_function'):
+			return model_source.continue_function()
 		return False
 
 	@staticmethod
 	def stop_message(message: Message):
-		if hasattr(message.source, 'stop_function'):
-			message.source.stop_function()
+		model_source = message.get_source(ModelSource)
+		if model_source and hasattr(model_source, 'stop_function'):
+			model_source.stop_function()
 
 class ToolUser(Conversable):
 	@abstractmethod

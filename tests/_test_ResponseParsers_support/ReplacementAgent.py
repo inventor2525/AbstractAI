@@ -36,7 +36,7 @@ class ReplacementAgent(Agent):
 	def process_response(self, conversation: Conversation):
 		new_message = conversation[-1]
 		original_message:Message = conversation.props.msg_to_replace
-		edit = original_message & new_message | CallerInfo.catch([0,1])
+		edit = original_message > new_message | CallerInfo.catch([0,1])
 		
 		conversation.apply_edit(edit)
 

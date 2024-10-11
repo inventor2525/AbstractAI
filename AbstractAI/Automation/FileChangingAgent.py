@@ -11,10 +11,8 @@ class FileChangingAgent(Agent):
 		
 		all_file_items = []
 		for message in conversation:
-			source = message.source
-			if isinstance(source, EditSource):
-				source = source.source
-			if isinstance(source, FilesSource):
+			source = message.get_source(FilesSource, expand_edits=True)
+			if source:
 				all_file_items.extend(source.items.items)
 		
 		files = FilesSource.from_items(all_file_items) | conversation.message_sequence

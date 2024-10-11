@@ -121,9 +121,11 @@ class ConversationView(QListWidget):
 		message_view.rowHeightChanged.connect(lambda: self.update_row_height(message_item))
 		message_view.regenerate_clicked.connect(lambda msg_source: self.regenerate_message.emit(msg_source))
 		def message_changed(message: Message):
-			self.conversation.replace_message(message.source.original, message.source.new, True)
-			self.message_changed.emit(message)
-			self.update_row_height(message_item)
+			edit = message.get_source(EditSource)
+			if edit:
+				self.conversation.replace_message(edit.original, edit.new, True)
+				self.message_changed.emit(message)
+				self.update_row_height(message_item)
 		message_view.message_changed.connect(message_changed)
 		
 		# Set the message view as the widget for the item

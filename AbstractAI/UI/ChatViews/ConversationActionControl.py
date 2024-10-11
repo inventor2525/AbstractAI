@@ -131,7 +131,7 @@ class ConversationActionControl(QWidget):
 						return False
 					if len(conv) == 0:
 						return False
-					if not isinstance(conv.source, AgentConfig):
+					if not conv.get_source(AgentConfig):
 						return False
 					return True
 				return ConversationAction.DoIt, should_display_DoIt()
@@ -152,10 +152,9 @@ class ConversationActionControl(QWidget):
 					elif len(Context.conversation) == 0:
 						self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=Context.llm_loaded)
 					else:
-						msg_source = Context.conversation[-1].source
-						if isinstance(msg_source, EditSource):
-							msg_source = msg_source.original_source()
-						if isinstance(msg_source, ModelSource):
+						last_msg = Context.conversation[-1]
+						model_source = last_msg.get_source(ModelSource, expand_edits=True)
+						if model_source:
 							self.set_btn_mode(self.right_button, ConversationAction.Continue, enabled=Context.llm_loaded)
 						else:
 							self.set_btn_mode(self.right_button, ConversationAction.Reply, enabled=Context.llm_loaded)

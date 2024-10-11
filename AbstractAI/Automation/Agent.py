@@ -21,10 +21,11 @@ class AgentConfig(Object):
 	
 	@staticmethod
 	def get_agent(conversation:Conversation) -> Optional["Agent"]:
-		if conversation is None or conversation.source is None:
+		if conversation is None:
 			return None
-		if isinstance(conversation.source, AgentConfig):
-			return conversation.source.agent
+		agent_config = conversation.get_source(AgentConfig)
+		if agent_config:
+			return agent_config.agent
 		return None
 
 @dataclass

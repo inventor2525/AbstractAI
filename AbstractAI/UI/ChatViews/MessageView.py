@@ -268,10 +268,8 @@ class MessageView(BaseMessageView):
 			self.message_changed.emit(self.message)
 	
 	def reload_files_message(self):
-		source = self.message.source
-		if isinstance(source, EditSource):
-			source = source.source
-		if not isinstance(source, FilesSource):
+		files_source = self.message.get_source(FilesSource, expand_edits=True)
+		if not files_source:
 			return
 		
 		new_source = FilesSource.from_items(deepcopy(self.file_selector.items)) | Context.user_source
@@ -299,15 +297,12 @@ class MessageView(BaseMessageView):
 		
 		self.message_source_view.message_source = value.source
 		
-		source = value.source
-		if value.source is not None:
-			if isinstance(source, EditSource):
-				source = source.source
-				
-		if isinstance(source, FilesSource):
+		files_source = value.get_source(FilesSource, expand_edits=True)
+		
+		if files_source:
 			self.text_edit.setVisible(False)
 			self.file_selector.setVisible(True)
-			self.file_selector.items = deepcopy(source.items.items)
+			self.file_selector.items = deepcopy(files_source.items.items)
 			self.file_selector.refresh()
 		else:
 			self.text_edit.setVisible(True)
@@ -317,7 +312,7 @@ class MessageView(BaseMessageView):
 
 		self.date_label.setText(value.date_created.strftime("%Y-%m-%d %H:%M:%S"))
 	
-		if isinstance(value.source, FilesSource):
+		if files_source:
 			self.background_color = QColor("#7DDF86")
 		else:
 			if value.role.type == Role.User().type:
@@ -329,8 +324,9 @@ class MessageView(BaseMessageView):
 			else:
 				self.background_color = QColor(Qt.white)
 		
-		self.regenerate_button.setVisible(isinstance(source, ModelSource))
-		self.reload_btn.setVisible(isinstance(source, FilesSource))
+		model_source = value.get_source(ModelSource, expand_edits=True)
+		self.regenerate_button.setVisible(model_source is not None)
+		self.reload_btn.setVisible(files_source is not None)
 		
 		self._compute_alternates()
 		self.update_text_edit_height()

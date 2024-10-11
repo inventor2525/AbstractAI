@@ -8,7 +8,7 @@ from AbstractAI.Helpers.Jobs import Jobs
 from argparse import Namespace
 
 @dataclass
-class Context:
+class ContextModel:
 	args:Namespace = None
 	settings: QSettings = None
 	engine:SQLStorageEngine = None
@@ -29,10 +29,10 @@ class Context:
 	active_conversations: List[Conversation] = field(default_factory=list)
 	
 	@staticmethod
-	def singleton() -> 'Context':
-		if not hasattr(Context, '_singleton'):
-			Context._singleton = Context()
-		return Context._singleton
+	def singleton() -> 'ContextModel':
+		if not hasattr(ContextModel, '_singleton'):
+			ContextModel._singleton = ContextModel()
+		return ContextModel._singleton
 	
 	@property
 	def conversation(self) -> Conversation:
@@ -52,11 +52,11 @@ class Context:
 				self.context_changed()
 		
 	def __post_init__(self):
-		Context.singleton = self
+		ContextModel.singleton = self
 	
 	def has_llm(self, conversation: Conversation):
 		return self.llm_loaded
 
-Context = Context.singleton()
+Context = ContextModel.singleton()
 
 from AbstractAI.Helpers.Transcriber import Transcriber

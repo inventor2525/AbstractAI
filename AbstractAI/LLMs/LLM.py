@@ -153,9 +153,10 @@ class LLM(Conversable):
 		return new_message, message_list
 	
 	def _log_chunk(self, chunk:Dict[str,Any], message:Message):
-		if "Chunks" not in message.source.serialized_raw_output:
-			message.source.serialized_raw_output["Chunks"] = []
-		message.source.serialized_raw_output["Chunks"].append(chunk)
+		model_source = message.get_source(ModelSource)
+		if "Chunks" not in model_source.serialized_raw_output:
+			model_source.serialized_raw_output["Chunks"] = []
+		model_source.serialized_raw_output["Chunks"].append(chunk)
 	
 	def _dict_from_obj(self, obj):
 		'''
