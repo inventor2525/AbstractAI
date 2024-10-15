@@ -12,6 +12,7 @@ class Message(Object):
 	
 	prev_message: "Message" = field(default=None, compare=False)
 	conversation: "Conversation" = field(default=None, compare=False)
+	children: List["Message"] = field(default_factory=list)
 	
 	changed:LazySignal[["Message"],None] = LazySignal.field()
 	

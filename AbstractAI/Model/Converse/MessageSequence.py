@@ -21,6 +21,7 @@ class MessageSequence(Object):
 		
 		if index > 0:
 			message.prev_message = self.messages[index-1]
+			self.messages[index-1].children.append(message)
 		self.messages.insert(index, message)
 		self.new_id()
 		
@@ -62,6 +63,7 @@ class MessageSequence(Object):
 				self.messages[old_message_index] = new_message
 				if old_message_index>0:
 					new_message.prev_message = self.messages[old_message_index-1]
+					self.messages[old_message_index-1].children.append(new_message)
 				else:
 					new_message.prev_message = None
 				removed_messages.append(old_message)
@@ -105,7 +107,9 @@ class MessageSequence(Object):
 		
 		if len(self.messages)>0:
 			message.prev_message = self.messages[-1]
+			self.messages[-1].children.append(message)
 		self.messages.append(message)
+		message.props.message_sequence = self #Just documenting where this message was first added.
 		
 	def __iter__(self):
 		return iter(self.messages)
