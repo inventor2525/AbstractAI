@@ -16,7 +16,7 @@ class MessageSequence(Object):
 			self.conversation.message_added(message)
 			self.conversation.conversation_changed()
 	
-	def insert_message(self, message: Message, index:int):
+	def insert_message(self, message: Message, index:int, silent:bool=False):
 		message.conversation = self.conversation
 		
 		if index > 0:
@@ -25,10 +25,17 @@ class MessageSequence(Object):
 		self.messages.insert(index, message)
 		self.new_id()
 		
+		if self.conversation is not None and not silent:
+			self.conversation.message_added(message)
+			self.conversation.conversation_changed()
+			
+	def insert_messages(self, messages:List[Message], index:int):
+		for message in messages[::-1]:
+			self.insert_message(message, index, silent=True)
 		if self.conversation is not None:
 			self.conversation.message_added(message)
 			self.conversation.conversation_changed()
-	
+			
 	def remove_message(self, message: Message, silent:bool=False):
 		self.messages.remove(message)
 		self.new_id()

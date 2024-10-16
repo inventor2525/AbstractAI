@@ -107,6 +107,19 @@ class ConversationView(QListWidget):
 					if message._view.right_arrow_btn.isVisible():
 						self._auto_scroll = False
 						message._view.right_arrow_btn.click()
+			
+			elif event.modifiers() & Qt.KeyboardModifier.ControlModifier and event.key() == Qt.Key_C:
+				selected_message_ids = set([id(item.message) for item in self.selectedItems()])
+				self.clipboard = [message for message in self.conversation if id(message) in selected_message_ids]
+			elif event.modifiers() & Qt.KeyboardModifier.ControlModifier and event.key() == Qt.Key_V:
+				clipboard = getattr(self, "clipboard", [])
+				copied = Conversation.copy_messages(clipboard)
+				current_item = self.currentItem()
+				if event.modifiers() & Qt.KeyboardModifier.ShiftModifier and current_item:
+					insert_index = self.conversation.message_sequence.messages.index(current_item.message)
+					self.conversation.insert_messages(copied, insert_index)
+				else:
+					self.conversation.add_messages(copied)
 			else:
 				super().keyPressEvent(event)
 		else:

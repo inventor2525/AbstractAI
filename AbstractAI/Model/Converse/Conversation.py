@@ -44,14 +44,24 @@ class Conversation(Object):
 		self.message_sequence.add_message(message)
 		
 	def add_messages(self, messages:List[Message]):
-		self.new_message_sequence()
-		for message in messages:
-			self.message_sequence.add_message(message)
+		if messages:
+			if len(messages)==0:
+				return
+			self.new_message_sequence()
+			for message in messages:
+				self.message_sequence.add_message(message)
 	
 	def insert_message(self, message:Message, index:int):
 		self.new_message_sequence()
 		self.message_sequence.insert_message(message, index)
 		
+	def insert_messages(self, messages:List[Message], index:int):
+		if messages:
+			if len(messages)==0:
+				return
+			self.new_message_sequence()
+			self.message_sequence.insert_messages(messages, index)
+			
 	def remove_message(self, message:Message, silent=False):
 		self.new_message_sequence()
 		self.message_sequence.remove_message(message, silent)
@@ -177,3 +187,10 @@ class Conversation(Object):
 			msg_txts.append(mt)
 			
 		return "\n\n".join((msg_txts))
+	
+	@staticmethod
+	def copy_messages(messages:List[Message]):
+		return [
+			Message(message.content, message.role) | message
+			for message in messages
+		]
