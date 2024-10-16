@@ -15,6 +15,7 @@ class ContextModel:
 	transcriber: 'Transcriber' = None
 	jobs:Jobs = None
 	start_str: str = ""
+	storage_location: str = None
 	
 	llm_loaded: bool = False
 	llm_generating: bool = False

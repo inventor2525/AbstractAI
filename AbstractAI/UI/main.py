@@ -1,3 +1,6 @@
+prev_compatible_db_versions = ["v2.0"]
+db_version = "v2.1"
+
 from AbstractAI.Helpers.Stopwatch import Stopwatch
 import traceback
 Stopwatch.singleton = Stopwatch(True)
@@ -37,6 +40,7 @@ from datetime import datetime
 from copy import deepcopy
 from AbstractAI.Helpers.JSONEncoder import JSONEncoder
 import argparse
+import shutil
 import os
 
 Stopwatch("PyQT5", log_statistics=False)
@@ -64,7 +68,16 @@ class Application(QMainWindow):
 		Stopwatch("Connect to database", log_statistics=False)
 		
 		self.settings_window = SettingsWindow()
-		Context.engine = SQLStorageEngine(f"sqlite:///new_engine_test1.db", DATA)#{Context.args.storage_location}", DATA)
+		
+		files_path = os.path.join(Context.storage_location, "files")
+		db_path = os.path.join(Context.storage_location, db_version, "chat.db")
+		#if doesn't exist check for old versions of the db:
+		if not os.path.exists(db_path):
+			for version in prev_compatible_db_versions:
+				old_db_path = os.path.join(Context.storage_location, version, "chat.db")
+				if os.path.exists(old_db_path):
+					shutil.copyfile(old_db_path, db_path)
+		Context.engine = SQLStorageEngine(f"sqlite:///{db_path}", DATA, files_dir=files_path)
 		
 		self.llmConfigs = Context.engine.query(LLMConfigs).first()
 		
@@ -582,6 +595,12 @@ if __name__ == "__main__":
 	
 	Context.args = parser.parse_args()
 	Context.settings.setValue("main/storage_location", Context.args.storage_location)
+	
+	storage_location:str = Context.args.storage_location
+	#prune: .db (this is to old code proof it and will be removed eventually):
+	if storage_location.endswith(".db"):
+		storage_location = storage_location[:-3]
+	Context.storage_location = storage_location
 	
 	# new model loading code:
 	Stopwatch("Load window", log_statistics=False)
