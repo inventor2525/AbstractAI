@@ -70,7 +70,11 @@ class Application(QMainWindow):
 		self.settings_window = SettingsWindow()
 		
 		files_path = os.path.join(Context.storage_location, "files")
+		os.makedirs(files_path, exist_ok=True)
+		
 		db_path = os.path.join(Context.storage_location, db_version, "chat.db")
+		os.makedirs(os.path.join(Context.storage_location, db_version), exist_ok=True)
+		
 		#if doesn't exist check for old versions of the db:
 		if not os.path.exists(db_path):
 			for version in prev_compatible_db_versions:
