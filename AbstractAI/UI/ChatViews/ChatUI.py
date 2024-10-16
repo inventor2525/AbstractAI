@@ -104,7 +104,19 @@ class ChatUI(QWidget):
 		self.advanced_controls_header_layout = QHBoxLayout(self.advanced_controls_header)
 		self.advanced_controls_header_layout.setContentsMargins(0, 0, 0, 0)
 		self.advanced_controls_header_layout.addWidget(QLabel("Advanced Generation Controls:"))
-		self.advanced_controls_header_layout.addStretch(1)
+		def copy_to_clipboard():
+			txt = str(Context.conversation)
+			try:
+				import pyperclip
+				pyperclip.copy(txt)
+			except:
+				print("Could not copy conversation since we're missing pyperclip (pip install pyperclip)")
+				print("Printing conversation here instead:")
+				print(txt)
+		self.conversation_to_clipboard_button = QPushButton("Copy Markdown")
+		self.conversation_to_clipboard_button.clicked.connect(copy_to_clipboard)
+		self.conversation_to_clipboard_button.setToolTip("Copies the current conversation to the clip board as markdown.")
+		self.advanced_controls_header_layout.addWidget(self.conversation_to_clipboard_button)
 		send_to_switchboard_button = QPushButton("Send to Switchboard")
 		send_to_switchboard_button.clicked.connect(self.send_to_switchboard)
 		self.advanced_controls_header_layout.addWidget(send_to_switchboard_button)

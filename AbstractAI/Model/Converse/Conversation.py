@@ -171,7 +171,9 @@ class Conversation(Object):
 		return self
 	
 	def __str__(self) -> str:
-		return "\n\n".join((
-			f"# {str(msg.role)} (message {index}):\n```txt\n{msg.content}\n```"
-			for index,msg in enumerate(self.message_sequence.messages)
-		))
+		msg_txts = []
+		for index,msg in enumerate(self.message_sequence.messages):
+			mt = f"# {str(msg.role)} (message {index+1}):\n```txt\n{msg.content}\n```"
+			msg_txts.append(mt)
+			
+		return "\n\n".join((msg_txts))

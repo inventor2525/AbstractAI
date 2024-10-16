@@ -21,6 +21,11 @@ class Role(Object):
 			return False
 		return self.type == value.type and self.name == value.name
 	
+	def __str__(self) -> str:
+		if self.name:
+			return f"{self.type} ({self.name})"
+		return self.type
+	
 	@singleton
 	@staticmethod
 	def System() -> "Role":
