@@ -128,13 +128,7 @@ class AudioRecorder:
 		# Format and return the audio:
 		if final_buffer is not None:
 			if return_type is AudioSegment:
-				audio_data = np.int16(final_buffer * 32767).tobytes()
-				return AudioSegment(
-					data=audio_data,
-					sample_width=2,
-					frame_rate=int(self.sample_rate),
-					channels=1
-				)
+				return self.np_to_AudioSegment(final_buffer)
 			return final_buffer
 		if return_type is AudioSegment:
 			return AudioSegment.empty()
@@ -173,13 +167,7 @@ class AudioRecorder:
 		# Format and return the audio:
 		if peak_buffer is not None:
 			if return_type is AudioSegment:
-				audio_data = np.int16(peak_buffer * 32767).tobytes()
-				return AudioSegment(
-					data=audio_data,
-					sample_width=2,
-					frame_rate=int(self.sample_rate),
-					channels=1
-				)
+				return self.np_to_AudioSegment(peak_buffer)
 			return peak_buffer
 		if return_type is AudioSegment:
 			return AudioSegment.empty()
@@ -198,3 +186,13 @@ class AudioRecorder:
 			rt.should_listen = False
 			rt.join()
 			print("Recorder terminated!")
+	
+	@staticmethod
+	def np_to_AudioSegment(self, array:np.ndarray) -> AudioSegment:
+		audio_data = np.int16(array * 32767).tobytes()
+		return AudioSegment(
+			data=audio_data,
+			sample_width=2,
+			frame_rate=int(self.sample_rate),
+			channels=1
+		)
