@@ -2,29 +2,56 @@ import sounddevice as sd
 import numpy as np
 from pydub import AudioSegment
 from .Stopwatch import Stopwatch
+from typing import TypeVar, Type
 import threading
 
+T = TypeVar("T")
 class AudioRecorder:
 	def __init__(self):
+		#Locate the first audio recording device:
 		devices = sd.query_devices()
 		input_devices = [(index,device) for index,device in enumerate(devices) if device['max_input_channels'] > 0]
-		if len(input_devices) == 0:
-			raise ValueError("No input devices found.")
-		self.input_device_index, self.device = input_devices[0]
-		self.sample_rate = self.device['default_samplerate']
+		if len(input_devices) > 0:
+			self.input_device_index, self.device = input_devices[0]
+			self.sample_rate = self.device['default_samplerate']
+		else:
+			self.device = None
 		
-		self.recording_thread = self.RecordingThread(self)
+		#Prep for recording:
+		self.recording_thread:AudioRecorder.RecordingThread = None
 		self.lock = threading.Lock()
 		self.buffers = [[]]
-		self.recording_thread.start()
-
+		self.start_listening()
+	
+	@property
+	def is_listening(self) -> bool:
+		'''
+		Tells you if we're currently streaming audio from device.
+		
+		(Doesn't tell you if we're recording, though we
+		aren't if this is false.)
+		'''
+		rt = self.recording_thread
+		return rt and rt.is_alive and rt.should_listen
+	
+	def start_listening(self) -> None:
+		'''
+		Starts listening (if we weren't already). This doesn't
+		record, it just gets the stream going.
+		
+		Be sure to stop it before app close.
+		'''
+		if self.device and not self.is_listening:
+			rt = AudioRecorder.RecordingThread(self)
+			self.recording_thread = rt
+			rt.start()
+		
 	class RecordingThread(threading.Thread):
 		def __init__(self, recorder:'AudioRecorder'):
 			super().__init__(daemon=True)
-			self.listen = True
-			self.record = False
+			self.should_listen = True
+			self.should_record = False
 			self.recorder = recorder
-			self.temporary_buffer = np.array([], dtype='float32')
 
 		def run(self):
 			print("Starting recorder thread.")
@@ -35,38 +62,72 @@ class AudioRecorder:
 			)
 			self.stream.start()
 			try:
-				while self.listen:
+				was_recording = self.should_record
+				prev_buffer = None
+				while self.should_listen:
 					data, _ = self.stream.read(1024)
-					if self.record:
+					record = self.should_record
+					if record:
 						with self.recorder.lock:
+							if not was_recording and prev_buffer is not None:
+								self.recorder.buffers[-1].append(prev_buffer)
 							self.recorder.buffers[-1].append(data.copy())
 					else:
-						self.temporary_buffer = data
+						prev_buffer = data.copy()
+					was_recording = record
 			except Exception as e:
-				print("Stopping recorder thread.")
+				print(f"Stopping recorder thread due to exception: {e}.")
 			self.stream.stop()
 			self.stream.close()
 			del self.stream
 	
 	def start_recording(self) -> bool:
-		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant record when not listening."
+		'''
+		Starts a single new recording, only call this if it's
+		listening first (it starts automatically on init).
+		'''
+		if not self.is_listening:
+			print("Cant record when not listening.")
+			return False
+		
+		if self.recording_thread.should_record:
+			return True
+		
 		with self.lock:
 			Stopwatch.singleton.start("Recording")
-			if self.recording_thread.record:
-				return False
-			
-			self.recording_thread.record = True
+			self.recording_thread.should_record = True
 			return True
 
-	def stop_recording(self):
-		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant stop recording after listening stops."
+	def stop_recording(self, return_type:Type[T]=AudioSegment) -> T:
+		'''
+		Stop recording and return the full recording since you started.
+		(Including any times you peaked)
+		'''
+		assert return_type is AudioSegment or return_type is np.ndarray, "Return type can only be an AudioSegment or np.ndarray"
+		
+		# Make sure we were recording:
+		assert self.is_listening, "Cant stop recording after listening stops."
+		assert self.recording_thread.should_record, "Cant stop recording when we never started!"
+		
+		# Grab the audio we've recorded:
+		final_buffer = None
 		with self.lock:
 			self.last_record_time = Stopwatch.singleton.stop("Recording")["last"]
 			
 			if self.buffers:
-				self.recording_thread.record = False
-				final_buffer = np.concatenate([np.concatenate(buffer) for buffer in self.buffers])
+				self.recording_thread.should_record = False
+				peak_buffers = []
+				for peak_buffer in self.buffers:
+					if isinstance(peak_buffer, list):
+						peak_buffers.append(np.concatenate(peak_buffer))
+					else:
+						peak_buffers.append(peak_buffer)
+				final_buffer = np.concatenate(peak_buffers)
 				self.buffers = [[]]  # Reset with a new empty list
+		
+		# Format and return the audio:
+		if final_buffer is not None:
+			if return_type is AudioSegment:
 				audio_data = np.int16(final_buffer * 32767).tobytes()
 				return AudioSegment(
 					data=audio_data,
@@ -74,36 +135,66 @@ class AudioRecorder:
 					frame_rate=int(self.sample_rate),
 					channels=1
 				)
+			return final_buffer
+		if return_type is AudioSegment:
 			return AudioSegment.empty()
+		return np.array([], dtype=np.float32)
 
-	def peak(self):
+	def peak(self, return_type:Type[T]=AudioSegment) -> T:
+		'''
+		Use this while recording to peak at what we've recorded
+		so far, since the time you started recording or since the
+		time you last peaked.
+		'''
+		assert return_type is AudioSegment or return_type is np.ndarray, "Return type can only be an AudioSegment or np.ndarray"
+		
+		# Make sure we were recording:
+		assert self.is_listening, "Cant peak recordings when not listening."
+		assert self.recording_thread.should_record, "Cant peak a recording we never started!"
+		
+		# Add an empty buffer to continue recording
+		# with so we can peak into the current one safely:
 		peak_buffer = None
-		assert self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen, "Cant peak recordings when not listening."
+		buffer_index = None
 		with self.lock:
 			if self.buffers[-1]:
-				peak_buffer = np.concatenate(self.buffers[-1])
+				peak_buffer = self.buffers[-1]
+				buffer_index = len(self.buffers)-1
 				self.buffers.append([])  # Add a new empty list for future recording
 		
+		# Concatenate the audio data we've recorded since the last peak:
 		if peak_buffer is not None:
-			audio_data = np.int16(peak_buffer * 32767).tobytes()
-			return AudioSegment(
-				data=audio_data,
-				sample_width=2,
-				frame_rate=int(self.sample_rate),
-				channels=1
-			)
-		else:
+			peak_buffer = np.concatenate(peak_buffer)
+			
+			# Save the concatenated version to reduce work when we stop recording:
+			with self.lock:
+				self.buffers[buffer_index] = peak_buffer
+		
+		# Format and return the audio:
+		if peak_buffer is not None:
+			if return_type is AudioSegment:
+				audio_data = np.int16(peak_buffer * 32767).tobytes()
+				return AudioSegment(
+					data=audio_data,
+					sample_width=2,
+					frame_rate=int(self.sample_rate),
+					channels=1
+				)
+			return peak_buffer
+		if return_type is AudioSegment:
 			return AudioSegment.empty()
+		return np.array([], dtype=np.float32)
 	
-	def stop_listening(self):
+	def stop_listening(self) -> None:
 		'''
 		There is a background thread that pulls the
 		audio stream from the device so it can be
 		recorded. This shuts that down before app
 		close, and blocks until it's quickly closed.
 		'''
-		if self.recording_thread and self.recording_thread.is_alive and self.recording_thread.listen:
+		rt = self.recording_thread
+		if rt and rt.is_alive and rt.should_listen:
 			print("Stopping recorder...")
-			self.recording_thread.listen = False
-			self.recording_thread.join()
+			rt.should_listen = False
+			rt.join()
 			print("Recorder terminated!")
