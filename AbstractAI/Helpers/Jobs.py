@@ -270,7 +270,7 @@ class Jobs(Object):
                     status = self.current_job()
                     changed = False
                     with self._lock:
-                        if status == JobStatus.SUCCESS:
+                        if status == JobStatus.SUCCESS or status == None:
                             print(f"Job completed successfully: {self.current_job.name or self.current_job.job_key}")
                             self._jobs.remove(self.current_job)
                             changed = True

@@ -2,14 +2,12 @@ from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 from ClassyFlaskDB.DefaultModel import Object, DATA
-from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 from AbstractAI.UI.Context import Context
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
 from pydub import AudioSegment
 from dataclasses import dataclass, field
 from typing import Optional
 import time
-from datetime import datetime
 
 @DATA
 @dataclass
@@ -21,6 +19,13 @@ class Transcription(Object):
     transcription_rate: float = field(default=None, init=False)
     raw_data: dict = field(default_factory=dict, init=False)
 
+    @classmethod
+    def from_AudioSegment(cls, audio_segment:AudioSegment) -> 'Transcription':
+        transcription = cls()
+        transcription.audio_segment = audio_segment
+        transcription.audio_length = audio_segment.duration_seconds
+        return transcription
+        
     def __str__(self):
         if not self.audio_length:
             return "No recording."
@@ -47,7 +52,6 @@ class Transcriber:
         self.hacky_tts_settings = hacky_tts_settings
         self.is_recording = False
         self.recording_indicator = None
-        self.start_time = None
         self.last_transcription:Transcription = None
 
         if hacky_tts_settings.use_groq:
@@ -88,7 +92,6 @@ class Transcriber:
         if self.recording_indicator:
             self.recording_indicator.is_recording = True
         self.recorder.start_recording()
-        self.start_time = time.time()
         self.is_recording = True
 
     def stop_recording(self) -> Transcription:
@@ -96,16 +99,17 @@ class Transcriber:
             self.recording_indicator.is_recording = False
         audio_segment = self.recorder.stop_recording()
         self.is_recording = False
-
-        transcription = Transcription()
-        transcription.audio_segment = audio_segment
-        transcription.audio_length = time.time() - self.start_time
-        self.last_transcription = transcription
         
-        Context.engine.merge(transcription)
+        transcription = Transcription.from_AudioSegment(audio_segment)
+        self.last_transcription = transcription
 
         return transcription
-
+    
+    def _get_audio_path(self, audio:AudioSegment) -> str:
+        try:
+            return Context.engine.get_binary_path(audio)
+        except:
+            return audio.export("temp_audio.mp3")
     def transcribe(self, transcription: Transcription) -> Transcription:
         if self.recording_indicator:
             self.recording_indicator.is_processing = True
@@ -122,12 +126,11 @@ class Transcriber:
         if self.recording_indicator:
             self.recording_indicator.is_processing = False
 
-        Context.engine.merge(transcription)
         return transcription
 
     def _transcribe_with_groq(self, transcription: Transcription):
         self._ensure_groq_loaded()
-        audio_path = Context.engine.get_binary_path(transcription.audio_segment)
+        audio_path = self._get_audio_path(transcription.audio_segment)
         data = None
         with open(audio_path, "rb") as audio_file:
             result = self.client.audio.transcriptions.create(
@@ -144,7 +147,7 @@ class Transcriber:
 
     def _transcribe_with_local_model(self, transcription: Transcription):
         self._ensure_local_model_loaded()
-        audio_path = Context.engine.get_binary_path(transcription.audio_segment)
+        audio_path = self._get_audio_path(transcription.audio_segment)
         segments, info = self.model.transcribe(audio_path, beam_size=5)
         segments_list = list(segments)
 

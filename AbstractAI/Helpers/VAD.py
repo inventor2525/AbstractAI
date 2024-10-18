@@ -222,17 +222,36 @@ class VAD:
 
 # Example usage
 if __name__ == "__main__":
+	from AbstractAI.Helpers.Jobs import Jobs
+	from AbstractAI.Helpers.Transcriber import Transcriber, TranscriptionJob, Transcription
+	from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
+	from datetime import datetime
 	recorder = AudioRecorder()
 	vad = VAD(recorder, peek_interval=0.5, window_padding=1.0)
-
+	
+	transcriber = Transcriber(hacky_tts_settings=Hacky_Whisper_Settings(
+		groq_api_key=""
+	))
+	jobs = Jobs()
+	jobs.start()
+	
+	def transcribe_work(job:TranscriptionJob):
+		transcriber.transcribe(job.transcription)
+	def transcribe_callback(job:TranscriptionJob):
+		print(f"{job.transcription.transcription} at {datetime.now()}")
+	
+	jobs.register("Transcribe",transcribe_work, transcribe_callback)
+	
 	try:
 		recorder.start_recording()
 		vad.start()
 		print("VAD started. Press Ctrl+C to stop.")
 
 		for audio_segment in vad.voice_segments():
-			print(f"Detected voice segment of length: {len(audio_segment)} ms")
-			# Here you would typically process the voice segment (e.g., transcribe, analyze, etc.)
+			print(f"\nDetected voice segment of length: {len(audio_segment)} ms at {datetime.now()}")
+			jobs.add(TranscriptionJob(
+				"Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
+			))
 
 	except KeyboardInterrupt:
 		print("Stopping VAD...")
