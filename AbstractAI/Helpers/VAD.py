@@ -112,21 +112,21 @@ class VAD:
 				
 				# Pull in > self.window_padding seconds worth of audio
 				# data we have cached from when there was no voice detected:
-				first_voice_time = segment_vad_result[0].start
+				first_voice_time = list(segment_vad_result.get_timeline())[0].start
 				required_padding = max(0, self.window_padding - first_voice_time)
 				self._trim_buffer_queue(required_padding)
 				voice_detected_segments = self.silent_peeks_buffer + [peek_data]
 				self.silent_peeks_buffer.clear()
 				
 				# Calculate how long there hasn't been a voice detected so far:
-				silent_duration = segment_duration - segment_vad_result[-1].end
+				silent_duration = segment_duration - list(segment_vad_result.get_timeline())[-1].end
 			
 			elif voice_detected:
 				# If we have been detecting a voice:
 				voice_detected_segments.append(peek_data)
 				if len(segment_vad_result):
 					# And still are:
-					silent_duration = segment_duration - segment_vad_result[-1].end
+					silent_duration = segment_duration - list(segment_vad_result.get_timeline())[-1].end
 				else:
 					# But if we are no longer detecting voice:
 					silent_duration += self._audio_segment_duration(peek_data)
@@ -140,7 +140,7 @@ class VAD:
 					# Make sure we actually did have a voice
 					# and it ended long enough ago:
 					if len(total_vad_result) > 0:
-						silent_duration = total_duration - total_vad_result[-1].end
+						silent_duration = total_duration - list(total_vad_result.get_timeline())[-1].end
 						
 						if silent_duration >= self.window_padding:
 							# If it's been long enough without a voice,
@@ -218,7 +218,7 @@ class VAD:
 					segment = self.vocal_segments.pop(0)
 					if not self.vocal_segments:
 						self.segment_available.clear()  # Clear the event if no more segments
-					yield AudioRecorder.np_to_AudioSegment(segment, self.recorder.sample_rate)
+					yield self.recorder.np_to_AudioSegment(segment)
 
 # Example usage
 if __name__ == "__main__":
