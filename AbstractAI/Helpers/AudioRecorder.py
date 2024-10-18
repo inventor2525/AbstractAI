@@ -101,7 +101,7 @@ class AudioRecorder:
 	def stop_recording(self, return_type:Type[T]=AudioSegment) -> T:
 		'''
 		Stop recording and return the full recording since you started.
-		(Including any times you peaked)
+		(Including any times you peeked)
 		'''
 		assert return_type is AudioSegment or return_type is np.ndarray, "Return type can only be an AudioSegment or np.ndarray"
 		
@@ -116,13 +116,13 @@ class AudioRecorder:
 			
 			if self.buffers:
 				self.recording_thread.should_record = False
-				peak_buffers = []
-				for peak_buffer in self.buffers:
-					if isinstance(peak_buffer, list):
-						peak_buffers.append(np.concatenate(peak_buffer))
+				peek_buffers = []
+				for peek_buffer in self.buffers:
+					if isinstance(peek_buffer, list):
+						peek_buffers.append(np.concatenate(peek_buffer))
 					else:
-						peak_buffers.append(peak_buffer)
-				final_buffer = np.concatenate(peak_buffers)
+						peek_buffers.append(peek_buffer)
+				final_buffer = np.concatenate(peek_buffers)
 				self.buffers = [[]]  # Reset with a new empty list
 		
 		# Format and return the audio:
@@ -134,41 +134,41 @@ class AudioRecorder:
 			return AudioSegment.empty()
 		return np.array([], dtype=np.float32)
 
-	def peak(self, return_type:Type[T]=AudioSegment) -> T:
+	def peek(self, return_type:Type[T]=AudioSegment) -> T:
 		'''
-		Use this while recording to peak at what we've recorded
+		Use this while recording to peek at what we've recorded
 		so far, since the time you started recording or since the
-		time you last peaked.
+		time you last peeked.
 		'''
 		assert return_type is AudioSegment or return_type is np.ndarray, "Return type can only be an AudioSegment or np.ndarray"
 		
 		# Make sure we were recording:
-		assert self.is_listening, "Cant peak recordings when not listening."
-		assert self.recording_thread.should_record, "Cant peak a recording we never started!"
+		assert self.is_listening, "Cant peek recordings when not listening."
+		assert self.recording_thread.should_record, "Cant peek a recording we never started!"
 		
 		# Add an empty buffer to continue recording
-		# with so we can peak into the current one safely:
-		peak_buffer = None
+		# with so we can peek into the current one safely:
+		peek_buffer = None
 		buffer_index = None
 		with self.lock:
 			if self.buffers[-1]:
-				peak_buffer = self.buffers[-1]
+				peek_buffer = self.buffers[-1]
 				buffer_index = len(self.buffers)-1
 				self.buffers.append([])  # Add a new empty list for future recording
 		
-		# Concatenate the audio data we've recorded since the last peak:
-		if peak_buffer is not None:
-			peak_buffer = np.concatenate(peak_buffer)
+		# Concatenate the audio data we've recorded since the last peek:
+		if peek_buffer is not None:
+			peek_buffer = np.concatenate(peek_buffer)
 			
 			# Save the concatenated version to reduce work when we stop recording:
 			with self.lock:
-				self.buffers[buffer_index] = peak_buffer
+				self.buffers[buffer_index] = peek_buffer
 		
 		# Format and return the audio:
-		if peak_buffer is not None:
+		if peek_buffer is not None:
 			if return_type is AudioSegment:
-				return self.np_to_AudioSegment(peak_buffer)
-			return peak_buffer
+				return self.np_to_AudioSegment(peek_buffer)
+			return peek_buffer
 		if return_type is AudioSegment:
 			return AudioSegment.empty()
 		return np.array([], dtype=np.float32)

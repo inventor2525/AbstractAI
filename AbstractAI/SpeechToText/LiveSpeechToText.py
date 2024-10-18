@@ -14,20 +14,20 @@ class LiveSpeechToText:
 			self.app = app
 
 		def run(self):
-			last_peak_time = time.time()
+			last_peek_time = time.time()
 			was_recording = False
 			while True:
-				time.sleep(max(1 - (time.time() - last_peak_time), 0))
+				time.sleep(max(1 - (time.time() - last_peek_time), 0))
 				
 				audio_segment = None
 				transcription = None
 				with self.app.lock:
 					if self.app._is_recording:
 						was_recording = True
-						audio_segment = self.app.recorder.peak()
-						stt_logger.end_segment("peak", audio_segment=audio_segment)
-						stt_logger.start_segment("peak", "full")
-						last_peak_time = time.time()
+						audio_segment = self.app.recorder.peek()
+						stt_logger.end_segment("peek", audio_segment=audio_segment)
+						stt_logger.start_segment("peek", "full")
+						last_peek_time = time.time()
 					elif was_recording:
 						transcription = self.app.transcriber.finish_transcription(self.app.last_segment)
 						
@@ -58,13 +58,13 @@ class LiveSpeechToText:
 				return False
 			self._is_recording = True
 			stt_logger.start_segment("full")
-			stt_logger.start_segment("peak", "full")
+			stt_logger.start_segment("peek", "full")
 			return True
 	
 	def stop(self):
 		with self.lock:
-			last_segment = self.recorder.peak()
-			stt_logger.end_segment("peak", last_segment)
+			last_segment = self.recorder.peek()
+			stt_logger.end_segment("peek", last_segment)
 			
 			full_recording = self.recorder.stop_recording()
 			stt_logger.end_segment("full", full_recording)

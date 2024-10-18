@@ -43,7 +43,7 @@ class VAD:
 	def _vad_loop(self):
 		while self.running:
 			time.sleep(self.peek_interval)
-			audio_data = self.recorder.peak(return_type=np.ndarray)
+			audio_data = self.recorder.peek(return_type=np.ndarray)
 			if audio_data.size > 0:
 				self._process_audio(audio_data)
 
