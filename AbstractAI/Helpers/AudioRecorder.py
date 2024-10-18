@@ -187,7 +187,6 @@ class AudioRecorder:
 			rt.join()
 			print("Recorder terminated!")
 	
-	@staticmethod
 	def np_to_AudioSegment(self, array:np.ndarray) -> AudioSegment:
 		audio_data = np.int16(array * 32767).tobytes()
 		return AudioSegment(
