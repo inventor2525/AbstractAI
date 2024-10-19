@@ -223,7 +223,7 @@ class VAD:
 # Example usage
 if __name__ == "__main__":
 	from AbstractAI.Helpers.Jobs import Jobs
-	from AbstractAI.Helpers.Transcriber import Transcriber, TranscriptionJob, Transcription
+	from AbstractAI.SpeechToText.Transcriber import Transcriber, TranscriptionJob, Transcription
 	from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 	from datetime import datetime
 	recorder = AudioRecorder()

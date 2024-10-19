@@ -14,7 +14,7 @@ from copy import deepcopy
 
 from AbstractAI.Conversable import Conversable
 from AbstractAI.Helpers.Jobs import Jobs, JobStatus
-from AbstractAI.Helpers.Transcriber import Transcriber, Transcription, TranscriptionJob
+from AbstractAI.SpeechToText.Transcriber import Transcriber, Transcription, TranscriptionJob
 from AbstractAI.UI.Elements.RecordingIndicator import RecordingIndicator
 from AbstractAI.UI.Support.KeyComboHandler import KeyComboHandler, KeyAction, KeyEvent
 from AbstractAI.Helpers.Signal import Signal
