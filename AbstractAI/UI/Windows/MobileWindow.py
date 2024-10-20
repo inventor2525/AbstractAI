@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, 
                              QTextEdit, QApplication, QSizePolicy, QScrollBar)
 from PyQt5.QtCore import Qt, QEventLoop
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from AbstractAI.UI.ChatViews.ChatUI import ChatUI
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.Model.Converse import Conversation, Message, Role, CallerInfo
@@ -31,8 +31,8 @@ class MobileWindow(QMainWindow):
         self.user_selected_bash_outputs: List[Tuple[int, str]] = []
         self.init_ui()
         
-        Context.context_changed.connect(self.on_context_changed)
-        Context.conversation_selected.connect(self.on_conversation_changed)
+        AppContext.context_changed.connect(self.on_context_changed)
+        AppContext.conversation_selected.connect(self.on_conversation_changed)
         
         tts_settings = MobileWindow.load_tts_settings()
         self.tts = OpenAI_TTS(self.tts_complete, tts_settings)
@@ -44,10 +44,10 @@ class MobileWindow(QMainWindow):
     def load_tts_settings() -> OpenAI_TTS_Settings:
         if hasattr(MobileWindow, "tts_settings"):
             return MobileWindow.tts_settings
-        settings = Context.engine.query(OpenAI_TTS_Settings).first()
+        settings = AppContext.engine.query(OpenAI_TTS_Settings).first()
         if settings is None:
             settings = OpenAI_TTS_Settings()
-            Context.engine.merge(settings)
+            AppContext.engine.merge(settings)
         MobileWindow.tts_settings = settings
         return settings
 
@@ -151,7 +151,7 @@ class MobileWindow(QMainWindow):
         if self.displaying_subprocess_output:
             return
 
-        conversation = Context.conversation
+        conversation = AppContext.conversation
         if conversation is None:
             self.text_view.clear()
             return
@@ -173,28 +173,28 @@ class MobileWindow(QMainWindow):
 
     def toggle_recording(self):
         self.chat_ui.toggle_recording()
-        if Context.transcriber.is_recording:
+        if AppContext.transcriber.is_recording:
             self.record_button.setText("Stop Recording")
         else:
             self.record_button.setText("Start Recording")
 
     def send_message(self):
-        if Context.conversation is not None and Context.main_agent is not None:
-            self.chat_ui.on_action(ConversationAction.Send, Context.main_agent.llm)
+        if AppContext.conversation is not None and AppContext.main_agent is not None:
+            self.chat_ui.on_action(ConversationAction.Send, AppContext.main_agent.llm)
 
     def send_message_with_tools(self):
-        if Context.conversation is not None and Context.main_agent is not None:
-            self.chat_ui.on_action(ConversationAction.Send, Context.main_agent)
+        if AppContext.conversation is not None and AppContext.main_agent is not None:
+            self.chat_ui.on_action(ConversationAction.Send, AppContext.main_agent)
 
     def do_it(self):
-        if Context.conversation and Context.main_agent:
+        if AppContext.conversation and AppContext.main_agent:
             self.displaying_subprocess_output = True
             self.user_selected_bash_outputs = []
             
             bash_script_count = 1
-            last_message = Context.conversation[-1]
+            last_message = AppContext.conversation[-1]
             
-            for code_block in Context.main_agent.process_response(Context.conversation):
+            for code_block in AppContext.main_agent.process_response(AppContext.conversation):
                 self.current_bash_output = None
                 self.text_view.clear()
                 
@@ -286,7 +286,7 @@ class MobileWindow(QMainWindow):
         elif self.bash_blocks_count==1 and len(self.user_selected_bash_outputs)==1:
             content = f"Your bash script returned:\n```bash\n{self.user_selected_bash_outputs[0][1]}```"
         if content:
-            Context.conversation + (content, Role.System()) | CallerInfo.catch([0,1])
+            AppContext.conversation + (content, Role.System()) | CallerInfo.catch([0,1])
             self.update_conversation_text()
         
     def wait_for_confirmation(self) -> bool:
@@ -346,7 +346,7 @@ class MobileWindow(QMainWindow):
         if self.playback_override_getter:
             text = self.playback_override_getter()
         else:
-            text = Context.conversation[-1].content if Context.conversation else self.chat_ui.input_field.toPlainText()
+            text = AppContext.conversation[-1].content if AppContext.conversation else self.chat_ui.input_field.toPlainText()
         
         if len(text)>0:
             self.tts.speak(text)
@@ -360,7 +360,7 @@ class MobileWindow(QMainWindow):
         conversation + ("Please summarize this text and say it in a way in plain English that's clear and understandable as to be spoken by a text-to-speech program:", Role.System())
         conversation + (text, Role.User())
         
-        response = Context.main_agent.llm.chat(conversation)
+        response = AppContext.main_agent.llm.chat(conversation)
         conversation + response
         return response.content
 

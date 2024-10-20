@@ -9,7 +9,7 @@ from AbstractAI.UI.Elements.FileSelector import FileSelectionWidget
 from AbstractAI.Model.Converse.Role import *
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QTextCursor
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from datetime import datetime
 from copy import deepcopy
 
@@ -176,8 +176,8 @@ class MessageView(BaseMessageView):
 		
 		# Regester the context changed event
 		def context_changed():
-			self.regenerate_button.setEnabled(Context.has_llm(self.message.conversation))
-		Context.context_changed.connect(context_changed, auto_disconnect=True)
+			self.regenerate_button.setEnabled(AppContext.has_llm(self.message.conversation))
+		AppContext.context_changed.connect(context_changed, auto_disconnect=True)
 		context_changed()
 	
 	def _compute_alternates(self):
@@ -264,7 +264,7 @@ class MessageView(BaseMessageView):
 
 	def confirm_changes(self):
 		if self.editing:
-			self.message = self.message.create_edited(self.text_edit.toPlainText(), Context.user_source)
+			self.message = self.message.create_edited(self.text_edit.toPlainText(), AppContext.user_source)
 			self.message_changed.emit(self.message)
 	
 	def reload_files_message(self):
@@ -272,7 +272,7 @@ class MessageView(BaseMessageView):
 		if not files_source:
 			return
 		
-		new_source = FilesSource.from_items(deepcopy(self.file_selector.items)) | Context.user_source
+		new_source = FilesSource.from_items(deepcopy(self.file_selector.items)) | AppContext.user_source
 		new_content = new_source.load()
 		self.message = self.message.create_edited(new_content, source_of_edit=new_source)
 		self.message_changed.emit(self.message)

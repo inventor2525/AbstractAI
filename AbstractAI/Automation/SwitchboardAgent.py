@@ -3,7 +3,7 @@ from AbstractAI.Automation.Agent import Agent
 from AbstractAI.Model.Converse import Conversation, Message, Role
 from AbstractAI.LLMs.LLM import LLM
 from AbstractAI.Tool import Tool
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from AbstractAI.Model.Converse.MessageSources import CallerInfo
 from typing import List, Optional
 
@@ -12,7 +12,7 @@ class SwitchboardAgent(Agent):
 	@classmethod
 	def default_llm(cls) -> LLM:
 		from AbstractAI.Model.Settings.Groq_LLMSettings import Groq_LLMSettings
-		llm_settings = next(Context.engine.query(Groq_LLMSettings).all(where="user_model_name = 'llama ToolUser'"))
+		llm_settings = next(AppContext.engine.query(Groq_LLMSettings).all(where="user_model_name = 'llama ToolUser'"))
 		if llm_settings is None:
 			raise ValueError("LLM settings not found in the database.")
 		llm = llm_settings.load()
@@ -63,8 +63,8 @@ DO NOT argue with them and tell them that you are unable to do something. You ar
 		"""
 		from AbstractAI.Automation.FileChangingAgent import FileChangingAgent
 		agent = FileChangingAgent()
-		original_conv = Context.conversation.props.original_conversation
-		Context.conversation = agent(original_conv)
+		original_conv = AppContext.conversation.props.original_conversation
+		AppContext.conversation = agent(original_conv)
 		return "File Changing Agent has been called and completed its task."
 
 	def _call_replacement_agent(self) -> str:
@@ -74,8 +74,8 @@ DO NOT argue with them and tell them that you are unable to do something. You ar
 		"""
 		from AbstractAI.Automation.ReplacementAgent import ReplacementAgent
 		agent = ReplacementAgent()
-		original_conv = Context.conversation.props.original_conversation
-		Context.conversation = agent(original_conv, original_conv[-1])
+		original_conv = AppContext.conversation.props.original_conversation
+		AppContext.conversation = agent(original_conv, original_conv[-1])
 		return "Replacement Agent has been called and completed its task."
 
 	def _call_talk_to_code_agent(self) -> str:
@@ -85,17 +85,17 @@ DO NOT argue with them and tell them that you are unable to do something. You ar
 		"""
 		from AbstractAI.Automation.TalkToCodeAgent import TalkToCodeAgent
 		agent = TalkToCodeAgent()
-		original_conv = Context.conversation.props.original_conversation
-		Context.conversation = agent(original_conv)
+		original_conv = AppContext.conversation.props.original_conversation
+		AppContext.conversation = agent(original_conv)
 		return "Talk to Code Agent has been called and completed its task."
 
 	@staticmethod
 	def call_switchboard(user_message: str):
-		original_conversation = Context.conversation
+		original_conversation = AppContext.conversation
 		agent = SwitchboardAgent()
 		new_conversation = agent(original_conversation)
 		new_conversation + (user_message, Role.User())
-		Context.conversation = new_conversation
+		AppContext.conversation = new_conversation
 
 		response = agent.chat(new_conversation)
 		new_conversation.add_message(response)

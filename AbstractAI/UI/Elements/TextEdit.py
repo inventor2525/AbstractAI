@@ -1,6 +1,7 @@
 from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QTextEdit
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
+from AbstractAI.UI.QtContext import QtContext
 from PyQt5.QtCore import QTimer
 
 class TextEdit(QTextEdit):
@@ -24,12 +25,12 @@ class TextEdit(QTextEdit):
     def load_settings(self):
         if self.auto_save:
             self._height_known = False
-            self.setPlainText(Context.settings.value(f"{self.name}/text", ""))
+            self.setPlainText(QtContext.settings.value(f"{self.name}/text", ""))
             self.textChanged.emit()
             
     def onTextChanged(self):
         if self.auto_save:
-            Context.settings.setValue(f"{self.name}/text", self.toPlainText())
+            QtContext.settings.setValue(f"{self.name}/text", self.toPlainText())
         self._height_known = False
     
     def clearSelection(self):

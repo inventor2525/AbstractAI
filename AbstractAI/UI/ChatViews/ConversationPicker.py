@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QScrollArea, QSizePolicy
 from PyQt5.QtCore import Qt, QSize
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from AbstractAI.Model.Converse import Conversation
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 
@@ -34,7 +34,7 @@ class ConversationPicker(QWidget):
 		super().__init__()
 		self.button_height = button_height
 		self.init_ui()
-		Context.context_changed.connect(self.on_context_changed)
+		AppContext.context_changed.connect(self.on_context_changed)
 		self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
 	def init_ui(self):
@@ -69,13 +69,13 @@ class ConversationPicker(QWidget):
 				child.widget().deleteLater()
 
 		# Create new tabs for each active conversation
-		for conversation in Context.active_conversations:
+		for conversation in AppContext.active_conversations:
 			if conversation is None:
 				continue
 			tab = ConversationTab(conversation, self.button_height)
 			tab.select_button.clicked.connect(lambda _, c=conversation: self.on_conversation_select(c))
 			tab.close_button.clicked.connect(lambda _, c=conversation: self.on_conversation_close(c))
-			tab.setChecked(conversation == Context.conversation)
+			tab.setChecked(conversation == AppContext.conversation)
 			self.scroll_layout.addWidget(tab)
 			self.scroll_layout.addSpacing(5)
 
@@ -83,24 +83,24 @@ class ConversationPicker(QWidget):
 		self.update()
 
 	def on_conversation_select(self, conversation: Conversation):
-		Context.conversation = conversation
+		AppContext.conversation = conversation
 		self.update_tabs()
 
 	def on_conversation_close(self, conversation: Conversation):
-		if conversation in Context.active_conversations:
-			index = Context.active_conversations.index(conversation)
-			Context.active_conversations.remove(conversation)
+		if conversation in AppContext.active_conversations:
+			index = AppContext.active_conversations.index(conversation)
+			AppContext.active_conversations.remove(conversation)
 			
-			if conversation == Context.conversation:
-				if Context.active_conversations:
-					if index < len(Context.active_conversations):
-						Context.conversation = Context.active_conversations[index]
+			if conversation == AppContext.conversation:
+				if AppContext.active_conversations:
+					if index < len(AppContext.active_conversations):
+						AppContext.conversation = AppContext.active_conversations[index]
 					else:
-						Context.conversation = Context.active_conversations[index - 1]
+						AppContext.conversation = AppContext.active_conversations[index - 1]
 				else:
-					Context.conversation = None
+					AppContext.conversation = None
 			
-			Context.context_changed()
+			AppContext.context_changed()
 
 	def resizeEvent(self, event):
 		super().resizeEvent(event)
@@ -136,9 +136,9 @@ if __name__ == "__main__":
 
 			# Add some test conversations
 			for i in range(5):
-				Context.active_conversations.append(Conversation(f"Conversation {i+1}", f"Description {i+1}"))
+				AppContext.active_conversations.append(Conversation(f"Conversation {i+1}", f"Description {i+1}"))
 
-			Context.context_changed()
+			AppContext.context_changed()
 
 	app = QApplication(sys.argv)
 	main_window = MainWindow()

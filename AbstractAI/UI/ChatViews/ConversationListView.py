@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 from AbstractAI.UI.ChatViews.ConversationView import ConversationView, Conversation, ConversationCollection
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from PyQt5.QtCore import pyqtSignal
 from enum import Enum
 
@@ -39,8 +39,8 @@ class ConversationListView(QListWidget):
 		def conversation_selected(prev_conversation:Conversation, new_conversation:Conversation):
 			if self._redrawing:
 				return
-			self.set_selected(Context.conversation)
-		Context.conversation_selected.connect(conversation_selected)
+			self.set_selected(AppContext.conversation)
+		AppContext.conversation_selected.connect(conversation_selected)
 		self.conversations = conversations
 		self.itemSelectionChanged.connect(self.update_selection)
 	
@@ -68,10 +68,10 @@ class ConversationListView(QListWidget):
 			if getattr(conversation, "_show", True):
 				self._redraw_conversation(conversation, is_selected=conversation.auto_id in selected_ids)
 		
-		if Context.conversation is not None:
-			if Context.conversation.auto_id in self._conversation_ids:
+		if AppContext.conversation is not None:
+			if AppContext.conversation.auto_id in self._conversation_ids:
 				try:
-					item = self.items_map[Context.conversation.auto_id]
+					item = self.items_map[AppContext.conversation.auto_id]
 					item.setSelected(True)
 					self.scrollToItem(item)
 				except:
@@ -102,9 +102,9 @@ class ConversationListView(QListWidget):
 			for item in self.selectedItems():
 				conversation = self.conversations.get_conversation(item.conversation)
 				self.conversations.ensure_loaded(conversation)
-				Context.active_conversations.clear()
-				Context.conversation = conversation
-				Context.context_changed()
+				AppContext.active_conversations.clear()
+				AppContext.conversation = conversation
+				AppContext.context_changed()
 				break
 		self._redrawing = False
 	

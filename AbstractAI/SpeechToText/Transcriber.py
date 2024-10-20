@@ -2,7 +2,7 @@ from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 from ClassyFlaskDB.DefaultModel import Object, DATA
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
 from pydub import AudioSegment
 from dataclasses import dataclass, field
@@ -107,7 +107,7 @@ class Transcriber:
     
     def _get_audio_path(self, audio:AudioSegment) -> str:
         try:
-            return Context.engine.get_binary_path(audio)
+            return AppContext.engine.get_binary_path(audio)
         except:
             return audio.export("temp_audio.mp3")
     def transcribe(self, transcription: Transcription) -> Transcription:

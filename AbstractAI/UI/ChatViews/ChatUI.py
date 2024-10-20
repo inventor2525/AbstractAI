@@ -4,7 +4,8 @@ from AbstractAI.UI.ChatViews.MessageView_extras.RoleComboBox import RoleComboBox
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationActionControl, ConversationAction
 from AbstractAI.UI.ChatViews.ConversationPicker import ConversationPicker
 from AbstractAI.UI.Support._CommonImports import *
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
+from AbstractAI.UI.QtContext import QtContext
 from AbstractAI.Model.Converse import *
 from AbstractAI.Model.Converse.MessageSources.FilesSource import ItemsModel
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
@@ -62,7 +63,7 @@ class ChatUI(QWidget):
 		self.num_lines = 0
 
 		self.init_ui(conversation)
-		Context.transcriber.recording_indicator = self.recording_indicator
+		AppContext.transcriber.recording_indicator = self.recording_indicator
 
 		# Set up key handler
 		self.key_handler = KeyComboHandler(key_actions=[
@@ -105,7 +106,7 @@ class ChatUI(QWidget):
 		self.advanced_controls_header_layout.setContentsMargins(0, 0, 0, 0)
 		self.advanced_controls_header_layout.addWidget(QLabel("Advanced Generation Controls:"))
 		def copy_to_clipboard():
-			txt = str(Context.conversation)
+			txt = str(AppContext.conversation)
 			try:
 				import pyperclip
 				pyperclip.copy(txt)
@@ -154,8 +155,8 @@ class ChatUI(QWidget):
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		def input_field_changed():
 			self.adjust_text_field_size(self.input_field)
-			Context.new_message_has_text = bool(self.input_field.toPlainText())
-			Context.context_changed()
+			AppContext.new_message_has_text = bool(self.input_field.toPlainText())
+			AppContext.context_changed()
 		self.input_field.textChanged.connect(input_field_changed)
 		self.input_field.textChanged.connect(self.clear_selection)
 		self.input_field.setPlaceholderText("Type your message here...")
@@ -178,12 +179,12 @@ class ChatUI(QWidget):
 		# Create a button to toggle the advanced controls:
 		self.advanced_controls_toggle = QToolButton()
 		self.advanced_controls_toggle.setCheckable(True)
-		self.advanced_controls_toggle.setChecked(Context.settings.value("ChatUI/ShowAdvancedControls", False, type=bool))
+		self.advanced_controls_toggle.setChecked(QtContext.settings.value("ChatUI/ShowAdvancedControls", False, type=bool))
 		# self.advanced_controls_toggle.setText("
 		self.advanced_controls_toggle.setIcon(QIcon.fromTheme("preferences-system"))
 		self.advanced_controls_toggle.setToolTip("Show advanced controls")
 		def toggle_advanced_controls():
-			Context.settings.setValue("ChatUI/ShowAdvancedControls", self.advanced_controls_toggle.isChecked())
+			QtContext.settings.setValue("ChatUI/ShowAdvancedControls", self.advanced_controls_toggle.isChecked())
 			self.advanced_controls.setVisible(self.advanced_controls_toggle.isChecked())
 		self.advanced_controls_toggle.clicked.connect(toggle_advanced_controls)
 		self.input_layout.addWidget(self.advanced_controls_toggle, alignment=Qt.AlignBottom)
@@ -218,7 +219,7 @@ class ChatUI(QWidget):
 		# Add play last recording button
 		self.play_button = QPushButton("Play Last Recording")
 		self.play_button.setEnabled(False)
-		self.play_button.clicked.connect(Context.transcriber.play_last_recording)
+		self.play_button.clicked.connect(AppContext.transcriber.play_last_recording)
 		self.recording_buttons_layout.addWidget(self.play_button, alignment=Qt.AlignBottom)
 
 		# Add timer label
@@ -240,7 +241,7 @@ class ChatUI(QWidget):
 		
 	def transcription_work(self, job: TranscriptionJob) -> JobStatus:
 		if job.transcription:
-			Context.transcriber.transcribe(job.transcription)
+			AppContext.transcriber.transcribe(job.transcription)
 			return JobStatus.SUCCESS
 		job.status_hover = "No transcription object supplied."
 		return JobStatus.FAILED
@@ -252,17 +253,17 @@ class ChatUI(QWidget):
 			self.input_field.append(job.transcription.transcription)
 
 	def toggle_recording(self):
-		transcription = Context.transcriber.toggle_recording()
+		transcription = AppContext.transcriber.toggle_recording()
 		if transcription:
 			self.toggle_recording_button.setText("Start Recording")
 			job = TranscriptionJob(job_key="Transcribe", name=f"Transcription {transcription.auto_id[-4:]}", transcription=transcription)
-			Context.jobs.add(job)
+			AppContext.jobs.add(job)
 		else:
 			self.toggle_recording_button.setText("Stop Recording")
 			
 	def update_timer(self):
-		if Context.transcriber.is_recording:
-			elapsed_time = time.time() - Context.transcriber.start_time
+		if AppContext.transcriber.is_recording:
+			elapsed_time = time.time() - AppContext.transcriber.start_time
 			self.timer_label.setText(f"Time: {elapsed_time:.1f}s")
 	
 	def clear_selection(self):
@@ -281,7 +282,7 @@ class ChatUI(QWidget):
 			new_message | FilesSource(items=items) | self.caller
 			new_message.content = new_message.source.load()
 		else:
-			new_message | Context.user_source
+			new_message | AppContext.user_source
 		return new_message
 	
 	def _add_message(self):
@@ -303,14 +304,14 @@ class ChatUI(QWidget):
 			self.input_field.clear()
 			
 		elif action == ConversationAction.Send:
-			Context.start_str = self.start_str
+			AppContext.start_str = self.start_str
 			self._add_message()
 			self.respond_to_conversation(self.conversation, conversable)
 		elif action == ConversationAction.Reply:
-			Context.start_str = self.start_str
+			AppContext.start_str = self.start_str
 			self.respond_to_conversation(self.conversation, conversable)
 		elif action == ConversationAction.Continue:
-			Context.start_str = self.conversation[-1].content
+			AppContext.start_str = self.conversation[-1].content
 			self.conversation.remove_message(self.conversation[-1], silent=True)
 			self.respond_to_conversation(self.conversation, conversable)
 			
@@ -320,9 +321,9 @@ class ChatUI(QWidget):
 		elif action == ConversationAction.Demo:
 			raise NotImplementedError("Demo not implemented")
 		elif action == ConversationAction.DoIt:
-			agent_config = Context.conversation.get_source(AgentConfig)
+			agent_config = AppContext.conversation.get_source(AgentConfig)
 			if agent_config:
-				agent_config.agent.process_response(Context.conversation)
+				agent_config.agent.process_response(AppContext.conversation)
 	
 	def keyPressEvent(self, event):
 		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:

@@ -17,7 +17,8 @@ from AbstractAI.UI.ChatViews.ConversationView import *
 from AbstractAI.UI.ChatViews.ChatUI import *
 from AbstractAI.UI.ChatViews.ConversationListView import *
 from AbstractAI.UI.Support.BackgroundTask import BackgroundTask
-from AbstractAI.UI.Context import Context, MainAgent
+from AbstractAI.AppContext import AppContext, MainAgent
+from AbstractAI.UI.QtContext import QtContext
 from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
 Stopwatch("Setting Models", log_statistics=False)
@@ -55,8 +56,8 @@ class Application(QMainWindow):
 	@llm.setter
 	def llm(self, value:LLM):
 		self._llm = value
-		Context.llm_loaded = value is not None
-		Context.context_changed()
+		AppContext.llm_loaded = value is not None
+		AppContext.context_changed()
 		
 	def __init__(self):
 		super().__init__()
@@ -69,38 +70,38 @@ class Application(QMainWindow):
 		
 		self.settings_window = SettingsWindow()
 		
-		files_path = os.path.join(Context.storage_location, "files")
+		files_path = os.path.join(AppContext.storage_location, "files")
 		os.makedirs(files_path, exist_ok=True)
 		
-		db_path = os.path.join(Context.storage_location, db_version, "chat.db")
-		os.makedirs(os.path.join(Context.storage_location, db_version), exist_ok=True)
+		db_path = os.path.join(AppContext.storage_location, db_version, "chat.db")
+		os.makedirs(os.path.join(AppContext.storage_location, db_version), exist_ok=True)
 		
 		#if doesn't exist check for old versions of the db:
 		if not os.path.exists(db_path):
 			for version in prev_compatible_db_versions:
-				old_db_path = os.path.join(Context.storage_location, version, "chat.db")
+				old_db_path = os.path.join(AppContext.storage_location, version, "chat.db")
 				if os.path.exists(old_db_path):
 					shutil.copyfile(old_db_path, db_path)
-		Context.engine = SQLStorageEngine(f"sqlite:///{db_path}", DATA, files_dir=files_path)
+		AppContext.engine = SQLStorageEngine(f"sqlite:///{db_path}", DATA, files_dir=files_path)
 		
-		self.llmConfigs = Context.engine.query(LLMConfigs).first()
+		self.llmConfigs = AppContext.engine.query(LLMConfigs).first()
 		
 		if self.llmConfigs is None:
 			self.llmConfigs = LLMConfigs()
 		
 		# Set up transcription
-		hacky_tts_settings = Context.engine.query(Hacky_Whisper_Settings).first()
+		hacky_tts_settings = AppContext.engine.query(Hacky_Whisper_Settings).first()
 		if hacky_tts_settings is None:
 			hacky_tts_settings = Hacky_Whisper_Settings()
 		
-		Context.transcriber = Transcriber(hacky_tts_settings)
+		AppContext.transcriber = Transcriber(hacky_tts_settings)
 		self.init_settings()
 		
 		# Create a user:
-		Context.user_source = UserSource() | CallerInfo.catch([0])
+		AppContext.user_source = UserSource() | CallerInfo.catch([0])
 		
 		Stopwatch("Load conversations", log_statistics=False)
-		self.conversations = ConversationCollection.all_from_engine(Context.engine)
+		self.conversations = ConversationCollection.all_from_engine(AppContext.engine)
 		
 		Stopwatch("Setup UI", log_statistics=False)
 		self.should_filter = False
@@ -126,38 +127,38 @@ class Application(QMainWindow):
 				self.name_field.setText("")
 				self.description_field.setText("")
 			self.chatUI.conversation = new_conversation
-		Context.conversation_selected.connect(conversation_selected)
-		Context.conversation = self.new_conversation()
-		Context.context_changed()
+		AppContext.conversation_selected.connect(conversation_selected)
+		AppContext.conversation = self.new_conversation()
+		AppContext.context_changed()
 		
 		self.read_settings()
 		
-		Context.main_agent = MainAgent()
+		AppContext.main_agent = MainAgent()
 		
-		Context.jobs = Context.engine.query(Jobs).first()
-		if Context.jobs is None:
-			Context.jobs = Jobs()
-		Context.jobs.should_save_job.connect(self.save_job)
+		AppContext.jobs = AppContext.engine.query(Jobs).first()
+		if AppContext.jobs is None:
+			AppContext.jobs = Jobs()
+		AppContext.jobs.should_save_job.connect(self.save_job)
 		
 		def save_jobs():
-			with Context.jobs._lock:
-				Context.engine.merge(Context.jobs)
+			with AppContext.jobs._lock:
+				AppContext.engine.merge(AppContext.jobs)
 		self.app.aboutToQuit.connect(save_jobs)
-		self.app.aboutToQuit.connect(Context.transcriber.recorder.stop_listening)
-		self.app.aboutToQuit.connect(Context.jobs.stop)
-		Context.jobs.changed.connect(save_jobs)
+		self.app.aboutToQuit.connect(AppContext.transcriber.recorder.stop_listening)
+		self.app.aboutToQuit.connect(AppContext.jobs.stop)
+		AppContext.jobs.changed.connect(save_jobs)
 		
 		Stopwatch.end_scope(log_statistics=False)
 		
-		self.jobs_window = JobsWindow(Context.jobs)
+		self.jobs_window = JobsWindow(AppContext.jobs)
 		jobs_window_button = QPushButton("Open Jobs List")
 		jobs_window_button.clicked.connect(self.open_jobs_list)
 		self.chatUI.advanced_controls_header_layout.insertWidget(2, jobs_window_button)
-		Context.jobs.start()
+		AppContext.jobs.start()
 	
 	@run_in_main_thread
 	def save_job(self, job:Job):
-		Context.engine.merge(job)
+		AppContext.engine.merge(job)
 		
 	def open_jobs_list(self):
 		self.jobs_window.show()
@@ -221,9 +222,9 @@ class Application(QMainWindow):
 		def save_settings():
 			for model in self.llmConfigs.models:
 				model.new_id(True)
-			Context.engine.merge(self.llmConfigs)
-			Context.engine.merge(Context.transcriber.hacky_tts_settings)
-			Context.engine.merge(MobileWindow.load_tts_settings())
+			AppContext.engine.merge(self.llmConfigs)
+			AppContext.engine.merge(AppContext.transcriber.hacky_tts_settings)
+			AppContext.engine.merge(MobileWindow.load_tts_settings())
 		self.settings_window.settingsSaved.connect(save_settings)
 		
 	def init_ui(self):
@@ -311,14 +312,14 @@ class Application(QMainWindow):
 		self.name_description_layout.addWidget(self.more_conversation_controls_toggle)
 		self.more_conversation_controls_toggle.setArrowType(Qt.RightArrow)
 		self.more_conversation_controls_toggle.setCheckable(True)
-		self.more_conversation_controls_toggle.setChecked(Context.settings.value("main/ShowMoreConversationControls", False, type=bool))
+		self.more_conversation_controls_toggle.setChecked(QtContext.settings.value("main/ShowMoreConversationControls", False, type=bool))
 		def toggle_more_conversation_controls():
 			self.more_conversation_controls.setVisible(self.more_conversation_controls_toggle.isChecked())
 			if self.more_conversation_controls_toggle.isChecked():
 				self.more_conversation_controls_toggle.setArrowType(Qt.DownArrow)
 			else:
 				self.more_conversation_controls_toggle.setArrowType(Qt.RightArrow)
-			Context.settings.setValue("main/ShowMoreConversationControls", self.more_conversation_controls_toggle.isChecked())
+			QtContext.settings.setValue("main/ShowMoreConversationControls", self.more_conversation_controls_toggle.isChecked())
 		self.more_conversation_controls_toggle.clicked.connect(toggle_more_conversation_controls)
 		toggle_more_conversation_controls()
 		
@@ -331,7 +332,7 @@ class Application(QMainWindow):
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
 		
 		self.settings_window.addSettingItem(SettingItem(
-			Context.transcriber.hacky_tts_settings,
+			AppContext.transcriber.hacky_tts_settings,
 			"TTS_Settings",
 			excluded_fields=["auto_id"]
 		))
@@ -391,11 +392,11 @@ class Application(QMainWindow):
 		name = self.new_conversation_name.text()
 		if name == "":
 			name = "New Conversation"
-		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}") | Context.user_source
+		conv = Conversation(name, f"A conversation created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}") | AppContext.user_source
 		self.conversations.append(conv)
-		Context.active_conversations.clear()
-		Context.conversation = conv
-		Context.context_changed()
+		AppContext.active_conversations.clear()
+		AppContext.conversation = conv
+		AppContext.context_changed()
 		return conv
 	
 	def toggle_settings_window(self):
@@ -416,15 +417,15 @@ class Application(QMainWindow):
 			self.settings_window.close()
 			
 	def _name_description_confirm(self):
-		if Context.conversation is None:
+		if AppContext.conversation is None:
 			return
 		
-		if Context.conversation.name != self.name_field.text() or Context.conversation.description != self.description_field.text():
-			Context.conversation.name = self.name_field.text()
-			Context.conversation.description = self.description_field.text()
-			Context.conversation.last_modified = get_local_time()
-			self.conversation_list_view._redraw_conversation(Context.conversation)
-			Context.engine.merge(Context.conversation, persist=True)
+		if AppContext.conversation.name != self.name_field.text() or AppContext.conversation.description != self.description_field.text():
+			AppContext.conversation.name = self.name_field.text()
+			AppContext.conversation.description = self.description_field.text()
+			AppContext.conversation.last_modified = get_local_time()
+			self.conversation_list_view._redraw_conversation(AppContext.conversation)
+			AppContext.engine.merge(AppContext.conversation, persist=True)
 	
 	def search_name_description(self):
 		search = self.search_field.text()
@@ -454,20 +455,20 @@ class Application(QMainWindow):
 			self.conversation_list_view._redraw_items()
 	
 	def read_settings(self):
-		self.restoreGeometry(Context.settings.value("geometry", QByteArray()))
+		self.restoreGeometry(QtContext.settings.value("geometry", QByteArray()))
 
 	def write_settings(self):
-		Context.settings.setValue("geometry", self.saveGeometry())
+		QtContext.settings.setValue("geometry", self.saveGeometry())
 	
 	def stop_generating(self):
 		self._should_generate = False
 		
 	def generate_ai_response(self, conversation:Conversation, conversable:Optional[Conversable] = None):
-		Context.llm_generating = True
-		Context.context_changed()
+		AppContext.llm_generating = True
+		AppContext.context_changed()
 		
 		self._should_generate = True
-		start_str = Context.start_str
+		start_str = AppContext.start_str
 		max_tokens = self.chatUI.max_tokens
 			
 		def chat(conversable:Conversable=conversable):
@@ -488,8 +489,8 @@ class Application(QMainWindow):
 		self.task = BackgroundTask(chat)
 		
 		def finished():
-			Context.llm_generating = False
-			Context.context_changed()
+			AppContext.llm_generating = False
+			AppContext.context_changed()
 		
 		self.task.finished.connect(finished)
 		self.task.start()
@@ -564,7 +565,7 @@ class Application(QMainWindow):
 		self.task.start()
 		
 	def closeEvent(self, event):
-		Context.transcriber.recorder.stop_listening()
+		AppContext.transcriber.recorder.stop_listening()
 		self.write_settings()
 		QApplication.quit()
 		
@@ -577,7 +578,7 @@ if __name__ == "__main__":
 	with open(qss_path, "r") as f:
 		app.setStyleSheet(f.read())
 		
-	Context.settings = QSettings("Inventor2525", "AbstractAI")
+	QtContext.settings = QSettings("Inventor2525", "AbstractAI")
 	
 	def get_default_storage_location():
 		config_dir = os.path.expanduser("~/.config/AbstractAI/")
@@ -589,7 +590,7 @@ if __name__ == "__main__":
 	
 	parser.add_argument(
 		'storage_location', nargs='?',
-		default=Context.settings.value(
+		default=QtContext.settings.value(
 			"main/storage_location",
 			get_default_storage_location(), 
 			type=str
@@ -597,14 +598,14 @@ if __name__ == "__main__":
 		help='Path to SQLite database file (default: %(default)s)'
 	)
 	
-	Context.args = parser.parse_args()
-	Context.settings.setValue("main/storage_location", Context.args.storage_location)
+	AppContext.args = parser.parse_args()
+	QtContext.settings.setValue("main/storage_location", AppContext.args.storage_location)
 	
-	storage_location:str = Context.args.storage_location
+	storage_location:str = AppContext.args.storage_location
 	#prune: .db (this is to old code proof it and will be removed eventually):
 	if storage_location.endswith(".db"):
 		storage_location = storage_location[:-3]
-	Context.storage_location = storage_location
+	AppContext.storage_location = storage_location
 	
 	# new model loading code:
 	Stopwatch("Load window", log_statistics=False)

@@ -1,4 +1,4 @@
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from AbstractAI.Model.Converse import DATA
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
 from ClassyFlaskDB.DefaultModel import Object
@@ -34,8 +34,8 @@ class TTS:
 			data=TTSData(text)
 		)
 		self._setup_job(job)
-		Context.engine.merge(job)
-		Context.jobs.add(job)
+		AppContext.engine.merge(job)
+		AppContext.jobs.add(job)
 		return job
 	
 	def work(self, job:TTSJob) -> JobStatus:

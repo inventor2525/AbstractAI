@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableView, QPush
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex
 from PyQt5.QtGui import QColor
 from AbstractAI.UI.Support._CommonImports import *
-from AbstractAI.UI.Context import Context
+from AbstractAI.AppContext import AppContext
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobPriority, JobStatus
 from ClassyFlaskDB.new.ClassInfo import ClassInfo

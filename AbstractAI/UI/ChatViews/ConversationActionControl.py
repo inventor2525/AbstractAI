@@ -1,6 +1,6 @@
 from AbstractAI.UI.Support._CommonImports import *
 from AbstractAI.Helpers.run_in_main_thread import run_in_main_thread
-from AbstractAI.UI.Context import Context, UserSource, Conversation, Message, ModelSource, EditSource
+from AbstractAI.AppContext import AppContext, UserSource, Conversation, Message, ModelSource, EditSource
 from AbstractAI.Automation.Agent import Agent, AgentConfig
 from enum import Enum
 
@@ -63,8 +63,8 @@ class ConversationActionControl(QWidget):
 			if new_conversation:
 				new_conversation.conversation_changed.connect(conversation_changed)
 			self.selected_messages = []
-		Context.conversation_selected.connect(conversation_selected)
-		Context.context_changed.connect(self.update_mode)
+		AppContext.conversation_selected.connect(conversation_selected)
+		AppContext.context_changed.connect(self.update_mode)
 		
 		self._init_ui()
 		
@@ -118,7 +118,7 @@ class ConversationActionControl(QWidget):
 	
 	@run_in_main_thread
 	def update_mode(self):
-		if Context.llm_generating:
+		if AppContext.llm_generating:
 			self.set_btn_mode(self.left_button, None)
 			self.set_btn_mode(self.right_button, ConversationAction.Stop)
 			return
@@ -126,7 +126,7 @@ class ConversationActionControl(QWidget):
 		def get_demo_do_it() -> Tuple[ConversationAction, bool]:
 			if self.should_auto_respond:
 				def should_display_DoIt():
-					conv:Conversation = Context.conversation
+					conv:Conversation = AppContext.conversation
 					if conv is None or conv.source is None:
 						return False
 					if len(conv) == 0:
@@ -144,20 +144,20 @@ class ConversationActionControl(QWidget):
 		else:
 			if self.should_auto_respond:
 				self.set_btn_mode(self.left_button, *get_demo_do_it())
-				if Context.new_message_has_text:
-					self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=Context.llm_loaded)
+				if AppContext.new_message_has_text:
+					self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=AppContext.llm_loaded)
 				else:
-					if Context.conversation is None:
+					if AppContext.conversation is None:
 						self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=False)
-					elif len(Context.conversation) == 0:
-						self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=Context.llm_loaded)
+					elif len(AppContext.conversation) == 0:
+						self.set_btn_mode(self.right_button, ConversationAction.Send, enabled=AppContext.llm_loaded)
 					else:
-						last_msg = Context.conversation[-1]
+						last_msg = AppContext.conversation[-1]
 						model_source = last_msg.get_source(ModelSource, expand_edits=True)
 						if model_source:
-							self.set_btn_mode(self.right_button, ConversationAction.Continue, enabled=Context.llm_loaded)
+							self.set_btn_mode(self.right_button, ConversationAction.Continue, enabled=AppContext.llm_loaded)
 						else:
-							self.set_btn_mode(self.right_button, ConversationAction.Reply, enabled=Context.llm_loaded)
+							self.set_btn_mode(self.right_button, ConversationAction.Reply, enabled=AppContext.llm_loaded)
 			else:
 				self.set_btn_mode(self.left_button, *get_demo_do_it())
 				self.set_btn_mode(self.right_button, ConversationAction.Add)

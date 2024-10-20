@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from PyQt5.QtCore import QSettings
 from AbstractAI.Model.Converse import *
 from AbstractAI.Helpers.Signal import Signal
 from AbstractAI.Automation.MainAgent import MainAgent
@@ -8,9 +7,8 @@ from AbstractAI.Helpers.Jobs import Jobs
 from argparse import Namespace
 
 @dataclass
-class ContextModel:
+class ApplicationContextModel:
 	args:Namespace = None
-	settings: QSettings = None
 	engine:SQLStorageEngine = None
 	transcriber: 'Transcriber' = None
 	jobs:Jobs = None
@@ -29,12 +27,6 @@ class ContextModel:
 	
 	active_conversations: List[Conversation] = field(default_factory=list)
 	
-	@staticmethod
-	def singleton() -> 'ContextModel':
-		if not hasattr(ContextModel, '_singleton'):
-			ContextModel._singleton = ContextModel()
-		return ContextModel._singleton
-	
 	@property
 	def conversation(self) -> Conversation:
 		return getattr(self, "_conversation", None)
@@ -51,13 +43,10 @@ class ContextModel:
 			self.conversation_selected(prev_conversation, value)
 			if added_to_active:
 				self.context_changed()
-		
-	def __post_init__(self):
-		ContextModel.singleton = self
 	
 	def has_llm(self, conversation: Conversation):
 		return self.llm_loaded
 
-Context = ContextModel.singleton()
+AppContext = ApplicationContextModel()
 
 # from AbstractAI.Helpers.Transcriber import Transcriber
