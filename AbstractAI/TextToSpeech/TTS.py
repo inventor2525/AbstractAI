@@ -2,7 +2,7 @@ from AbstractAI.AppContext import AppContext
 from AbstractAI.Model.Converse import DATA
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
 from ClassyFlaskDB.DefaultModel import Object
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pydub import AudioSegment
 from typing import Callable
 
@@ -20,7 +20,7 @@ class TTSJob(Job):
 
 @dataclass
 class TTS:
-	callback:Callable[[TTSJob], None]
+	callback:Callable[[TTSJob], None] = field(default=None, kw_only=True)
 	
 	def __post_init__(self):
 		Jobs.register("TTS", self.work, self.on_callback)
@@ -34,7 +34,6 @@ class TTS:
 			data=TTSData(text)
 		)
 		self._setup_job(job)
-		AppContext.engine.merge(job)
 		AppContext.jobs.add(job)
 		return job
 	
@@ -42,7 +41,8 @@ class TTS:
 		pass
 	
 	def on_callback(self, job:TTSJob):
-		self.callback(job)
+		if self.callback:
+			self.callback(job)
 
 from openai import OpenAI
 from AbstractAI.Model.Settings.OpenAI_TTS_Settings import OpenAI_TTS_Settings

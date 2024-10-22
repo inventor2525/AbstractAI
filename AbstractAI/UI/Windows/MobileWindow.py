@@ -35,7 +35,7 @@ class MobileWindow(QMainWindow):
         AppContext.conversation_selected.connect(self.on_conversation_changed)
         
         tts_settings = MobileWindow.load_tts_settings()
-        self.tts = OpenAI_TTS(self.tts_complete, tts_settings)
+        self.tts = OpenAI_TTS(callback=self.tts_complete, settings=tts_settings)
         self.audio_player = AudioPlayer()
         
         self.playback_override_getter = None

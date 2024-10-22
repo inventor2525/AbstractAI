@@ -46,9 +46,18 @@ class TranscriptionJob(Job):
     transcription: Transcription = field(default=None)
 
 class Transcriber:
-    def __init__(self, hacky_tts_settings: Hacky_Whisper_Settings):
-        self.recorder = AudioRecorder()
-        self.player = AudioPlayer()
+    def __init__(self, hacky_tts_settings: Hacky_Whisper_Settings, recorder:AudioRecorder=None, player:AudioPlayer=None):
+        #TODO: remove recorder and recording indicator from this entirely, put it in the new ApplicationCore
+        if recorder:
+            self.recorder = recorder
+        else:
+            self.recorder = AudioRecorder()
+        
+        if player:
+            self.player = player
+        else:
+            self.player = AudioPlayer()
+        
         self.hacky_tts_settings = hacky_tts_settings
         self.is_recording = False
         self.recording_indicator = None

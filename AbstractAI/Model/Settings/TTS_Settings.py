@@ -1,8 +1,4 @@
 from ClassyFlaskDB.DefaultModel import *
-from dataclasses import field
-from copy import deepcopy
-from typing import List
-from typing import Dict
 
 @DATA
 @dataclass

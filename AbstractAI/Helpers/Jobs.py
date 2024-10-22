@@ -58,7 +58,10 @@ class Job(Object):
 
     should_stop: bool = field(default=False, init=False)
     # Flag to indicate if the job should stop execution
-
+    
+    registered: bool = field(default=True, init=False)
+    # Set by Jobs class to track if this job is registered yet after loading
+    
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
         """
         Start the job with the specified priority.
@@ -143,16 +146,20 @@ class Jobs(Object):
             self._ensure_loaded_jobs_registered()
         
     def _ensure_loaded_jobs_registered(self):
-        new_urj = []
+        if len(self._un_registered_jobs)==0:
+            return
+        
+        new_un_registered_jobs = []
         for job in self._un_registered_jobs:
             job.jobs = self
             
             if job.job_key in self.registry:
                 job_callable = self.registry[job.job_key]
                 job.work, job.callback = job_callable.work, job_callable.callback
+                job.registered = True
             else:
-                new_urj.append(job)
-        self._un_registered_jobs = new_urj
+                new_un_registered_jobs.append(job)
+        self._un_registered_jobs = new_un_registered_jobs
 
     @property
     def jobs(self) -> List[Job]:
@@ -258,11 +265,12 @@ class Jobs(Object):
         while not self._stop_event.is_set():
             with self._lock:
                 for j in self._jobs:
+                    if not j.registered:
+                        continue
+                    
                     if not j.failed_last_run and (j.work or j.callback):
                         self.current_job = j
                         break
-                else:
-                    self.current_job = None
 
             if self.current_job:
                 print(f"Starting job: {self.current_job.name or self.current_job.job_key}")
