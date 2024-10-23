@@ -4,9 +4,7 @@ Stopwatch.singleton = Stopwatch(should_log=True, log_statistics=False)
 stopwatch = Stopwatch.singleton
 
 # Track import times:
-stopwatch("AbstractAI App Core Startup")
-stopwatch.new_scope()
-stopwatch("Imports")
+stopwatch("AbstractAI App Core Init")
 stopwatch.new_scope()
 
 stopwatch("Basics")
@@ -217,33 +215,5 @@ class ApplicationCore:
 	def transcription_callback(self, job: TranscriptionJob):
 		self.transcription_completed(job.transcription)
 		
-stopwatch.end_scope() #Imports
-
-
-stopwatch.end_scope() # AbstractAI App Core Startup
-
-if __name__ == "__main__":
-	appCore = ApplicationCore("/home/charlie/Documents/AbstractAI")
-	
-	def transcription_completed(transcription:Transcription):
-		print(f"Transcribed: '{transcription.transcription}' at {datetime.now()}")
-	appCore.transcription_completed.connect(transcription_completed)
-	
-	try:
-		appCore.audio_recorder.start_recording()
-		appCore.vad.start()
-		print("VAD started. Press Ctrl+C to stop.")
-
-		for audio_segment in appCore.vad.voice_segments():
-			print(f"\nDetected voice segment of length: {len(audio_segment)} ms at {datetime.now()}")
-			AppContext.jobs.add(TranscriptionJob(
-				"Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
-			))
-
-	except KeyboardInterrupt:
-		print("Stopping VAD...")
-	finally:
-		appCore.vad.stop()
-		appCore.audio_recorder.stop_recording()
-		appCore.audio_recorder.stop_listening()
-		print("VAD stopped.")
+stopwatch.end_scope() #AbstractAI App Core Init
+stopwatch("")
