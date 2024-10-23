@@ -261,7 +261,6 @@ class Jobs(Object):
         """
         The main job processing loop.
         """
-        print("Job processing thread started")
         while not self._stop_event.is_set():
             with self._lock:
                 for j in self._jobs:
@@ -297,5 +296,4 @@ class Jobs(Object):
             else:
                 time.sleep(0.05)
 
-        print("Job processing thread stopped")
         self.thread_status_changed(False)

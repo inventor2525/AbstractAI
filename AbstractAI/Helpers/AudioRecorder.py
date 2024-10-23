@@ -54,7 +54,6 @@ class AudioRecorder:
 			self.recorder = recorder
 
 		def run(self):
-			print("Starting recorder thread.")
 			self.stream = sd.InputStream(
 				samplerate=self.recorder.sample_rate,
 				channels=1, dtype='float32', 
