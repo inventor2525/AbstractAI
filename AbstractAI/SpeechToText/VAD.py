@@ -1,12 +1,35 @@
 import threading
 import time
 import numpy as np
+from AbstractAI.Helpers.Stopwatch import Stopwatch
+
+# Timing some really slow Voice Activity Detection imports:
+Stopwatch.singleton("VAD Imports")
+Stopwatch.singleton.new_scope()
+
+Stopwatch.singleton("torch")
 import torch
+
+Stopwatch.singleton("Model")
 from pyannote.audio import Model
+
+Stopwatch.singleton("VoiceActivityDetector")
 from pyannote.audio.pipelines import VoiceActivityDetection
+Stopwatch.singleton.end_scope()
+
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from typing import List, Iterator
 from pydub import AudioSegment
+from ClassyFlaskDB.DefaultModel import *
+
+@DATA
+@dataclass
+class VADSettings(Object):
+	use_remote_model:bool = True
+	path:str = "pyannote/segmentation-3.0"
+	user_auth_token:str = ""
+	min_duration_on:float = 0.0
+	min_duration_off:float = 0.0
 
 class VAD:
 	'''
@@ -14,7 +37,7 @@ class VAD:
 	Start after starting a recording with recorder,
 	then iterate voice_segments.
 	'''
-	def __init__(self, recorder: AudioRecorder, peek_interval: float = 0.5, window_padding: float = 1.0):
+	def __init__(self, settings:VADSettings, recorder: AudioRecorder, peek_interval: float = 0.5, window_padding: float = 1.0):
 		"""
 		Initialize the Voice Activity Detector.
 
@@ -23,6 +46,7 @@ class VAD:
 			peek_interval (float): The interval in seconds between each audio peek.
 			window_padding (float): The padding in seconds to include before and after voice activity.
 		"""
+		self.settings = settings
 		self.recorder = recorder
 		self.peek_interval = peek_interval
 		self.window_padding = window_padding
@@ -38,14 +62,14 @@ class VAD:
 
 		# Initialize the model
 		self.model = Model.from_pretrained(
-			"pyannote/segmentation-3.0", 
-			use_auth_token="")
+			settings.path, 
+			use_auth_token=settings.user_auth_token if settings.use_remote_model else None)
 
 		# Initialize the pipeline
 		self.pipeline = VoiceActivityDetection(segmentation=self.model)
 		HYPER_PARAMETERS = {
-			"min_duration_on": 0.0,
-			"min_duration_off": 0.0
+			"min_duration_on": settings.min_duration_on,
+			"min_duration_off": settings.min_duration_off
 		}
 		self.pipeline.instantiate(HYPER_PARAMETERS)
 

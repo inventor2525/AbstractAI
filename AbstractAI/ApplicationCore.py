@@ -46,9 +46,10 @@ stopwatch("Audio IO")
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 
-stopwatch("Speech to Text")
+stopwatch.start("Speech to Text")
 from AbstractAI.SpeechToText.Transcriber import Transcriber, Transcription, TranscriptionJob
-from AbstractAI.SpeechToText.VAD import VAD
+from AbstractAI.SpeechToText.VAD import VAD, VADSettings
+stopwatch.stop("Speech to Text")
 
 stopwatch("Text to Speech")
 from AbstractAI.Model.Settings.OpenAI_TTS_Settings import OpenAI_TTS_Settings
@@ -116,6 +117,7 @@ class ApplicationCore:
 		# Load all settings:
 		stopwatch("Query Settings")
 		self.llmConfigs = self.query_db(LLMConfigs, as_setting=True)
+		self.vad_settings = self.query_db(VADSettings, as_setting=True)
 		self.transcription_settings = self.query_db(Hacky_Whisper_Settings, as_setting=True)
 		self.speech_settings = self.query_db(OpenAI_TTS_Settings, as_setting=True)
 		
@@ -138,7 +140,7 @@ class ApplicationCore:
 		# Create Voice Activity Detector:
 		#TODO: VAD (with offline mode):
 		stopwatch("Voice Activity Detector startup")
-		self.vad = VAD(self.audio_recorder)
+		self.vad = VAD(self.vad_settings, self.audio_recorder)
 		
 		# Setup Text to Speech:
 		stopwatch("Text to Speech startup")
