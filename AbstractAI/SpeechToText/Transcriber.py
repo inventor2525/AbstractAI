@@ -124,9 +124,12 @@ class Transcriber:
             self.recording_indicator.is_processing = True
         
         start_time = time.time()
-        try:
-            self._transcribe_with_groq(transcription)
-        except:
+        if self.hacky_tts_settings.use_groq:
+            try:
+                self._transcribe_with_groq(transcription)
+            except:
+                self._transcribe_with_local_model(transcription)
+        else:
             self._transcribe_with_local_model(transcription)
 
         transcription.transcription_time = time.time() - start_time

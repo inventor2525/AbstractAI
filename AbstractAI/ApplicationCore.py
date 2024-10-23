@@ -224,4 +224,26 @@ stopwatch.end_scope() # AbstractAI App Core Startup
 
 if __name__ == "__main__":
 	appCore = ApplicationCore("/home/charlie/Documents/AbstractAI")
-	print("Hello")
+	
+	def transcription_completed(transcription:Transcription):
+		print(f"Transcribed: '{transcription.transcription}' at {datetime.now()}")
+	appCore.transcription_completed.connect(transcription_completed)
+	
+	try:
+		appCore.audio_recorder.start_recording()
+		appCore.vad.start()
+		print("VAD started. Press Ctrl+C to stop.")
+
+		for audio_segment in appCore.vad.voice_segments():
+			print(f"\nDetected voice segment of length: {len(audio_segment)} ms at {datetime.now()}")
+			AppContext.jobs.add(TranscriptionJob(
+				"Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
+			))
+
+	except KeyboardInterrupt:
+		print("Stopping VAD...")
+	finally:
+		appCore.vad.stop()
+		appCore.audio_recorder.stop_recording()
+		appCore.audio_recorder.stop_listening()
+		print("VAD stopped.")
