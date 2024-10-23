@@ -6,15 +6,15 @@ import os
 
 @DATA
 @dataclass
-class TextContext(Object):
+class TextArtifact(Object):
 	text: str
 	
 	@property
 	def none_str(self) -> str:
 		return ""
 	
-	def copy(self) -> 'TextContext':
-		return TextContext(text=self.text)
+	def copy(self) -> 'TextArtifact':
+		return TextArtifact(text=self.text)
 	
 	def __str__(self):
 		if self.text is None:
@@ -23,7 +23,7 @@ class TextContext(Object):
 
 @DATA
 @dataclass
-class TextFileContext(TextContext):
+class TextFileArtifact(TextArtifact):
 	path: str
 	text: str = field(default=None, init=False)
 	
@@ -38,23 +38,23 @@ class TextFileContext(TextContext):
 		else:
 			self.text = None
 	
-	def copy(self) -> 'TextFileContext':
-		return TextFileContext(path=self.path)
+	def copy(self) -> 'TextFileArtifact':
+		return TextFileArtifact(path=self.path)
 	
 	@staticmethod
-	def from_app_dir(inner_dir:str) -> 'TextFileContext':
+	def from_app_dir(inner_dir:str) -> 'TextFileArtifact':
 		'''
 		Loads a text file inside the git repo
 		that this class is inside of, at a relative
 		directory 'inner_dir'
 		'''
-		repo_root = TextFileContext.get_repo_root_dir()
+		repo_root = TextFileArtifact.get_repo_root_dir()
 		full_path = os.path.join(repo_root, inner_dir)
-		return TextFileContext(path=full_path)
+		return TextFileArtifact(path=full_path)
 
 	@staticmethod
 	def get_repo_root_dir() -> str:
-		if not hasattr(TextFileContext, '_repo_root'):
+		if not hasattr(TextFileArtifact, '_repo_root'):
 			# Get the current file's directory
 			current_dir = os.path.dirname(os.path.abspath(__file__))
 			
@@ -65,13 +65,13 @@ class TextFileContext(TextContext):
 				if repo_root == os.path.dirname(repo_root):  # Reached the root directory
 					raise Exception("Git repository root not found")
 			
-			TextFileContext._repo_root = repo_root
+			TextFileArtifact._repo_root = repo_root
 
-		return TextFileContext._repo_root
+		return TextFileArtifact._repo_root
 
 @DATA
 @dataclass
-class ConversationContext(TextContext):
+class ConversationArtifact(TextArtifact):
 	conversation:Conversation
 	text: str = field(default=None, init=False)
 	
@@ -85,5 +85,5 @@ class ConversationContext(TextContext):
 		else:
 			self.text = None
 	
-	def copy(self) -> 'TextFileContext':
-		return TextFileContext(path=self.conversation)
+	def copy(self) -> 'TextFileArtifact':
+		return TextFileArtifact(path=self.conversation)
