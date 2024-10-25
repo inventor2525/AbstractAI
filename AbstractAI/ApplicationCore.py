@@ -47,6 +47,7 @@ from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 stopwatch.start("Speech to Text")
 from AbstractAI.SpeechToText.Transcriber import Transcriber, Transcription, TranscriptionJob
 from AbstractAI.SpeechToText.VAD import VAD, VADSettings
+from AbstractAI.SpeechToText.TranscriptionIterator import TranscriptionIterator
 stopwatch.stop("Speech to Text")
 
 stopwatch("Text to Speech")
@@ -214,6 +215,10 @@ class ApplicationCore:
 
 	def transcription_callback(self, job: TranscriptionJob):
 		self.transcription_completed(job.transcription)
+	
+	def transcribe_live(self) -> Iterator[Transcription]:
+		with TranscriptionIterator(self.audio_recorder, self.vad, self.transcription_completed) as iterator:
+			yield from iterator
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")
