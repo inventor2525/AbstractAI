@@ -3,6 +3,7 @@ from enum import Enum
 from typing import List, Callable, Dict, Tuple, Optional, ClassVar, Type
 import time
 import traceback
+import threading
 from threading import Thread, Lock, Event
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.Signal import Signal
@@ -23,7 +24,7 @@ class JobCallable:
     callback: Callable[['Job'], None]
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "completion_event"])
 @dataclass
 class Job(Object):
     job_key: str
@@ -62,6 +63,9 @@ class Job(Object):
     registered: bool = field(default=True, init=False)
     # Set by Jobs class to track if this job is registered yet after loading
     
+    completion_event: Event = field(default_factory=Event, init=False)
+    # Event to signal job completion
+    
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
         """
         Start the job with the specified priority.
@@ -72,12 +76,13 @@ class Job(Object):
         if self.jobs:
             self.jobs.start_job(self, priority)
 
-    def wait(self):
+    def wait(self) -> bool:
         """
         Wait until the job is done.
+        :return: True if the job completed successfully, False otherwise
         """
-        while not self.done:
-            time.sleep(0.05)
+        self.completion_event.wait()
+        return self.done and not self.failed_last_run
 
     def __call__(self) -> JobStatus:
         """
@@ -106,6 +111,8 @@ class Job(Object):
             print(f"Error in job {self.name or self.job_key}: {e}")
             self.failed_last_run = True
             return JobStatus.FAILED
+        finally:
+            self.completion_event.set()
 
 @DATA(included_fields=["_jobs"], excluded_fields=["changed", "thread_status_changed", "registry", "current_job"])
 @dataclass
@@ -201,6 +208,11 @@ class Jobs(Object):
             job.work, job.callback = job_callable.work, job_callable.callback
             job.jobs = self
             self._jobs.append(job)
+        
+        current_wait_for = WaitFor.get_current()
+        if current_wait_for:
+            current_wait_for.add_job(job)
+        
         self.changed()
         return job
 
@@ -297,3 +309,33 @@ class Jobs(Object):
                 time.sleep(0.05)
 
         self.thread_status_changed(False)
+
+class WaitFor:
+    _local = threading.local()
+
+    def __init__(self):
+        self.jobs = []
+
+    def __enter__(self):
+        if not hasattr(self._local, 'WaitFor_stack'):
+            self._local.WaitFor_stack = []
+        self._local.WaitFor_stack.append(self)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._local.WaitFor_stack.pop()
+        Jobs().start()
+        for job in self.jobs:
+            job.wait()
+
+    @classmethod
+    def get_current(cls):
+        if hasattr(cls._local, 'WaitFor_stack') and cls._local.WaitFor_stack:
+            return cls._local.WaitFor_stack[-1]
+        return None
+
+    def add_job(self, job):
+        self.jobs.append(job)
+
+    def get_jobs(self):
+        return self.jobs.copy()
