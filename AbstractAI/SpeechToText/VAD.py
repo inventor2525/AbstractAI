@@ -37,6 +37,20 @@ class VAD:
 	Start after starting a recording with recorder,
 	then iterate voice_segments.
 	'''
+	class Pause:
+		'''Pauses the vad when used in a with block.'''
+		def __init__(self, vad:'VAD'):
+			self.vad = vad
+		
+		def __enter__(self):
+			self.vad.paused = True
+			self.vad.stop()
+			return self
+		
+		def __exit__(self, exc_type, exc_val, exc_tb):
+			self.vad.start(ignore_prev_audio=True)
+			self.vad.paused = False
+	
 	def __init__(self, settings:VADSettings, recorder: AudioRecorder, peek_interval: float = 0.5, window_padding: float = 1.0):
 		"""
 		Initialize the Voice Activity Detector.
@@ -73,10 +87,12 @@ class VAD:
 		}
 		self.pipeline.instantiate(HYPER_PARAMETERS)
 
-	def start(self) -> None:
+	def start(self, ignore_prev_audio:bool=False) -> None:
 		"""Start the voice activity detection loop."""
 		if not self.running:
 			self.running = True
+			if ignore_prev_audio:
+				self.recorder.peek()
 			self.vad_thread = threading.Thread(target=self._vad_loop)
 			self.vad_thread.start()
 
@@ -235,7 +251,7 @@ class VAD:
 		Yields:
 			AudioSegment: An AudioSegment containing the audio data of a voice.
 		"""
-		while self.running:
+		while self.running or getattr(self, 'paused', False):
 			self.segment_available.wait()  # Wait for a segment to become available
 			with self.segment_lock:
 				if self.vocal_segments:
@@ -243,3 +259,10 @@ class VAD:
 					if not self.vocal_segments:
 						self.segment_available.clear()  # Clear the event if no more segments
 					yield self.recorder.np_to_AudioSegment(segment)
+			
+	def pauser(self) -> 'VAD.Pause':
+		'''
+		Returns a 'Pause' object that can be used with
+		'with' syntax to block speech input for a time
+		'''
+		return VAD.Pause(self)

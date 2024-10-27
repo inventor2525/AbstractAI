@@ -223,7 +223,10 @@ class ApplicationCore:
 		self.transcription_completed(job.transcription)
 	
 	def text_to_speech_callback(self, job:TTSJob):
-		self.audio_player.play(job.data.speech)
+		#self.audio_player.play(job.data.speech)
+		from pydub.playback import play
+		play(job.data.speech)
+		self.done_speaking = True
 		
 	def transcribe_live(self) -> Iterator[Transcription]:
 		with TranscriptionIterator(self.audio_recorder, self.vad, self.transcription_completed) as iterator:
@@ -243,8 +246,12 @@ class ApplicationCore:
 		from AbstractAI.LLMs.LLM_Helpers import llm_method
 		return llm_method(AppContext.jobs, llm, with_history, blocking)
 	
-	def speak(self, text:str):
+	def speak(self, text:str, blocking:bool=False):
+		self.done_speaking = False
 		self.tts.speak(text)
+		if blocking:
+			while not getattr(self, 'done_speaking', False):
+				time.sleep(0.01)
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")

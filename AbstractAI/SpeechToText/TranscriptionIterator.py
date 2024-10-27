@@ -43,6 +43,7 @@ class TranscriptionIterator:
 			AppContext.jobs.add(TranscriptionJob(
 				job_key="Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
 			))
+		#TODO: we never get notification this is done, and hens iterate transcriptions forever, even when not getting voice segments
 
 	def __iter__(self) -> Iterator[Transcription]:
 		threading.Thread(target=self._process_voice_segments, daemon=True).start()

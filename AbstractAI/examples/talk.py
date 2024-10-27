@@ -12,7 +12,12 @@ try:
 	for transcription in app.transcribe_live():
 		print(f"Transcribed: '{transcription.transcription}' at {datetime.now()}")
 		ro = chat(conversation, transcription.transcription)
-		app.speak(str(ro))
+		
+		print("Speaking...")
+		with app.vad.pauser():
+			app.speak(str(ro), blocking=True)
+		print("Done speaking!")
+	print("Exited transcription loop")
 		
 except KeyboardInterrupt:
 	print("Stopping transcription...")
