@@ -149,7 +149,7 @@ class ApplicationCore:
 		
 		# Setup Text to Speech:
 		stopwatch("Text to Speech startup")
-		self.stt = OpenAI_TTS(self.speech_settings)
+		self.tts = OpenAI_TTS(self.speech_settings, callback=self.text_to_speech_callback)
 		
 		# Load any previously un-completed jobs:
 		stopwatch("Query Jobs")
@@ -222,6 +222,9 @@ class ApplicationCore:
 	def transcription_callback(self, job: TranscriptionJob):
 		self.transcription_completed(job.transcription)
 	
+	def text_to_speech_callback(self, job:TTSJob):
+		self.audio_player.play(job.data.speech)
+		
 	def transcribe_live(self) -> Iterator[Transcription]:
 		with TranscriptionIterator(self.audio_recorder, self.vad, self.transcription_completed) as iterator:
 			yield from iterator
@@ -239,6 +242,9 @@ class ApplicationCore:
 	def llm_method(self, llm:LLM, with_history:bool=False, blocking:bool=True):
 		from AbstractAI.LLMs.LLM_Helpers import llm_method
 		return llm_method(AppContext.jobs, llm, with_history, blocking)
+	
+	def speak(self, text:str):
+		self.tts.speak(text)
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")
