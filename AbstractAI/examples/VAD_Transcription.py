@@ -17,7 +17,7 @@ try:
 		
 		# Transcribe each of them live:
 		AppContext.jobs.add(TranscriptionJob(
-			"Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
+			job_key="Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
 		))
 
 except KeyboardInterrupt:

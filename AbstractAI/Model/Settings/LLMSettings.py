@@ -35,8 +35,28 @@ class LLMSettings(Object):
 	roles:RolesSettings = field(default_factory=RolesSettings, kw_only=True)
 	
 	def load(self) -> "LLM":
+		'''
+		Loads the model from settings, regardless who calls it or when.
+		'''
 		raise NotImplementedError("Subclasses must implement this method.")
 	
+	@property
+	def model(self) -> "LLM":
+		'''
+		A lazily loaded singleton of the model these settings represent.
+		'''
+		def setup():
+			model = self.load()
+			model.start()
+			self._model = model
+			return model
+		
+		if hasattr(self, "_model"):
+			# TODO: re-load model on setting changes (needs better compare operator):
+			#if self == self._model.settings:
+			return self._model
+		return setup()
+		
 	@classmethod
 	def ui_name(cls) -> str:
 		if hasattr(cls, "__ui_name__"):

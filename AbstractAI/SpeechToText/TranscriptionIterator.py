@@ -41,7 +41,7 @@ class TranscriptionIterator:
 			if self.stop_event.is_set():
 				break
 			AppContext.jobs.add(TranscriptionJob(
-				"Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
+				job_key="Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
 			))
 
 	def __iter__(self) -> Iterator[Transcription]:

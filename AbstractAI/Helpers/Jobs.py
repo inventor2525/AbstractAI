@@ -27,34 +27,34 @@ class JobCallable:
 @DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "completion_event"])
 @dataclass
 class Job(Object):
-    job_key: str
+    job_key: str = field(kw_only=True)
     # Key to identify the job type and retrieve its callables
 
-    name: str = ""
+    name: str = field(default="", kw_only=True)
     # Optional descriptive name for the job instance
     
-    done: bool = False
+    done: bool = field(default=False, kw_only=True)
     # Indicates whether the job has completed
     
-    status: str = ""
+    status: str = field(default="", kw_only=True)
     # Current status of the job
     
-    status_hover: str = ""
+    status_hover: str = field(default="", kw_only=True)
     # Detailed status information for hover tooltip
     
-    failed_last_run: bool = False
+    failed_last_run: bool = field(default=False, kw_only=True)
     # Indicates if the job failed in its last execution
 
-    work: Callable[['Job'], JobStatus] = field(init=False)
+    work: Callable[['Job'], JobStatus] = field(default=None, init=False)
     # The bulk of the work to be done by this job which should monitor should_stop and can return STOPPED 
     
-    callback: Callable[['Job'], None] = field(init=False)
+    callback: Callable[['Job'], None] = field(default=None, init=False)
     # A quick non-blocking function to be called when work is done
 
     status_changed: Signal[[object, str, str], None] = Signal.field()
     # Signal emitted when the job's status changes
 
-    jobs: 'Jobs' = field(init=False, default=None)
+    jobs: 'Jobs' = field(default=None, init=False)
     # Weak reference to the Jobs instance this job belongs to
 
     should_stop: bool = field(default=False, init=False)

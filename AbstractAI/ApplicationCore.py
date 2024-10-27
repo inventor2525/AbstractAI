@@ -9,6 +9,7 @@ stopwatch.new_scope()
 
 stopwatch("Basics")
 import json
+from enum import Enum
 from pydub import AudioSegment
 from datetime import datetime
 from copy import deepcopy
@@ -22,7 +23,8 @@ from ClassyFlaskDB.new.AudioTranscoder import AudioTranscoder
 from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
 
 stopwatch("Helpers")
-from AbstractAI.Helpers.Signal import Signal
+from AbstractAI.Helpers.ScopeParams import *
+from AbstractAI.Helpers.Signal import Signal, LazySignal
 from AbstractAI.Helpers.Jobs import *
 
 stopwatch("LLMSettings")
@@ -39,6 +41,7 @@ stopwatch("Conversable")
 from AbstractAI.Conversable import *
 from AbstractAI.LLMs.LLM import LLM
 from AbstractAI.Automation.Agent import Agent, AgentConfig
+from AbstractAI.LLMs.LLM_Helpers import ResponseObject, LLMParams, LLMJob
 
 stopwatch("Audio IO")
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
@@ -79,6 +82,9 @@ class ApplicationCore:
 	#######################
 	_settings: List[Tuple[Object, Optional[Callable[[],None]]]] = field(default_factory=list, init=False)
 	# All settings we will save when calling 'save settings'
+	
+	_llm_cache:Dict[str, LLMSettings] = field(default_factory=dict, init=False)
+	# Mapping for all LLMs based on 'user model name'
 	
 	#######################
 	#      Signals        #
@@ -219,6 +225,20 @@ class ApplicationCore:
 	def transcribe_live(self) -> Iterator[Transcription]:
 		with TranscriptionIterator(self.audio_recorder, self.vad, self.transcription_completed) as iterator:
 			yield from iterator
+			
+	def __getitem__(self, model_name: str) -> LLM:
+		if model_name not in self._llm_cache:
+			for model_settings in self.llmConfigs.models:
+				if model_settings.user_model_name == model_name:
+					self._llm_cache[model_name] = model_settings
+					break
+			else:
+				raise KeyError(f"No LLM model found with name: {model_name}")
+		return self._llm_cache[model_name].model
+	
+	def llm_method(self, llm:LLM, with_history:bool=False, blocking:bool=True):
+		from AbstractAI.LLMs.LLM_Helpers import llm_method
+		return llm_method(AppContext.jobs, llm, with_history, blocking)
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")
