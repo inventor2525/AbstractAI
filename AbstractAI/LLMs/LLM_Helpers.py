@@ -2,7 +2,7 @@ from enum import Enum
 from ClassyFlaskDB.DefaultModel import *
 from AbstractAI.Helpers.ScopeParams import ScopeParams
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus, WaitFor
-from AbstractAI.Model.Converse import Conversation, Message, Role, MessageSequence
+from AbstractAI.Model.Converse import Conversation, Message, Role, MessageSequence, CallerInfo
 from AbstractAI.LLMs.LLM import LLM
 from AbstractAI.Model.Settings.LLMSettings import LLMSettings
 from typing import List, Dict, Any, Optional
@@ -11,6 +11,7 @@ import inspect
 from functools import wraps
 from dataclasses import fields
 import traceback
+import linecache
 
 @DATA
 @dataclass
@@ -20,6 +21,8 @@ class ResponseObject:
 	after_response_message_sequence: MessageSequence = None
 	message: Message = None
 	job: 'LLMJob' = None
+	stacktrace: str = None
+	key: str = None
 
 	@property
 	def conversation(self) -> Conversation:
@@ -101,7 +104,34 @@ def llm_job_callback(job: LLMJob):
 
 Jobs.register("LLM Chat", llm_job_work, llm_job_callback)
 
-def llm_method(jobs:Jobs, llm: LLM, with_history: bool = False, blocking: bool = True):
+def get_stacktrace():
+    stack = inspect.stack()[1:]
+    traceback = []
+    for frame_info in reversed(stack):
+        filename = frame_info.filename
+        lineno = frame_info.lineno
+        function = frame_info.function
+        line = linecache.getline(filename, lineno).strip()
+        traceback.append(f'File "{filename}", line {lineno}, in {function}')
+        traceback.append(f'  {line}')
+    return "\n".join(traceback)
+
+def llm_method(jobs:Jobs, llm: LLM, key:str=None, with_history: bool = False, blocking: bool = True):
+	'''
+	Method decorator that turns a str returning method into a call
+	to the supplied llm. Work is persisted in storage incase failure.
+	
+	Args:
+		jobs: Jobs queue the work is to be done on, less 'blocking' = False.
+		llm: The model your str will be sent to in the form of a 'Message'.
+		key: An optional string you can use to identify this type of call for self coding agents to refer to.
+		with_history: If true, your first argument must be a 'Conversation' that will be used to persist a back and forth chat.
+		blocking: If this call will block the current thread or run concurrently.
+
+	Returns:
+		A 'ResponseObject' that can be used to return the conversation to any point easily or get the str return from the llm, that also contains metadata useful for the agent to assist the user in message feedback annotation and example curation.
+	'''
+	constructor = CallerInfo.catch([0,1])
 	def decorator(func):
 		@wraps(func)
 		def wrapper(*args, **kwargs):
@@ -114,19 +144,20 @@ def llm_method(jobs:Jobs, llm: LLM, with_history: bool = False, blocking: bool =
 					"First argument must be of type Conversation when with_history is True"
 				conversation = bound_args.arguments[next(iter(bound_args.arguments))]
 			else:
-				conversation = Conversation()
+				conversation = Conversation() | constructor
 			
 			before_message_sequence = conversation.message_sequence
 			
 			prompt = func(*args, **kwargs)
-			conversation + Message(prompt, Role.User())
+			conversation + Message(prompt, Role.User()) | constructor
 			
 			after_prompt_message_sequence = conversation.message_sequence
 			
-			response = ResponseObject(
+			response = ResponseObject(stacktrace=get_stacktrace(), # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
 				before_message_sequence=before_message_sequence,
-				after_prompt_message_sequence=after_prompt_message_sequence
-			)
+				after_prompt_message_sequence=after_prompt_message_sequence,
+				key=key
+			) | constructor
 			
 			with LLMParams():
 				llm_params = LLMParams.get_all_params()
@@ -136,7 +167,7 @@ def llm_method(jobs:Jobs, llm: LLM, with_history: bool = False, blocking: bool =
 					message_sequence=after_prompt_message_sequence,
 					llm_params=llm_params,
 					response=response
-				)
+				) | constructor
 				
 				response.job = llm_job
 				

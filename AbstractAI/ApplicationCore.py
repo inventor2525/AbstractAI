@@ -242,9 +242,14 @@ class ApplicationCore:
 				raise KeyError(f"No LLM model found with name: {model_name}")
 		return self._llm_cache[model_name].model
 	
-	def llm_method(self, llm:LLM, with_history:bool=False, blocking:bool=True):
+	def llm_method(self, llm:LLM, key:str=None, with_history:bool=False, blocking:bool=True):
 		from AbstractAI.LLMs.LLM_Helpers import llm_method
-		return llm_method(AppContext.jobs, llm, with_history, blocking)
+		return llm_method(
+			AppContext.jobs,
+			llm=llm, key=key, 
+			with_history=with_history, 
+			blocking=blocking
+		)
 	
 	def speak(self, text:str, blocking:bool=False):
 		self.done_speaking = False
