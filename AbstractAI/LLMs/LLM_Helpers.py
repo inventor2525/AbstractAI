@@ -146,11 +146,11 @@ def llm_job(llm:LLM, prompt:str, conversation:Conversation=None, source:Object=N
 		
 		response.job = job
 		
-		Jobs.singleton().add(job)
-			
 		if blocking:
-			job.wait()
-			
+			Jobs.singleton().execute_job(job)
+		else:
+			Jobs.singleton().add(job)
+		
 		return response
 
 def llm_method(llm: LLM, key:str=None, with_history: bool = False, blocking: bool = True):

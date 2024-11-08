@@ -24,7 +24,7 @@ class JobCallable:
     callback: Callable[['Job'], None]
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "completion_event"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "completion_event", "running"])
 @dataclass
 class Job(Object):
     job_key: str = field(kw_only=True)
@@ -65,6 +65,9 @@ class Job(Object):
     
     completion_event: Event = field(default_factory=Event, init=False)
     # Event to signal job completion
+    
+    running: bool = field(default=False, init=False)
+    # If the job is being run by any thread
     
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
         """
@@ -245,7 +248,25 @@ class Jobs(Object):
 
         self.start()
         self.changed()
-
+    
+    def execute_job(self, job:Job):
+        '''
+        Execute Job on current thread or wait for it
+        if it's already running.
+        
+        This makes sure it's saved with the job list
+        to file, but not dispatch it needlessly to a separate thread.
+        '''
+        already_running = False
+        with self._lock:
+            if job.running:
+                already_running = True
+            job.running = True
+        if already_running:
+            job.wait()
+        else:
+            self._execute_job(job)
+            
     def start(self):
         """
         Start the job processing thread if it's not already running.
@@ -287,36 +308,39 @@ class Jobs(Object):
                     if not j.registered:
                         continue
                     
-                    if not j.failed_last_run and (j.work or j.callback):
+                    if not j.failed_last_run and not j.running:
                         self.current_job = j
                         break
 
             if self.current_job:
-                print(f"Starting job: {self.current_job.name or self.current_job.job_key}")
-                try:
-                    status = self.current_job()
-                    changed = False
-                    with self._lock:
-                        if status == JobStatus.SUCCESS or status == None:
-                            print(f"Job completed successfully: {self.current_job.name or self.current_job.job_key}")
-                            self._jobs.remove(self.current_job)
-                            changed = True
-                        elif status == JobStatus.FAILED:
-                            print(f"Job failed: {self.current_job.name or self.current_job.job_key}")
-                        elif status == JobStatus.STOPPED:
-                            print(f"Job stopped: {self.current_job.name or self.current_job.job_key}")
-                        self.current_job.should_stop = False
-                    if changed:
-                        self.changed()
-                except Exception as e:
-                    print(f"Error in job {self.current_job.name or self.current_job.job_key}: {e}. Moving to the next job.")
-                
-                Jobs.should_save_job(self.current_job)
+                self._execute_job(self.current_job)
                 self.current_job = None
             else:
                 time.sleep(0.05)
 
         self.thread_status_changed(False)
+    
+    def _execute_job(self, job:Job):
+        print(f"Starting job: {job.name or job.job_key}")
+        try:
+            status = job()
+            changed = False
+            with self._lock:
+                if status == JobStatus.SUCCESS or status == None:
+                    print(f"Job completed successfully: {job.name or job.job_key}")
+                    self._jobs.remove(job)
+                    changed = True
+                elif status == JobStatus.FAILED:
+                    print(f"Job failed: {job.name or job.job_key}")
+                elif status == JobStatus.STOPPED:
+                    print(f"Job stopped: {job.name or job.job_key}")
+                job.should_stop = False
+                job.running = False
+            if changed:
+                self.changed()
+        except Exception as e:
+            print(f"Error in job {job.name or job.job_key}: {e}.")
+        Jobs.should_save_job(job)
 
 class WaitFor:
     _local = threading.local()
