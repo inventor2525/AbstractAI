@@ -116,13 +116,50 @@ def get_stacktrace():
         traceback.append(f'  {line}')
     return "\n".join(traceback)
 
-def llm_method(jobs:Jobs, llm: LLM, key:str=None, with_history: bool = False, blocking: bool = True):
+def llm_job(llm:LLM, prompt:str, conversation:Conversation=None, source:Object=None, key:str=None, blocking:bool=True) -> ResponseObject:
+	before_message_sequence = conversation.message_sequence
+	stacktrace=get_stacktrace(), # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
+	
+	if conversation is None:
+		conversation = Conversation(key, stacktrace) | source
+	
+	conversation + Message(prompt, Role.User()) | source
+	
+	after_prompt_message_sequence = conversation.message_sequence
+	
+	response = ResponseObject(
+		before_message_sequence=before_message_sequence,
+		after_prompt_message_sequence=after_prompt_message_sequence,
+		key=key
+	) | source
+	
+	with LLMParams():
+		llm_params = LLMParams.get_all_params()
+		job = LLMJob(
+			job_key="LLM Chat",
+			llm_settings=llm.settings,
+			message_sequence=after_prompt_message_sequence,
+			llm_params=llm_params,
+			response=response,
+			stacktrace=stacktrace
+		) | source
+		
+		response.job = job
+		
+		Jobs.singleton().add(job)
+			
+		if blocking:
+			job.wait()
+			
+		return response
+
+def llm_method(llm: LLM, key:str=None, with_history: bool = False, blocking: bool = True):
 	'''
 	Method decorator that turns a str returning method into a call
-	to the supplied llm. Work is persisted in storage incase failure.
+	to the supplied llm. Work is persisted in storage incase failure
+	and executed by Jobs.singleton() (optionally) concurrently.
 	
 	Args:
-		jobs: Jobs queue the work is to be done on, less 'blocking' = False.
 		llm: The model your str will be sent to in the form of a 'Message'.
 		key: An optional string you can use to identify this type of call for self coding agents to refer to.
 		with_history: If true, your first argument must be a 'Conversation' that will be used to persist a back and forth chat.
@@ -139,44 +176,14 @@ def llm_method(jobs:Jobs, llm: LLM, key:str=None, with_history: bool = False, bl
 			bound_args = signature.bind(*args, **kwargs)
 			bound_args.apply_defaults()
 			
+			conversation = None
 			if with_history:
 				assert isinstance(bound_args.arguments[next(iter(bound_args.arguments))], Conversation), \
 					"First argument must be of type Conversation when with_history is True"
 				conversation = bound_args.arguments[next(iter(bound_args.arguments))]
-			else:
-				conversation = Conversation() | constructor
+		
+			return llm_job(llm, func(*args, **kwargs), conversation=conversation, source=constructor, key=key, blocking=blocking)
 			
-			before_message_sequence = conversation.message_sequence
-			
-			prompt = func(*args, **kwargs)
-			conversation + Message(prompt, Role.User()) | constructor
-			
-			after_prompt_message_sequence = conversation.message_sequence
-			
-			response = ResponseObject(stacktrace=get_stacktrace(), # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
-				before_message_sequence=before_message_sequence,
-				after_prompt_message_sequence=after_prompt_message_sequence,
-				key=key
-			) | constructor
-			
-			with LLMParams():
-				llm_params = LLMParams.get_all_params()
-				llm_job = LLMJob(
-					job_key="LLM Chat",
-					llm_settings=llm.settings,
-					message_sequence=after_prompt_message_sequence,
-					llm_params=llm_params,
-					response=response
-				) | constructor
-				
-				response.job = llm_job
-				
-				jobs.add(llm_job)
-				
-				if blocking:
-					llm_job.wait()
-				
-				return response
 
 		# Update return type hint and docstring
 		original_annotations = func.__annotations__.copy()

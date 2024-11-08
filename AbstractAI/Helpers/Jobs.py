@@ -147,10 +147,18 @@ class Jobs(Object):
     should_save_job: ClassVar[Signal[[Job],None]] = Signal[[Job],None]()
     # Called after the job is run so it can be saved to a db, along with it's data
     
+    @staticmethod
+    def singleton() -> 'Jobs':
+        try:
+            return Jobs._singleton
+        except:
+            return Jobs()
+        
     def __post_init__(self):
         self._un_registered_jobs = list(self._jobs)
         with self._lock:
             self._ensure_loaded_jobs_registered()
+        Jobs._singleton = self
         
     def _ensure_loaded_jobs_registered(self):
         if len(self._un_registered_jobs)==0:

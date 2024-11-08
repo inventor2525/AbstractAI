@@ -245,7 +245,6 @@ class ApplicationCore:
 	def llm_method(self, llm:LLM, key:str=None, with_history:bool=False, blocking:bool=True):
 		from AbstractAI.LLMs.LLM_Helpers import llm_method
 		return llm_method(
-			AppContext.jobs,
 			llm=llm, key=key, 
 			with_history=with_history, 
 			blocking=blocking
