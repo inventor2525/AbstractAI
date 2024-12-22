@@ -24,7 +24,7 @@ class JobCallable:
     callback: Callable[['Job'], None]
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "completion_event", "running"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "registered", "completion_event", "running"])
 @dataclass
 class Job(Object):
     job_key: str = field(kw_only=True)
@@ -60,7 +60,7 @@ class Job(Object):
     should_stop: bool = field(default=False, init=False)
     # Flag to indicate if the job should stop execution
     
-    registered: bool = field(default=True, init=False)
+    registered: bool = field(default=False, init=False)
     # Set by Jobs class to track if this job is registered yet after loading
     
     completion_event: Event = field(default_factory=Event, init=False)
@@ -162,6 +162,16 @@ class Jobs(Object):
         with self._lock:
             self._ensure_loaded_jobs_registered()
         Jobs._singleton = self
+    
+    def _ensure_job_registered(self, job:Job) -> bool:
+        if job.registered:
+            return True
+        if job.job_key not in self.registry:
+            return False
+        job_callable = self.registry[job.job_key]
+        job.work, job.callback = job_callable.work, job_callable.callback
+        job.registered = True
+        return True
         
     def _ensure_loaded_jobs_registered(self):
         if len(self._un_registered_jobs)==0:
@@ -172,9 +182,7 @@ class Jobs(Object):
             job.jobs = self
             
             if job.job_key in self.registry:
-                job_callable = self.registry[job.job_key]
-                job.work, job.callback = job_callable.work, job_callable.callback
-                job.registered = True
+                self._ensure_job_registered(job)
             else:
                 new_un_registered_jobs.append(job)
         self._un_registered_jobs = new_un_registered_jobs
@@ -213,10 +221,8 @@ class Jobs(Object):
         :return: The added job
         """
         with self._lock:
-            if job.job_key not in self.registry:
-                raise ValueError(f"No registered job type with key: {job.job_key}")
-            job_callable = self.registry[job.job_key]
-            job.work, job.callback = job_callable.work, job_callable.callback
+            if not self._ensure_job_registered(job):
+                print(f"Note: Adding un-registered job with key: '{job.job_key}'. This may be important if nothing registers it latter. If something does, it should run normally at that time. If not, you will see it skipped repeatedly.")
             job.jobs = self
             self._jobs.append(job)
         
@@ -261,6 +267,9 @@ class Jobs(Object):
         with self._lock:
             if job.running:
                 already_running = True
+            else:
+                if not self._ensure_job_registered(job):
+                    raise Exception(f"Error executing un-registered job with key: '{job.job_key}'")
             job.running = True
         if already_running:
             job.wait()
@@ -305,8 +314,8 @@ class Jobs(Object):
         while not self._stop_event.is_set():
             with self._lock:
                 for j in self._jobs:
-                    if not j.registered:
-                        continue
+                    if not self._ensure_job_registered(j):
+                        print(f"Skipping un-registered job '{j.name}' with key: '{j.job_key}'")
                     
                     if not j.failed_last_run and not j.running:
                         self.current_job = j
@@ -328,7 +337,10 @@ class Jobs(Object):
             with self._lock:
                 if status == JobStatus.SUCCESS or status == None:
                     print(f"Job completed successfully: {job.name or job.job_key}")
-                    self._jobs.remove(job)
+                    try:
+                        self._jobs.remove(job)
+                    except:
+                        pass
                     changed = True
                 elif status == JobStatus.FAILED:
                     print(f"Job failed: {job.name or job.job_key}")
