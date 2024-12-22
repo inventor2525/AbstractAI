@@ -15,7 +15,7 @@ import linecache
 
 @DATA
 @dataclass
-class ResponseObject:
+class ResponseObject(Object):
 	before_message_sequence: MessageSequence
 	after_prompt_message_sequence: MessageSequence
 	after_response_message_sequence: MessageSequence = None
@@ -117,11 +117,11 @@ def get_stacktrace():
     return "\n".join(traceback)
 
 def llm_job(llm:LLM, prompt:str, conversation:Conversation=None, source:Object=None, key:str=None, blocking:bool=True) -> ResponseObject:
-	before_message_sequence = conversation.message_sequence
-	stacktrace=get_stacktrace(), # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
+	stacktrace=get_stacktrace() # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
 	
 	if conversation is None:
 		conversation = Conversation(key, stacktrace) | source
+	before_message_sequence = conversation.message_sequence
 	
 	conversation + Message(prompt, Role.User()) | source
 	
@@ -140,8 +140,7 @@ def llm_job(llm:LLM, prompt:str, conversation:Conversation=None, source:Object=N
 			llm_settings=llm.settings,
 			message_sequence=after_prompt_message_sequence,
 			llm_params=llm_params,
-			response=response,
-			stacktrace=stacktrace
+			response=response
 		) | source
 		
 		response.job = job
