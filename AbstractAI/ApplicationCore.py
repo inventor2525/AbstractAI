@@ -21,6 +21,7 @@ stopwatch("ClassyFlaskDB")
 from ClassyFlaskDB.DefaultModel import *
 from ClassyFlaskDB.new.AudioTranscoder import AudioTranscoder
 from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
+from ClassyFlaskDB.new.JSONStorageEngine import JSONStorageEngine
 
 stopwatch("Helpers")
 from AbstractAI.Helpers.ScopeParams import *
@@ -192,16 +193,84 @@ class ApplicationCore:
 			return self.register_setting(obj)
 		return obj
 	
-	def save_settings(self) -> None:
-		'''Save all 'settings' registered with 'register_setting' to the db.'''
+	def save_settings(self, engine:Optional[StorageEngine]=None) -> None:
+		'''
+		Save all 'settings' registered with 'register_setting' to the
+		passed storage engine, or to the one in app context if none
+		is passed.
+		'''
+		if engine is None:
+			engine = AppContext.engine
+		
 		for model in self.llmConfigs.models:
-				model.new_id(True)
+			model.new_id(True)
 		
 		for setting, on_save in self._settings:
 			if on_save:
 				on_save()
-			AppContext.engine.merge(setting)
+			engine.merge(setting)
 	
+	def export_settings(self, path:Optional[str]=None) -> dict:
+		engine = JSONStorageEngine(DATA)
+		self.save_settings(engine)
+		settings = engine._data
+		if path:
+			directory = os.path.dirname(path)
+			if len(directory)>0 and not os.path.exists(directory):
+				os.makedirs(directory, exist_ok=True)
+			with open(path, "w") as f:
+				json.dump(settings, f, indent=4)
+		return settings
+	
+	def import_settings(self, settings:Union[str, dict]) -> None:
+		'''
+		Imports the settings provided or at the path provided,
+		into the main storage engine.
+		'''
+		if isinstance(settings, str):
+			with open(settings, "r") as f:
+				settings = json.load(f)
+		
+		def copy_into(new_obj, old_obj, closed_set:set={}):
+			ci = ClassInfo.get(type(new_obj))
+			for field in ci.fields.values():
+				if field.name == ci.primary_key_name:
+					continue
+				
+				new_val = getattr(new_obj, field.name)
+				if ClassInfo.get(field.type) is None:
+					setattr(old_obj, field.name, new_val)
+				else:
+					old_val = getattr(old_obj, field.name)
+					if old_val not in closed_set:
+						closed_set.add(old_val)
+						copy_into(new_val, old_val, closed_set=closed_set)
+		
+		json_llm_settings :LLMConfigs = None
+		engine = JSONStorageEngine(DATA, initial_data=settings)
+		for setting_t in self._settings:
+			setting = setting_t[0]
+			setting_type = type(setting)
+			
+			json_setting = engine.query(setting_type).first()
+			if setting_type is LLMConfigs:
+				json_llm_settings = json_setting
+				continue
+			
+			copy_into(json_setting, setting)
+			
+		if json_llm_settings:
+			exiting_models = {(type(model), model.user_model_name):model for model in self.llmConfigs.models}
+			for model in json_llm_settings.models:
+				model_key = (type(model), model.user_model_name)
+				if model_key in exiting_models:
+					old_model = exiting_models[model_key]
+					copy_into(model, old_model)
+				else:
+					self.llmConfigs.models.append(model)
+		
+		self.save_settings()
+		
 	def _save_job(self, job:Job) -> None:
 		'''Save's a single job. (triggered by Jobs.should_save_job after job completes)'''
 		with AppContext.jobs._lock:
