@@ -231,7 +231,7 @@ class ApplicationCore:
 			with open(settings, "r") as f:
 				settings = json.load(f)
 		
-		def copy_into(new_obj, old_obj, closed_set:set={}):
+		def copy_into(new_obj, old_obj, closed_set:set=set()):
 			ci = ClassInfo.get(type(new_obj))
 			for field in ci.fields.values():
 				if field.name == ci.primary_key_name:
@@ -242,7 +242,9 @@ class ApplicationCore:
 					setattr(old_obj, field.name, new_val)
 				else:
 					old_val = getattr(old_obj, field.name)
-					if old_val not in closed_set:
+					if old_val is None:
+						setattr(old_obj, field.name, new_val)
+					elif old_val not in closed_set:
 						closed_set.add(old_val)
 						copy_into(new_val, old_val, closed_set=closed_set)
 		
