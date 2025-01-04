@@ -30,11 +30,18 @@ class ScopeParamsModel(Object):
 		"""
 		all_params = parent._all_params.copy() if parent else {}
 		
+		ScopeParamsModel_info = ClassInfo.get(ScopeParamsModel)
+		scope_param_excluded_field_names = set([f.name for f in ScopeParamsModel_info.all_fields])
+		scope_param_excluded_field_names.add(ScopeParamsModel_info.primary_key_name)
+		
 		# Add data object fields if present
 		if self.data_object is not None:
 			info = ClassInfo.get(self.data_object.__class__)
 			if info:
 				for field_name, field in info.fields.items():
+					if field_name in scope_param_excluded_field_names:
+						continue
+					
 					value = getattr(self.data_object, field_name)
 					if value is not None:
 						all_params[field_name] = value
@@ -83,7 +90,7 @@ class ScopeParamsModel(Object):
 	def get_all_params(cls) -> Dict[str, Any]:
 		currentThread = threading.currentThread
 		if hasattr(currentThread, 'ScopeParams_stack') and currentThread.ScopeParams_stack:
-			return currentThread.ScopeParams_stack[-1].all_params.copy()
+			return currentThread.ScopeParams_stack[-1]._all_params.copy()
 		return {}
 
 	@classmethod
@@ -145,7 +152,6 @@ if __name__ == "__main__":
 	class LLMParams(ScopeParamsModel):
 		model: str = "gpt-3.5-turbo"
 		temperature: float = 0.7
-		max_tokens: Optional[int] = None
 
 	@DATA
 	@dataclass
@@ -162,6 +168,7 @@ if __name__ == "__main__":
 		indent = "  " * ScopeParams.get_nesting_level()
 		print(f"{indent}Model: {ScopeParams.get_param('model')}")
 		print(f"{indent}Temperature: {ScopeParams.get_param('temperature')}")
+		print(f"{indent}All Params: {ScopeParams.get_all_params()}")
 		
 		batch_config = BatchConfig(batch_size=20)
 		with ScopeParams(batch_config, temperature=0.5):
@@ -179,3 +186,4 @@ if __name__ == "__main__":
 			
 			stack.make_current()
 			print(f"{indent}After make_current - Temperature: {ScopeParams.get_param('temperature')}")
+			print(f"{indent}All Params: {ScopeParams.get_all_params()}")
