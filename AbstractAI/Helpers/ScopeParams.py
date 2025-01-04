@@ -11,22 +11,18 @@ MISSING = object()
 @DATA
 @dataclass 
 class ScopeParamsModel(Object):
-	data_object: Optional[Any] = field(default=None)
+	data_objects: List[Any] = field(default_factory=list)
 	params: Dict[str, Any] = field(default_factory=dict)
 	_all_params: Dict[str, Any] = field(default_factory=dict, init=False)
 	
 	def __post_init__(self):
-		if self.data_object is None and ClassInfo.has_ClassInfo(type(self)):
-			self.data_object = self
-	
-	@classmethod
-	def create(cls, data_object: Optional[Any] = None, **kwargs):
-		return ScopeParamsModel(data_object=data_object, params=kwargs)
+		if not self.data_objects and ClassInfo.has_ClassInfo(type(self)):
+			self.data_objects = [self]
 			
 	def _build_all_params(self, parent: Optional['ScopeParamsModel'] = None) -> Dict[str, Any]:
 		"""
-		Builds _all_params for this ScopeParams instance using parent's _all_params if available.
-		Updates with data object fields and explicit params.
+		Builds _all_params using parent's _all_params if available.
+		Updates with fields from all data objects and explicit params.
 		"""
 		all_params = parent._all_params.copy() if parent else {}
 		
@@ -34,15 +30,15 @@ class ScopeParamsModel(Object):
 		scope_param_excluded_field_names = set([f.name for f in ScopeParamsModel_info.all_fields])
 		scope_param_excluded_field_names.add(ScopeParamsModel_info.primary_key_name)
 		
-		# Add data object fields if present
-		if self.data_object is not None:
-			info = ClassInfo.get(self.data_object.__class__)
+		# Add fields from all data objects
+		for obj in self.data_objects:
+			info = ClassInfo.get(obj.__class__)
 			if info:
 				for field_name, field in info.fields.items():
 					if field_name in scope_param_excluded_field_names:
 						continue
 					
-					value = getattr(self.data_object, field_name)
+					value = getattr(obj, field_name)
 					if value is not None:
 						all_params[field_name] = value
 		
@@ -82,8 +78,9 @@ class ScopeParamsModel(Object):
 		currentThread = threading.currentThread
 		if hasattr(currentThread, 'ScopeParams_stack'):
 			for params in reversed(currentThread.ScopeParams_stack):
-				if params.data_object is not None and isinstance(params.data_object, type_):
-					return params.data_object
+				for obj in reversed(params.data_objects):
+					if isinstance(obj, type_):
+						return obj
 		return None
 	
 	@classmethod
@@ -102,10 +99,30 @@ class ScopeParamsModel(Object):
 	def get_nesting_level(cls) -> int:
 		currentThread = threading.currentThread
 		return len(getattr(currentThread, 'ScopeParams_stack', []))
+	
+	def __add__(self, other: 'ScopeParamsModel') -> 'ScopeParamsModel':
+		"""Combines parameters from two scope params objects"""
+		# Create new scope params with combined data objects
+		new_data_objects = self.data_objects.copy()
+		new_data_objects.extend(other.data_objects)
+		
+		# Combine params dictionaries
+		new_params = self.params.copy()
+		new_params.update(other.params)
+		
+		return ScopeParamsModel(data_objects=new_data_objects, params=new_params)
 
 class ScopeParams(ScopeParamsModel):
-	def __init__(self, data_object: Optional[Any] = None, **kwargs) -> None:
-		super().__init__(data_object, params=kwargs)
+    def __init__(self, 
+                 data_object: Optional[Any] = None,
+                 data_objects: Optional[List[Any]] = None,
+                 **kwargs) -> None:
+        objects = []
+        if data_object is not None:
+            objects.append(data_object)
+        if data_objects is not None:
+            objects.extend(data_objects)
+        super().__init__(data_objects=objects, params=kwargs)
 
 @DATA
 @dataclass
@@ -187,3 +204,31 @@ if __name__ == "__main__":
 			stack.make_current()
 			print(f"{indent}After make_current - Temperature: {ScopeParams.get_param('temperature')}")
 			print(f"{indent}All Params: {ScopeParams.get_all_params()}")
+	
+	# Example with plus operator
+	@DATA
+	@dataclass
+	class VisionParams(ScopeParamsModel):
+		image_size: int = 1024
+		quality: float = 0.8
+		model: str = "dall-e-3"
+	
+	print("\nStarting plus operator example...")
+	nesting_level = ScopeParams.get_nesting_level()
+	print(f"{'  ' * nesting_level}Initial nesting level: {nesting_level}")
+	
+	with LLMParams(temperature=0.9) + VisionParams(quality=0.95) + ScopeParams(BatchConfig(batch_size=20)):
+		indent = "  " * ScopeParams.get_nesting_level()
+		print(f"{indent}Model (LLM): {ScopeParams.get_param('model')}")
+		print(f"{indent}Temperature: {ScopeParams.get_param('temperature')}")
+		print(f"{indent}Image Size: {ScopeParams.get_param('image_size')}")
+		print(f"{indent}Quality: {ScopeParams.get_param('quality')}")
+		print(f"{indent}Batch Size: {ScopeParams.get_param('batch_size')}")
+		print(f"{indent}All Params: {ScopeParams.get_all_params()}")
+		
+		# Show object retrieval still works
+		llm = ScopeParams.get_object(LLMParams)
+		vision = ScopeParams.get_object(VisionParams)
+		batch = ScopeParams.get_object(BatchConfig)
+		print(f"{indent}Found Objects: LLM({llm})\n\n"
+			f"Vision({vision})\n\nBatch({batch})")
