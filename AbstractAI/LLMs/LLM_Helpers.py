@@ -1,6 +1,6 @@
 from enum import Enum
 from ClassyFlaskDB.DefaultModel import *
-from AbstractAI.Helpers.ScopeParams import ScopeParams
+from AbstractAI.Helpers.ScopeParams import ScopeParamsModel
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus, WaitFor
 from AbstractAI.Model.Converse import Conversation, Message, Role, MessageSequence, CallerInfo
 from AbstractAI.LLMs.LLM import LLM
@@ -51,7 +51,7 @@ class ResponseObject(Object):
 		return value
 
 @dataclass
-class LLMParams(ScopeParams):
+class LLMParams(ScopeParamsModel):
 	stream: bool = False
 	max_tokens: Optional[int] = None
 	temperature: Optional[float] = None
