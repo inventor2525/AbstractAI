@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from AbstractAI.Conversable import Conversation
 from ClassyFlaskDB.DefaultModel import Object, DATA, dataclass, get_local_time, field
 from datetime import datetime
@@ -13,6 +13,12 @@ class TextArtifact(Object):
 	def none_str(self) -> str:
 		return ""
 	
+	def __post_init__(self):
+		self.update()
+	
+	def update(self):
+		pass
+	
 	def copy(self) -> 'TextArtifact':
 		return TextArtifact(text=self.text)
 	
@@ -23,6 +29,16 @@ class TextArtifact(Object):
 
 @DATA
 @dataclass
+class TextArtifacts(TextArtifact):
+	artifacts: List[TextArtifact]
+	separator: str
+	text: str = field(default=None, init=False)
+	
+	def update(self):
+		self.text = self.separator.join([artifact.text for artifact in self.artifacts])
+	
+@DATA
+@dataclass
 class TextFileArtifact(TextArtifact):
 	path: str
 	text: str = field(default=None, init=False)
@@ -31,7 +47,7 @@ class TextFileArtifact(TextArtifact):
 	def none_str(self) -> str:
 		return f"<Context loaded from file path '{self.path}' does not exist>"
 	
-	def __post_init__(self):
+	def update(self):
 		if os.path.exists(self.path):
 			with open(self.path, 'r') as f:
 				self.text = f.read()
@@ -79,7 +95,7 @@ class ConversationArtifact(TextArtifact):
 	def none_str(self) -> str:
 		return f"In a previous conversation (None): Nothing was said."
 	
-	def __post_init__(self):
+	def update(self):
 		if self.conversation:
 			self.text = f"In a previous conversation named '{self.conversation.name}' we said the following:\n```md\n{str(self.conversation)}\n```\n(End of previous conversation '{self.conversation.name}')"
 		else:
