@@ -3,6 +3,7 @@ import numpy as np
 from pydub import AudioSegment
 from .Stopwatch import Stopwatch
 from typing import TypeVar, Type
+from datetime import datetime
 import threading
 
 T = TypeVar("T")
@@ -22,6 +23,7 @@ class AudioRecorder:
 		self.lock = threading.Lock()
 		self.buffers = [[]]
 		self.start_listening()
+		self.last_peek :datetime = None
 	
 	@property
 	def is_listening(self) -> bool:
@@ -63,12 +65,15 @@ class AudioRecorder:
 			try:
 				was_recording = self.should_record
 				prev_buffer = None
+				data_start_time :datetime = None
 				while self.should_listen:
+					data_start_time = datetime.now()
 					data, _ = self.stream.read(1024)
 					record = self.should_record
 					if record:
 						with self.recorder.lock:
 							if not was_recording and prev_buffer is not None:
+								self.last_peek = data_start_time
 								self.recorder.buffers[-1].append(prev_buffer)
 							self.recorder.buffers[-1].append(data.copy())
 					else:
@@ -95,6 +100,7 @@ class AudioRecorder:
 		with self.lock:
 			Stopwatch.singleton.start("Recording")
 			self.recording_thread.should_record = True
+			self.last_peek = datetime.now() #More accurate start time will be picked up in the run loop that may actually be ~1000 samples in the past but this at least makes sure 'a date' is populated simply incase race conditions
 			return True
 
 	def stop_recording(self, return_type:Type[T]=AudioSegment) -> T:
@@ -111,6 +117,7 @@ class AudioRecorder:
 		# Grab the audio we've recorded:
 		final_buffer = None
 		with self.lock:
+			self.last_peek = datetime.now()
 			self.last_record_time = Stopwatch.singleton.stop("Recording")["last"]
 			
 			if self.buffers:
@@ -150,6 +157,7 @@ class AudioRecorder:
 		peek_buffer = None
 		buffer_index = None
 		with self.lock:
+			self.last_peek = datetime.now()
 			if self.buffers[-1]:
 				peek_buffer = self.buffers[-1]
 				buffer_index = len(self.buffers)-1
