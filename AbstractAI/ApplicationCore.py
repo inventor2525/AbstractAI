@@ -72,10 +72,10 @@ class ApplicationCore:
 	storage_location: str
 	# The un-versioned root directory all application data will be stored in
 	
-	db_version: str = "v2.1"
+	db_version: str = "v3"
 	# Current db version
 	
-	prev_compatible_db_versions: List[str] = default(["v2.0"])
+	prev_compatible_db_versions: List[str] = default([])
 	# Previous versions of the db that are compatible to load with this one.
 	
 	#######################
@@ -140,7 +140,7 @@ class ApplicationCore:
 		
 		# Create Transcriber:
 		stopwatch("Transcriber startup")
-		self.transcriber = Transcriber(self.tts_settings, recorder=self.audio_recorder, player=self.audio_player)
+		self.transcriber = Transcriber(self.tts_settings)
 		AppContext.transcriber = self.transcriber #Legacy bs (moving it to self cause circular import)
 		
 		# Create Voice Activity Detector:

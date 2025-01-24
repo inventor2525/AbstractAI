@@ -3,7 +3,7 @@ from AbstractAI.ApplicationCore import *
 appCore = ApplicationCore("/home/charlie/Documents/AbstractAI")
 	
 def transcription_completed(transcription:Transcription):
-	print(f"Transcribed: '{transcription.transcription}' at {datetime.now()}")
+	print(f"Transcribed: '{transcription.text}' at {datetime.now()}")
 appCore.transcription_completed.connect(transcription_completed)
 
 try:
@@ -12,12 +12,12 @@ try:
 	print("VAD started. Press Ctrl+C to stop.")
 
 	# Detect audio segments where there is human voice:
-	for audio_segment in appCore.vad.voice_segments():
-		print(f"\nDetected voice segment of length: {len(audio_segment)} ms at {datetime.now()}")
+	for audio in appCore.vad.voice_segments():
+		print(f"\nDetected voice segment of length: {audio.length} ms at {datetime.now()}")
 		
 		# Transcribe each of them live:
 		AppContext.jobs.add(TranscriptionJob(
-			job_key="Transcribe", transcription=Transcription.from_AudioSegment(audio_segment)
+			job_key="Transcribe", audio=audio
 		))
 
 except KeyboardInterrupt:

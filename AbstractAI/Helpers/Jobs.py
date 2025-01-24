@@ -24,7 +24,7 @@ class JobCallable:
     callback: Callable[['Job'], None]
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "registered", "running"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "registered", "_completion_event", "running", "completed"])
 @dataclass
 class Job(Object):
     job_key: str = field(kw_only=True)

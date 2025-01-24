@@ -155,7 +155,7 @@ class VAD:
 						# Accumulate segments off the end of voice_detected_segments
 						# until we have > self.window_padding seconds of audio:
 						segments_duration += self._audio_segment_duration(segment.data)
-						segments.insert(0, segment.data)
+						segments.insert(0, segment)
 						if segments_duration > self.window_padding:
 							break
 					segment_data = concat(segments).data

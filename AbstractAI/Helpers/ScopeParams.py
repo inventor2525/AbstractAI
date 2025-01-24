@@ -11,9 +11,9 @@ MISSING = object()
 @DATA
 @dataclass 
 class ScopeParamsModel(Object):
-	data_objects: List[Any] = field(default_factory=list)
-	params: Dict[str, Any] = field(default_factory=dict)
-	_all_params: Dict[str, Any] = field(default_factory=dict, init=False)
+	data_objects: List[Object] = field(default_factory=list)
+	params: dict = field(default_factory=dict)
+	_all_params: dict = field(default_factory=dict, init=False)
 	
 	def __post_init__(self):
 		if not self.data_objects and ClassInfo.has_ClassInfo(type(self)):
