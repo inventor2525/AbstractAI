@@ -6,7 +6,7 @@ class Groq_LLMSettings(LLMSettings):
 	__ui_name__ = "Groq"
 	model_name:str = ""
 	
-	api_key:str = ""
+	api_key:str = field(default_factory=environ_getter("GROQ_API_KEY"))
 	base_url:str = ""
 	
 	def load(self):

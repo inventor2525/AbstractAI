@@ -4,6 +4,6 @@ from ClassyFlaskDB.DefaultModel import *
 @dataclass
 class OpenAI_TTS_Settings(Object):
     __ui_name__ = "OpenAI TTS"
-    api_key: str = ""
+    api_key: str = field(default_factory=environ_getter("OPENAI_API_KEY"))
     model: str = "tts-1"
     voice: str = "alloy"

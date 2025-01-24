@@ -6,7 +6,7 @@ class OpenAI_LLMSettings(LLMSettings):
 	__ui_name__ = "OpenAI"
 	model_name:str = ""
 	
-	api_key:str = ""
+	api_key:str = field(default_factory=environ_getter("OPENAI_API_KEY"))
 	base_url:str = ""
 	organization: str = ""
 	
