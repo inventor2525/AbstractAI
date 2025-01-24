@@ -2,11 +2,12 @@ from ClassyFlaskDB.DefaultModel import *
 
 @DATA
 @dataclass
-class Hacky_Whisper_Settings(Object):
-	groq_api_key:str = None
+class TTS_Settings_v1(Object):
 	use_groq:bool = True
+	groq_api_key:str = None
+	groq_model_name:str = "whisper-large-v3"
 	
-	#local (non-groq) use only:
-	model_name:str="small.en"
-	device:str="cpu"
-	compute_type:str="int8"
+	enable_local_fallback:bool = True
+	local_model_name:str = "small.en"
+	local_device:str = "cpu"
+	local_compute_type:str = "int8"

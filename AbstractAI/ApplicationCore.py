@@ -124,7 +124,7 @@ class ApplicationCore:
 		stopwatch("Query Settings")
 		self.llmConfigs = self.query_db(LLMConfigs, as_setting=True)
 		self.vad_settings = self.query_db(VADSettings, as_setting=True)
-		self.transcription_settings = self.query_db(Hacky_Whisper_Settings, as_setting=True)
+		self.tts_settings = self.query_db(TTS_Settings_v1, as_setting=True)
 		self.speech_settings = self.query_db(OpenAI_TTS_Settings, as_setting=True)
 		
 		# Create User Source:
@@ -140,7 +140,7 @@ class ApplicationCore:
 		
 		# Create Transcriber:
 		stopwatch("Transcriber startup")
-		self.transcriber = Transcriber(self.transcription_settings, recorder=self.audio_recorder, player=self.audio_player)
+		self.transcriber = Transcriber(self.tts_settings, recorder=self.audio_recorder, player=self.audio_player)
 		AppContext.transcriber = self.transcriber #Legacy bs (moving it to self cause circular import)
 		
 		# Create Voice Activity Detector:
@@ -284,10 +284,10 @@ class ApplicationCore:
 			AppContext.engine.merge(AppContext.jobs)
 	
 	def transcription_work(self, job: TranscriptionJob) -> JobStatus:
-		if job.transcription:
-			self.transcriber.transcribe(job.transcription)
+		if job.audio:
+			job.transcription = self.transcriber.transcribe(job.audio)
 			return JobStatus.SUCCESS
-		job.status_hover = "No transcription object supplied."
+		job.status_hover = "No audio supplied for transcription."
 		return JobStatus.FAILED
 
 	def transcription_callback(self, job: TranscriptionJob):
@@ -300,7 +300,7 @@ class ApplicationCore:
 		self.done_speaking = True
 		
 	def transcribe_live(self) -> Iterator[Transcription]:
-		with TranscriptionIterator(self.audio_recorder, self.vad, self.transcription_completed) as iterator:
+		with TranscriptionIterator(self.audio_recorder, self.vad) as iterator:
 			yield from iterator
 			
 	def __getitem__(self, model_name: str) -> LLM:

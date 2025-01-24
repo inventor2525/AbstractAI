@@ -19,7 +19,7 @@ Stopwatch.singleton.end_scope()
 
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from typing import List, Iterator
-from pydub import AudioSegment
+from AbstractAI.Model.Audio import Audio, AudioSegment
 from ClassyFlaskDB.DefaultModel import *
 
 @DATA
@@ -51,6 +51,12 @@ class VAD:
 			self.vad.start(ignore_prev_audio=True)
 			self.vad.paused = False
 	
+	@dataclass
+	class _Segment:
+		data:np.ndarray
+		start_time:datetime
+		end_time:datetime
+	
 	def __init__(self, settings:VADSettings, recorder: AudioRecorder, peek_interval: float = 0.5, window_padding: float = 1.0):
 		"""
 		Initialize the Voice Activity Detector.
@@ -71,8 +77,8 @@ class VAD:
 		self.segment_available = threading.Event()
 		self.segment_lock = threading.Lock()
 		
-		self.silent_peeks_buffer: List[np.ndarray] = []
-		self.vocal_segments: List[np.ndarray] = []
+		self.silent_peeks_buffer: List[VAD._Segment] = []
+		self.vocal_segments: List[VAD._Segment] = []
 
 		# Initialize the model
 		self.model = Model.from_pretrained(
@@ -111,12 +117,21 @@ class VAD:
 		"""Main loop for voice activity detection."""
 		silent_duration = 0.0
 		voice_detected = False
-		voice_detected_segments: List[np.ndarray] = []
-		
+		voice_detected_segments: List[VAD._Segment] = []
+		def concat(segs:List[VAD._Segment]) -> VAD._Segment:
+			return VAD._Segment(
+				np.concatenate([b.data for b in segs]),
+				segs[0].start_time,
+				segs[-1].end_time
+			)
 		while self.running:
 			time.sleep(self.peek_interval)
-			peek_data = self.recorder.peek(return_type=np.ndarray)
-			if peek_data.size == 0:
+			peek_data = VAD._Segment(
+				self.recorder.peek(return_type=np.ndarray),
+				self.recorder.last_peek,
+				datetime.now()
+			)
+			if peek_data.data.size == 0:
 				continue
 			
 			# Get a longer segment we can check for voice activity more robustly:
@@ -125,22 +140,25 @@ class VAD:
 				# the sum of the current peeked audio and all 'silent'
 				# buffers we have before hand to make sure they were
 				# truly silent when combined with more recent data:
-				segment_data = np.concatenate(self.silent_peeks_buffer + [peek_data])
+				if len(self.silent_peeks_buffer) > 0:
+					segment_data = concat(self.silent_peeks_buffer + [peek_data]).data
+				else:
+					segment_data = peek_data.data
 			else:
 				# Else we'll use the last so many segments, up to window_padding seconds ago:
-				segments_duration = self._audio_segment_duration(peek_data)
+				segments_duration = self._audio_segment_duration(peek_data.data)
 				if segments_duration > self.window_padding:
-					segment_data = peek_data
+					segment_data = peek_data.data
 				else:
 					segments = [peek_data]
 					for segment in reversed(voice_detected_segments):
 						# Accumulate segments off the end of voice_detected_segments
 						# until we have > self.window_padding seconds of audio:
-						segments_duration += self._audio_segment_duration(segment)
-						segments.insert(0, segment)
+						segments_duration += self._audio_segment_duration(segment.data)
+						segments.insert(0, segment.data)
 						if segments_duration > self.window_padding:
 							break
-					segment_data = np.concatenate(segments)
+					segment_data = concat(segments).data
 			
 			# Check segment for vocal activity:
 			segment_duration = self._audio_segment_duration(segment_data)
@@ -169,13 +187,13 @@ class VAD:
 					silent_duration = segment_duration - list(segment_vad_result.get_timeline())[-1].end
 				else:
 					# But if we are no longer detecting voice:
-					silent_duration += self._audio_segment_duration(peek_data)
+					silent_duration += self._audio_segment_duration(peek_data.data)
 					
 				if silent_duration >= self.window_padding:
 					# Then if we haven't been detecting voice long enough:
-					full_segment = np.concatenate(voice_detected_segments)
-					total_duration = self._audio_segment_duration(full_segment)
-					total_vad_result = self._check_voice_activity(full_segment)
+					full_segment = concat(voice_detected_segments)
+					total_duration = self._audio_segment_duration(full_segment.data)
+					total_vad_result = self._check_voice_activity(full_segment.data)
 					
 					# Make sure we actually did have a voice
 					# and it ended long enough ago:
@@ -199,7 +217,6 @@ class VAD:
 						
 						# Keep some of the silent peeked buffers for latter VAD:
 						self._trim_buffer_queue(self.window_padding)
-			
 			else:
 				# No voice detected, just keep a rolling buffer
 				# to make up our padding for once there is some:
@@ -209,9 +226,9 @@ class VAD:
 		# Finish up by queue'ing any audio we have
 		# been building out atm with voice in it:
 		if voice_detected:
-			last_audio = np.concatenate(voice_detected_segments)
+			last_audio = concat(voice_detected_segments)
 			# Make sure it's actually got some voice in it:
-			if last_audio.size>0 and len(self._check_voice_activity(last_audio)) > 0:
+			if last_audio.data.size>0 and len(self._check_voice_activity(last_audio.data)) > 0:
 				with self.segment_lock:
 					# It does, queue it up:
 					self.vocal_segments.append(last_audio)
@@ -238,13 +255,13 @@ class VAD:
 		"""
 		current_duration = 0.0
 		for i, buffer in enumerate(reversed(self.silent_peeks_buffer)):
-			buffer_duration = self._audio_segment_duration(buffer)
+			buffer_duration = self._audio_segment_duration(buffer.data)
 			current_duration += buffer_duration
 			if current_duration >= required_duration:
 				self.silent_peeks_buffer = self.silent_peeks_buffer[-(i+1):]
 				break
 
-	def voice_segments(self) -> Iterator[AudioSegment]:
+	def voice_segments(self) -> Iterator[Audio]:
 		"""
 		Iterates AudioSegments containing voice as they become available.
 
@@ -258,8 +275,12 @@ class VAD:
 					segment = self.vocal_segments.pop(0)
 					if not self.vocal_segments:
 						self.segment_available.clear()  # Clear the event if no more segments
-					yield self.recorder.np_to_AudioSegment(segment)
-			
+					yield Audio(
+						self.recorder.np_to_AudioSegment(segment.data),
+						start_time=segment.start_time,
+						date_created=segment.end_time
+					)
+	
 	def pauser(self) -> 'VAD.Pause':
 		'''
 		Returns a 'Pause' object that can be used with

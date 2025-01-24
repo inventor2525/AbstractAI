@@ -18,5 +18,6 @@ class Audio(Object):
 		'''
 		How much time between start and finish, including any
 		dead air time we didn't actually record for some reason.
+		(like skipped frames)
 		'''
 		return (self.date_created - self.start_time).total_seconds()

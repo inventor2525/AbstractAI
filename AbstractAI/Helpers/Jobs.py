@@ -24,7 +24,7 @@ class JobCallable:
     callback: Callable[['Job'], None]
     creation_traceback: str
 
-@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "registered", "completion_event", "running"])
+@DATA(excluded_fields=["callback", "work", "status_changed", "should_stop", "jobs", "registered", "running"])
 @dataclass
 class Job(Object):
     job_key: str = field(kw_only=True)
@@ -63,11 +63,14 @@ class Job(Object):
     registered: bool = field(default=False, init=False)
     # Set by Jobs class to track if this job is registered yet after loading
     
-    completion_event: Event = field(default_factory=Event, init=False)
-    # Event to signal job completion
+    _completion_event: Event = field(default_factory=Event, init=False)
+    # Event to signal job completion in wait
     
     running: bool = field(default=False, init=False)
     # If the job is being run by any thread
+    
+    completed: Signal[['Job', JobStatus], None] = Signal.field()
+    # Signals to anyone interested in specifically this job instance that it has been run
     
     def start(self, priority: JobPriority = JobPriority.WHENEVER):
         """
@@ -84,7 +87,7 @@ class Job(Object):
         Wait until the job is done.
         :return: True if the job completed successfully, False otherwise
         """
-        self.completion_event.wait()
+        self._completion_event.wait()
         return self.done and not self.failed_last_run
 
     def __call__(self) -> JobStatus:
@@ -115,7 +118,7 @@ class Job(Object):
             self.failed_last_run = True
             return JobStatus.FAILED
         finally:
-            self.completion_event.set()
+            self._completion_event.set()
 
 @DATA(included_fields=["_jobs"], excluded_fields=["changed", "thread_status_changed", "registry", "current_job"])
 @dataclass
@@ -353,6 +356,8 @@ class Jobs(Object):
         except Exception as e:
             print(f"Error in job {job.name or job.job_key}: {e}.")
         Jobs.should_save_job(job)
+        
+        job.completed(job, status)
 
 class WaitFor:
     _local = threading.local()
