@@ -6,7 +6,7 @@ from AbstractAI.Model.Audio import *
 class Transcription(TextArtifact):
 	audio: Audio
 	transcription_time: float = field(default=None, init=False)
-	raw_data: dict = field(default_factory=dict, init=False)
+	raw_data: dict = field(default_factory=dict)
 	
 	@property
 	def transcription_rate(self) -> float:

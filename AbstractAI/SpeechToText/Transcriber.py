@@ -34,7 +34,6 @@ class Transcriber:
 			transcription = self._transcribe_with_local_model(audio)
 
 		transcription.transcription_time = time.time() - start_time
-		transcription.transcription_rate = transcription.transcription_time / audio.data_length
 
 		return transcription
 	
