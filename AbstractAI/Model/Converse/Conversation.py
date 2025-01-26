@@ -6,6 +6,7 @@ from .Message import Message
 
 from datetime import datetime
 from typing import Callable, List, Union, Tuple, Iterator
+from AbstractAI.Model.Artifacts import TextArtifact
 
 @DATA(excluded_fields=["conversation_changed", "message_added", "message_removed"])
 @dataclass
@@ -134,12 +135,22 @@ class Conversation(Object):
 	def __contains__(self, message:Message) -> bool:
 		return message in self.message_sequence
 	
-	def __add__(self, message_s: Union[Message, str, Tuple[str, Role], List[Union[Message, str, Tuple[str, Role]]]]) -> Union[Message,List[Message]]:
+	def __add__(self, message_s: Union[Message, str, TextArtifact, Tuple[str, Role], Tuple[TextArtifact, Role], List[Union[Message, str, TextArtifact, Tuple[str, Role], Tuple[TextArtifact, Role]]]]) -> Union[Message,List[Message]]:
 		def item_to_message(item):
 			if isinstance(item, str):
 				new_msg = Message(item)
+			elif isinstance(item, TextArtifact):
+				new_msg = Message(item.text) | item
 			elif isinstance(item, tuple):
-				new_msg = Message(*item)
+				if isinstance(item[0], str):
+					new_msg = Message(*item)
+				elif isinstance(item[0], TextArtifact):
+					item = list(item)
+					artifact = item[0]
+					item[0] = artifact.text
+					new_msg = Message(*item) | artifact
+				else:
+					ValueError(f"Unsupported type: {type(item)}")
 			elif isinstance(item, Message):
 				new_msg = item
 			else:

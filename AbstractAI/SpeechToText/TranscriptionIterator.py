@@ -43,6 +43,7 @@ class TranscriptionIterator:
 			self.audio_recorder.stop_recording(),
 			self._record_start_time
 		)
+		AppContext.engine.merge(self.transcriptions)
 		self.audio_recorder.stop_listening()
 
 	def _on_transcription_completed(self, job: TranscriptionJob, status=JobStatus):

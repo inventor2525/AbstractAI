@@ -1,5 +1,4 @@
 from typing import Any, List
-from AbstractAI.Conversable import Conversation
 from ClassyFlaskDB.DefaultModel import Object, DATA, dataclass, get_local_time, field
 from datetime import datetime
 import os
@@ -84,22 +83,3 @@ class TextFileArtifact(TextArtifact):
 			TextFileArtifact._repo_root = repo_root
 
 		return TextFileArtifact._repo_root
-
-@DATA
-@dataclass
-class ConversationArtifact(TextArtifact):
-	conversation:Conversation
-	text: str = field(default=None, init=False)
-	
-	@property
-	def none_str(self) -> str:
-		return f"In a previous conversation (None): Nothing was said."
-	
-	def update(self):
-		if self.conversation:
-			self.text = f"In a previous conversation named '{self.conversation.name}' we said the following:\n```md\n{str(self.conversation)}\n```\n(End of previous conversation '{self.conversation.name}')"
-		else:
-			self.text = None
-	
-	def copy(self) -> 'TextFileArtifact':
-		return TextFileArtifact(path=self.conversation)

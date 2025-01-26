@@ -57,10 +57,6 @@ class LLMParams(ScopeParamsModel):
 	temperature: Optional[float] = None
 	top_p: Optional[float] = None
 
-	def __post_init__(self):
-		params = {f.name: getattr(self, f.name) for f in fields(self) if getattr(self, f.name) is not None}
-		super().__init__(**params)
-
 @DATA
 @dataclass
 class LLMJob(Job):

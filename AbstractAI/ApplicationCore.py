@@ -38,6 +38,9 @@ from AbstractAI.Model.Converse import *
 stopwatch("TTS Settings")
 from AbstractAI.Model.Settings.STT_Settings import *
 
+stopwatch("Artifacts")
+from AbstractAI.Model.Artifacts import TextArtifact, TextArtifacts, TextFileArtifact
+
 stopwatch("Conversable")
 from AbstractAI.Conversable import *
 from AbstractAI.LLMs.LLM import LLM
