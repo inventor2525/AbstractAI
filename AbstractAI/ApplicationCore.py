@@ -36,7 +36,7 @@ stopwatch("Conversation Model")
 from AbstractAI.Model.Converse import *
 
 stopwatch("TTS Settings")
-from AbstractAI.Model.Settings.TTS_Settings import *
+from AbstractAI.Model.Settings.STT_Settings import *
 
 stopwatch("Conversable")
 from AbstractAI.Conversable import *
@@ -124,7 +124,7 @@ class ApplicationCore:
 		stopwatch("Query Settings")
 		self.llmConfigs = self.query_db(LLMConfigs, as_setting=True)
 		self.vad_settings = self.query_db(VADSettings, as_setting=True)
-		self.tts_settings = self.query_db(TTS_Settings_v1, as_setting=True)
+		self.stt_settings = self.query_db(STT_Settings_v1, as_setting=True)
 		self.speech_settings = self.query_db(OpenAI_TTS_Settings, as_setting=True)
 		
 		# Create User Source:
@@ -140,7 +140,7 @@ class ApplicationCore:
 		
 		# Create Transcriber:
 		stopwatch("Transcriber startup")
-		self.transcriber = Transcriber(self.tts_settings)
+		self.transcriber = Transcriber(self.stt_settings)
 
 		# Create Voice Activity Detector:
 		#TODO: VAD (with offline mode):

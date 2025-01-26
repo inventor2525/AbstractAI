@@ -161,8 +161,8 @@ class Application(QMainWindow):
 		))
 		
 		self.settings_window.addSettingItem(SettingItem(
-			self.appCore.transcriber.tts_settings,
-			"TTS_Settings",
+			self.appCore.transcriber.stt_settings,
+			"STT_Settings",
 			excluded_fields=["auto_id"]
 		))
 	

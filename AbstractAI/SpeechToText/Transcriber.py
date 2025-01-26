@@ -1,6 +1,6 @@
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
-from AbstractAI.Model.Settings.TTS_Settings import TTS_Settings_v1
+from AbstractAI.Model.Settings.STT_Settings import STT_Settings_v1
 from AbstractAI.Model.Transcription import *
 from AbstractAI.AppContext import AppContext
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
@@ -16,19 +16,19 @@ class TranscriptionJob(Job):
 	transcription: Transcription = field(default=None)
 
 class Transcriber:
-	def __init__(self, tts_settings: TTS_Settings_v1):
-		self.tts_settings = tts_settings
+	def __init__(self, stt_settings: STT_Settings_v1):
+		self.stt_settings = stt_settings
 
-		if tts_settings.use_groq:
+		if stt_settings.use_groq:
 			self._ensure_groq_loaded()
-		elif tts_settings.enable_local_fallback:
+		elif stt_settings.enable_local_fallback:
 			self._ensure_local_model_loaded()
 		else:
 			raise ValueError("No model enabled in passed settings, groq or local.")
 	
 	def transcribe(self, audio: Audio) -> Transcription:
 		start_time = time.time()
-		if self.tts_settings.use_groq:
+		if self.stt_settings.use_groq:
 			transcription = self._transcribe_with_groq(audio)
 		else:
 			transcription = self._transcribe_with_local_model(audio)
@@ -42,22 +42,22 @@ class Transcriber:
 			return
 		from groq import Groq
 		try:
-			self.client = Groq(api_key=self.tts_settings.groq_api_key)
+			self.client = Groq(api_key=self.stt_settings.groq_api_key)
 		except Exception as e:
 			print(f"Error loading groq whisper: {e}")
 
 	def _ensure_local_model_loaded(self):
 		if hasattr(self, "model"):
 			return
-		if not self.tts_settings.enable_local_fallback:
+		if not self.stt_settings.enable_local_fallback:
 			ValueError("Local model requested but disabled in settings")
 		
 		from faster_whisper import WhisperModel
 		try:
 			self.model = WhisperModel(
-				self.tts_settings.local_model_name,
-				device=self.tts_settings.local_device,
-				compute_type=self.tts_settings.local_compute_type
+				self.stt_settings.local_model_name,
+				device=self.stt_settings.local_device,
+				compute_type=self.stt_settings.local_compute_type
 			)
 		except Exception as e:
 			print(f"Error loading local whisper: {e}")
