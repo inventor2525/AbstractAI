@@ -10,7 +10,6 @@ from argparse import Namespace
 class ApplicationContextModel:
 	args:Namespace = None
 	engine:SQLStorageEngine = None
-	transcriber: 'Transcriber' = None
 	jobs:Jobs = None
 	start_str: str = ""
 	storage_location: str = None

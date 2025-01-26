@@ -23,7 +23,6 @@ import os
 import time
 
 import os
-from AbstractAI.Model.Settings.TTS_Settings import Hacky_Whisper_Settings
 
 class ChatUI(QWidget):
 	stop_generating = pyqtSignal()
@@ -63,18 +62,15 @@ class ChatUI(QWidget):
 		self.num_lines = 0
 
 		self.init_ui(conversation)
-		AppContext.transcriber.recording_indicator = self.recording_indicator
+		# AppContext.transcriber.recording_indicator = self.recording_indicator
 
 		# Set up key handler
-		self.key_handler = KeyComboHandler(key_actions=[
-			KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
-			KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
-			KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_RIGHTCTRL', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
-			KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording)
-		])
-
-		# Register jobs
-		Jobs.register("Transcribe", self.transcription_work, self.transcription_callback)
+		# self.key_handler = KeyComboHandler(key_actions=[
+		# 	KeyAction(device_name="ThinkPad Extra Buttons", keycode='KEY_PROG1', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
+		# 	KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_CALC', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
+		# 	KeyAction(device_name="AT Translated Set 2 keyboard", keycode='KEY_RIGHTCTRL', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording),
+		# 	KeyAction(device_name="Apple, Inc Apple Keyboard", keycode='KEY_F19', key_event_type=KeyEvent.KEY_DOWN, action=self.toggle_recording)
+		# ])
 
 	def init_ui(self, conversation:Conversation = None):
 		self.layout = QVBoxLayout()
@@ -206,21 +202,21 @@ class ChatUI(QWidget):
 		
 		# Add recording indicator
 		self.recording_indicator = RecordingIndicator()
-		self.recording_indicator.clicked.connect(self.toggle_recording)
+		# self.recording_indicator.clicked.connect(self.toggle_recording)
 		self.recording_indicator.show()
 		
 		self.recording_buttons_layout = QHBoxLayout()
 		self.advanced_controls_layout.addLayout(self.recording_buttons_layout)
 		# Add toggle recording button
 		self.toggle_recording_button = QPushButton("Start Recording")
-		self.toggle_recording_button.clicked.connect(self.toggle_recording)
+		# self.toggle_recording_button.clicked.connect(self.toggle_recording)
 		self.recording_buttons_layout.addWidget(self.toggle_recording_button, alignment=Qt.AlignBottom)
 
 		# Add play last recording button
-		self.play_button = QPushButton("Play Last Recording")
-		self.play_button.setEnabled(False)
-		self.play_button.clicked.connect(AppContext.transcriber.play_last_recording)
-		self.recording_buttons_layout.addWidget(self.play_button, alignment=Qt.AlignBottom)
+		# self.play_button = QPushButton("Play Last Recording")
+		# self.play_button.setEnabled(False)
+		# self.play_button.clicked.connect(AppContext.transcriber.play_last_recording)
+		# self.recording_buttons_layout.addWidget(self.play_button, alignment=Qt.AlignBottom)
 
 		# Add timer label
 		self.timer_label = QLabel("Time: 0s")
@@ -239,32 +235,33 @@ class ChatUI(QWidget):
 		SwitchboardAgent.call_switchboard(user_message)
 		self.input_field.clear()
 		
-	def transcription_work(self, job: TranscriptionJob) -> JobStatus:
-		if job.transcription:
-			AppContext.transcriber.transcribe(job.transcription)
-			return JobStatus.SUCCESS
-		job.status_hover = "No transcription object supplied."
-		return JobStatus.FAILED
+	# def transcription_work(self, job: TranscriptionJob) -> JobStatus:
+	# 	if job.transcription:
+	# 		AppContext.transcriber.transcribe(job.transcription)
+	# 		return JobStatus.SUCCESS
+	# 	job.status_hover = "No transcription object supplied."
+	# 	return JobStatus.FAILED
 
-	@run_in_main_thread
-	def transcription_callback(self, job: TranscriptionJob):
-		if job.transcription:
-			self.timer_label.setText(str(job.transcription))
-			self.input_field.append(job.transcription.transcription)
+	# @run_in_main_thread
+	# def transcription_callback(self, job: TranscriptionJob):
+	# 	if job.transcription:
+	# 		self.timer_label.setText(str(job.transcription))
+	# 		self.input_field.append(job.transcription.transcription)
 
-	def toggle_recording(self):
-		transcription = AppContext.transcriber.toggle_recording()
-		if transcription:
-			self.toggle_recording_button.setText("Start Recording")
-			job = TranscriptionJob(job_key="Transcribe", name=f"Transcription {transcription.auto_id[-4:]}", transcription=transcription)
-			AppContext.jobs.add(job)
-		else:
-			self.toggle_recording_button.setText("Stop Recording")
+	# def toggle_recording(self):
+	# 	transcription = AppContext.transcriber.toggle_recording()
+	# 	if transcription:
+	# 		self.toggle_recording_button.setText("Start Recording")
+	# 		job = TranscriptionJob(job_key="Transcribe", name=f"Transcription {transcription.auto_id[-4:]}", transcription=transcription)
+	# 		AppContext.jobs.add(job)
+	# 	else:
+	# 		self.toggle_recording_button.setText("Stop Recording")
 			
 	def update_timer(self):
-		if AppContext.transcriber.is_recording:
-			elapsed_time = time.time() - AppContext.transcriber.start_time
-			self.timer_label.setText(f"Time: {elapsed_time:.1f}s")
+		pass
+		# if AppContext.transcriber.is_recording:
+		# 	elapsed_time = time.time() - AppContext.transcriber.start_time
+		# 	self.timer_label.setText(f"Time: {elapsed_time:.1f}s")
 	
 	def clear_selection(self):
 		self.conversation_view.clearSelection()

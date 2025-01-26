@@ -26,7 +26,7 @@ class JobsTableModel(QAbstractTableModel):
         for job in self.jobs.jobs:
             if not hasattr(job, 'view'):
                 job_fields.update(field.name for field in ClassInfo.get(job.__class__).fields.values()
-                                  if field.name not in ["callback", "work", "status_changed", "_jobs", "auto_id", "done", "failed_last_run", "source", "tags", "status", "status_hover"])
+                                  if field.name not in set(list(ClassInfo.get(job.__class__)._excluded_fields) + ["callback", "work", "status_changed", "_jobs", "auto_id", "done", "failed_last_run", "source", "tags", "status", "status_hover"]))
         
         prioritized_fields = ["job_key", "name", "date_created"]
         remaining_fields = sorted(job_fields - set(prioritized_fields))

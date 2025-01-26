@@ -141,8 +141,7 @@ class ApplicationCore:
 		# Create Transcriber:
 		stopwatch("Transcriber startup")
 		self.transcriber = Transcriber(self.tts_settings)
-		AppContext.transcriber = self.transcriber #Legacy bs (moving it to self cause circular import)
-		
+
 		# Create Voice Activity Detector:
 		#TODO: VAD (with offline mode):
 		stopwatch("Voice Activity Detector startup")
@@ -155,7 +154,7 @@ class ApplicationCore:
 		# Load any previously un-completed jobs:
 		stopwatch("Query Jobs")
 		AppContext.jobs = self.query_db(Jobs)
-		AppContext.jobs.changed.connect(self._save_jobs)
+		AppContext.jobs.changed.connect(self.save_jobs)
 		AppContext.jobs.should_save_job.connect(self._save_job)
 		
 		# Job registration:
@@ -259,7 +258,8 @@ class ApplicationCore:
 				json_llm_settings = json_setting
 				continue
 			
-			copy_into(json_setting, setting)
+			if json_setting is not None:
+				copy_into(json_setting, setting)
 			
 		if json_llm_settings:
 			exiting_models = {(type(model), model.user_model_name):model for model in self.llmConfigs.models}
@@ -278,7 +278,7 @@ class ApplicationCore:
 		with AppContext.jobs._lock:
 			AppContext.engine.merge(job)
 	
-	def _save_jobs(self) -> None:
+	def save_jobs(self) -> None:
 		'''Saves current jobs list to the db. (triggered by Jobs.changed event)'''
 		with AppContext.jobs._lock:
 			AppContext.engine.merge(AppContext.jobs)
@@ -327,6 +327,16 @@ class ApplicationCore:
 		if blocking:
 			while not getattr(self, 'done_speaking', False):
 				time.sleep(0.01)
+	
+	def quit(self):
+		'''Do all things needed to do before terminating the application.'''
+		if getattr(self, 'has_quit', False):
+			self.has_quit = True
+			return
+		
+		AppContext.jobs.stop()
+		self.save_jobs()
+		self.save_settings()
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")

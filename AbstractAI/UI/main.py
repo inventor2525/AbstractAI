@@ -1,17 +1,11 @@
-prev_compatible_db_versions = ["v2.0"]
-db_version = "v2.1"
+from AbstractAI.ApplicationCore import *
 
-from AbstractAI.Helpers.Stopwatch import Stopwatch
-import traceback
-Stopwatch.singleton = Stopwatch(True)
-Stopwatch = Stopwatch.singleton
+stopwatch("Qt Startup", log_statistics=False)
+stopwatch.new_scope()
+stopwatch("Imports", log_statistics=False)
+stopwatch.new_scope()
 
-Stopwatch("Startup", log_statistics=False)
-Stopwatch.new_scope()
-Stopwatch("Imports", log_statistics=False)
-Stopwatch.new_scope()
-
-Stopwatch("UI", log_statistics=False)
+stopwatch("UI", log_statistics=False)
 from AbstractAI.UI.ChatViews.MessageView_extras import *
 from AbstractAI.UI.ChatViews.ConversationView import *
 from AbstractAI.UI.ChatViews.ChatUI import *
@@ -21,34 +15,22 @@ from AbstractAI.AppContext import AppContext, MainAgent
 from AbstractAI.UI.QtContext import QtContext
 from AbstractAI.UI.Windows.Settings import SettingsWindow, SettingItem
 
-Stopwatch("Setting Models", log_statistics=False)
-from AbstractAI.Model.Settings.LLMSettings import *
-llm_settings_types = LLMSettings.load_subclasses()
-from ClassyFlaskDB.new.AudioTranscoder import AudioTranscoder
-from AbstractAI.Helpers.Jobs import *
+stopwatch("Setting Models", log_statistics=False)
 from AbstractAI.UI.Windows.JobsUI import *
-from AbstractAI.UI.Windows.MobileWindow import MobileWindow, OpenAI_TTS_Settings
+from AbstractAI.UI.Windows.MobileWindow import MobileWindow
 
 from AbstractAI.LLMs.LLM import LLM
 from AbstractAI.Automation.Agent import Agent, AgentConfig
 
-Stopwatch("DATAEngine", log_statistics=False)
-from ClassyFlaskDB.new.SQLStorageEngine import SQLStorageEngine
-
-Stopwatch("basics", log_statistics=False)
-import json
+stopwatch("basics", log_statistics=False)
 from datetime import datetime
-from copy import deepcopy
-from AbstractAI.Helpers.JSONEncoder import JSONEncoder
-import argparse
-import shutil
 import os
 
-Stopwatch("PyQT5", log_statistics=False)
+stopwatch("PyQT5", log_statistics=False)
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
-Stopwatch("Application", log_statistics=False)
+stopwatch("Application", log_statistics=False)
 class Application(QMainWindow):	
 	@property
 	def llm(self) -> LLM:
@@ -59,51 +41,25 @@ class Application(QMainWindow):
 		AppContext.llm_loaded = value is not None
 		AppContext.context_changed()
 		
-	def __init__(self):
+	def __init__(self, appCore:ApplicationCore):
 		super().__init__()
+		self.appCore = appCore
 		self.llm : LLM = None
 		
-		Stopwatch.new_scope()
+		stopwatch.new_scope()
 		self.setWindowTitle("AbstractAI")
 		self.app = QApplication.instance()
-		Stopwatch("Connect to database", log_statistics=False)
-		
 		self.settings_window = SettingsWindow()
 		
-		files_path = os.path.join(AppContext.storage_location, "files")
-		os.makedirs(files_path, exist_ok=True)
-		
-		db_path = os.path.join(AppContext.storage_location, db_version, "chat.db")
-		os.makedirs(os.path.join(AppContext.storage_location, db_version), exist_ok=True)
-		
-		#if doesn't exist check for old versions of the db:
-		if not os.path.exists(db_path):
-			for version in prev_compatible_db_versions:
-				old_db_path = os.path.join(AppContext.storage_location, version, "chat.db")
-				if os.path.exists(old_db_path):
-					shutil.copyfile(old_db_path, db_path)
-		AppContext.engine = SQLStorageEngine(f"sqlite:///{db_path}", DATA, files_dir=files_path)
-		
-		self.llmConfigs = AppContext.engine.query(LLMConfigs).first()
-		
-		if self.llmConfigs is None:
-			self.llmConfigs = LLMConfigs()
-		
-		# Set up transcription
-		hacky_tts_settings = AppContext.engine.query(Hacky_Whisper_Settings).first()
-		if hacky_tts_settings is None:
-			hacky_tts_settings = Hacky_Whisper_Settings()
-		
-		AppContext.transcriber = Transcriber(hacky_tts_settings)
 		self.init_settings()
 		
 		# Create a user:
 		AppContext.user_source = UserSource() | CallerInfo.catch([0])
 		
-		Stopwatch("Load conversations", log_statistics=False)
+		stopwatch("Load conversations", log_statistics=False)
 		self.conversations = ConversationCollection.all_from_engine(AppContext.engine)
 		
-		Stopwatch("Setup UI", log_statistics=False)
+		stopwatch("Setup UI", log_statistics=False)
 		self.should_filter = False
 		self.filter_timmer = QTimer()
 		self.filter_timmer.setInterval(500)
@@ -135,26 +91,14 @@ class Application(QMainWindow):
 		
 		AppContext.main_agent = MainAgent()
 		
-		AppContext.jobs = AppContext.engine.query(Jobs).first()
-		if AppContext.jobs is None:
-			AppContext.jobs = Jobs()
-		AppContext.jobs.should_save_job.connect(self.save_job)
+		self.app.aboutToQuit.connect(self.appCore.quit)
 		
-		def save_jobs():
-			with AppContext.jobs._lock:
-				AppContext.engine.merge(AppContext.jobs)
-		self.app.aboutToQuit.connect(save_jobs)
-		self.app.aboutToQuit.connect(AppContext.transcriber.recorder.stop_listening)
-		self.app.aboutToQuit.connect(AppContext.jobs.stop)
-		AppContext.jobs.changed.connect(save_jobs)
-		
-		Stopwatch.end_scope(log_statistics=False)
+		stopwatch.end_scope(log_statistics=False)
 		
 		self.jobs_window = JobsWindow(AppContext.jobs)
 		jobs_window_button = QPushButton("Open Jobs List")
 		jobs_window_button.clicked.connect(self.open_jobs_list)
 		self.chatUI.advanced_controls_header_layout.insertWidget(2, jobs_window_button)
-		AppContext.jobs.start()
 	
 	@run_in_main_thread
 	def save_job(self, job:Job):
@@ -191,7 +135,7 @@ class Application(QMainWindow):
 			def create_clicked():
 				model_type = llm_settings_types[model_type_picker.currentText()]
 				model = model_type()
-				self.llmConfigs.models.append(model)
+				self.appCore.llmConfigs.models.append(model)
 				add_model(model)
 				
 			create_button = QPushButton("Create")
@@ -201,7 +145,7 @@ class Application(QMainWindow):
 			return widget
 			
 		self.settings_window.addSettingItem(SettingItem(
-			self.llmConfigs,
+			self.appCore.llmConfigs,
 			"Models",
 			view_factories=[
 				("Create Model", create_model_view)
@@ -215,17 +159,17 @@ class Application(QMainWindow):
 			"OpenAI TTS Settings",
 			excluded_fields=["auto_id", "id"]
 		))
+		
+		self.settings_window.addSettingItem(SettingItem(
+			self.appCore.transcriber.tts_settings,
+			"TTS_Settings",
+			excluded_fields=["auto_id"]
+		))
 	
-		for model in self.llmConfigs.models:
+		for model in self.appCore.llmConfigs.models:
 			add_model(model)
 			
-		def save_settings():
-			for model in self.llmConfigs.models:
-				model.new_id(True)
-			AppContext.engine.merge(self.llmConfigs)
-			AppContext.engine.merge(AppContext.transcriber.hacky_tts_settings)
-			AppContext.engine.merge(MobileWindow.load_tts_settings())
-		self.settings_window.settingsSaved.connect(save_settings)
+		self.settings_window.settingsSaved.connect(self.appCore.save_settings)
 		
 	def init_ui(self):
 		#split view:
@@ -331,12 +275,6 @@ class Application(QMainWindow):
 		self.chatUI.stop_generating.connect(self.stop_generating)
 		self.chatUI.conversation_view.regenerate_message.connect(self.regenerate)
 		
-		self.settings_window.addSettingItem(SettingItem(
-			AppContext.transcriber.hacky_tts_settings,
-			"TTS_Settings",
-			excluded_fields=["auto_id"]
-		))
-		
 		w = QWidget()
 		w.setLayout(self.right_panel)
 		self.splitter.addWidget(w)
@@ -361,7 +299,7 @@ class Application(QMainWindow):
 		default_background_color = "white"
 		alternate_background_color = "lightgrey"
 		prev_ui_name = None
-		for model in sorted(self.llmConfigs.models, key=self.format_model_name):
+		for model in sorted(self.appCore.llmConfigs.models, key=self.format_model_name):
 			self.models_by_users_name[model.user_model_name] = model
 			if prev_ui_name is None:
 				prev_ui_name = model.__ui_name__
@@ -565,13 +503,13 @@ class Application(QMainWindow):
 		self.task.start()
 		
 	def closeEvent(self, event):
-		AppContext.transcriber.recorder.stop_listening()
 		self.write_settings()
+		self.appCore.quit()
 		QApplication.quit()
 		
-Stopwatch.end_scope(log_statistics=False)
+stopwatch.end_scope(log_statistics=False)
 if __name__ == "__main__":
-	Stopwatch("Load settings", log_statistics=False)
+	stopwatch("Load settings", log_statistics=False)
 	app = QApplication(sys.argv)
 	qss_path = os.path.join(os.path.dirname(__file__), "Styles", "AbstractAI.qss")
 	app.setStyle("Fusion")
@@ -580,40 +518,15 @@ if __name__ == "__main__":
 		
 	QtContext.settings = QSettings("Inventor2525", "AbstractAI")
 	
-	def get_default_storage_location():
-		config_dir = os.path.expanduser("~/.config/AbstractAI/")
-		if os.path.exists(config_dir):
-			return os.path.join(config_dir, 'chats.db')
-		return os.path.join(os.path.expanduser('~'), 'AbstractAI.db')
-
-	parser = argparse.ArgumentParser(description='AbstractAI')
-	
-	parser.add_argument(
-		'storage_location', nargs='?',
-		default=QtContext.settings.value(
-			"main/storage_location",
-			get_default_storage_location(), 
-			type=str
-		),
-		help='Path to SQLite database file (default: %(default)s)'
-	)
-	
-	AppContext.args = parser.parse_args()
-	QtContext.settings.setValue("main/storage_location", AppContext.args.storage_location)
-	
-	storage_location:str = AppContext.args.storage_location
-	#prune: .db (this is to old code proof it and will be removed eventually):
-	if storage_location.endswith(".db"):
-		storage_location = storage_location[:-3]
-	AppContext.storage_location = storage_location
+	appCore = ApplicationCore("/home/charlie/Documents/AbstractAI")
 	
 	# new model loading code:
-	Stopwatch("Load window", log_statistics=False)
-	window = Application()
+	stopwatch("Load window", log_statistics=False)
+	window = Application(appCore)
 	
-	Stopwatch("Show window", log_statistics=False)
+	stopwatch("Show window", log_statistics=False)
 	window.show()
-	Stopwatch.stop("Show window", log_statistics=False)
-	Stopwatch.end_scope(log_statistics=False)
-	Stopwatch.end_scope(log_statistics=False)
+	stopwatch.stop("Show window", log_statistics=False)
+	stopwatch.end_scope(log_statistics=False)
+	stopwatch.end_scope(log_statistics=False)
 	sys.exit(app.exec_())
