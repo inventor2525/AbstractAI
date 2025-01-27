@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Union, Tuple
 import re
 
 @dataclass
@@ -8,7 +8,7 @@ class MarkdownCodeBlockInfo:
     content: str
     path: Optional[str] = None
 
-def extract_code_blocks(text: str) -> List[MarkdownCodeBlockInfo]:
+def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
     '''
     Extracts code blocks from markdown and any path they are prefaced by.
     '''
@@ -32,7 +32,9 @@ def extract_code_blocks(text: str) -> List[MarkdownCodeBlockInfo]:
     path = None
     code = ""
     language = ""
-
+    
+    other_lines = []
+    
     lines = text.split('\n')
     for i, line in enumerate(lines):
         if depth == 0:
@@ -41,7 +43,14 @@ def extract_code_blocks(text: str) -> List[MarkdownCodeBlockInfo]:
             elif re.match(code_start_pattern, line):
                 depth = 1
                 language = re.match(code_start_pattern, line).group(1) or "text"
+                
+                if len(other_lines)>0:
+                    code_blocks.append("\n".join(other_lines))
+                    other_lines.clear()
             else:
+                if path is not None:
+                    other_lines.append(path)
+                other_lines.append(line)
                 path = None
         elif depth >= 1:
             pseudo_depth = depth + fuzzy_depth
@@ -75,10 +84,11 @@ def extract_code_blocks(text: str) -> List[MarkdownCodeBlockInfo]:
                         depth += 1
                 elif nested_end_matches:
                     fuzzy_depth += 1
-
+    if len(other_lines)>0:
+        code_blocks.append("\n".join(other_lines))
     return code_blocks
 
-def extract_paths_and_code(x):
+def extract_paths_and_code(x:List[Union[MarkdownCodeBlockInfo, str]]) -> List[Tuple[str,str]]:
     '''Legacy method usage support'''
-    code_blocks = extract_code_blocks(x)
+    code_blocks = [cb for cb in extract_code_blocks(x) if isinstance(cb, MarkdownCodeBlockInfo)]
     return [(code_block.path, code_block.content) for code_block in code_blocks if code_block.path]

@@ -2,12 +2,11 @@ import unittest
 import os
 import inspect
 from jinja2 import Template
-from AbstractAI.Helpers.ResponseParsers import extract_paths_and_code
+from AbstractAI.Helpers.ResponseParsers import extract_code_blocks, MarkdownCodeBlockInfo, extract_paths_and_code
 
 class TestExtractPathsAndCode(unittest.TestCase):
     def test_extract_paths_and_code(self):
-        text = r"""
-This is some text.
+        text = r"""This is some text.
 
 /path/to/a/place
 ```python
@@ -26,31 +25,35 @@ More text here.
 console.log("Hello, world!");
 ```
 
-Even more text.
-"""
+/path/to/more/places
+Even more text."""
         expected_path_and_codes = [
-            (
-                '/path/to/a/place',
-                'my_str = "```python"\n'
+            "This is some text.\n",
+            MarkdownCodeBlockInfo(
+                language='python',
+                content='my_str = "```python"\n'
                 "my_str += r'''some nested code\\n\n"
                 "more\\n\n"
                 "```\n"
                 "That was some markdown. Cool, eh?'''\n"
-                'print(my_str)'
+                'print(my_str)',
+                path='/path/to/a/place'
             ),
-            (
-                '/another/path',
-                'console.log("Hello, world!");'
-            )
+            "\nMore text here.\n",
+            MarkdownCodeBlockInfo(
+                language='javascript',
+                content='console.log("Hello, world!");',
+                path='/another/path'
+            ),
+            "\n/path/to/more/places\nEven more text."
         ]
 
-        path_and_codes = extract_paths_and_code(text)
+        path_and_codes = extract_code_blocks(text)
 
         self.assertEqual(path_and_codes, expected_path_and_codes)
 
     def test_nested_code_blocks(self):
-        text = r"""
-/nested/code/example
+        text = r"""/nested/code/example
 ```python
 def nested_function():
     print("This is a nested function")
@@ -64,9 +67,9 @@ def nested_function():
 ```
 """
         expected_path_and_codes = [
-            (
-                '/nested/code/example',
-                'def nested_function():\n'
+            MarkdownCodeBlockInfo(
+                language='python',
+                content='def nested_function():\n'
                 '    print("This is a nested function")\n'
                 '    \n'
                 '    nested_code = ```\n'
@@ -74,11 +77,13 @@ def nested_function():
                 '    It should be included in the output\n'
                 '    ```\n'
                 '    \n'
-                '    print(nested_code)'
-            )
+                '    print(nested_code)',
+                path='/nested/code/example'
+            ),
+            ""
         ]
 
-        path_and_codes = extract_paths_and_code(text)
+        path_and_codes = extract_code_blocks(text)
 
         self.assertEqual(path_and_codes, expected_path_and_codes)
 
