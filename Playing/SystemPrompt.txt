@@ -1,0 +1,50 @@
+```python
+from AbstractAI.ApplicationCore import *
+from AbstractAI.Helpers.TerminalClient import *
+from time import sleep
+
+app = ApplicationCore("/home/charlie/Documents/AbstractAI")
+llm = app["Llama 3.1 8b"]
+
+# Reload or create the conversation:
+conversation_name = "Terminal Playing v1"
+try:
+	conversation = list(AppContext.engine.query(Conversation).all(where=f"name='{conversation_name}'"))[0]
+	print("Loaded conversation!")
+except:
+	print("Conversation not created yet, making it...")
+	conversation = Conversation(name=conversation_name)
+	conversation + (TextFileArtifact("Playing/SystemPrompt.txt"), Role.System())
+
+# Define a chat function:
+@app.llm_method(llm, with_history=True)
+def chat(conv:Conversation, msg:str) -> ResponseObject:
+	return msg
+
+terminal = Terminal("My first terminal")
+
+# Talk back and forth (with a terminal):
+try:
+	for transcription in app.transcribe_live():
+		with app.vad.pauser():
+			ro = chat(conversation, transcription.text)
+			response = str(ro)
+			if response.startswith("send to terminal\n```bash\n") and response.endswith("\n```"):
+				print("================================")
+				print(response)
+				print("------------")
+				response = response[len("send to terminal\n```bash\n"):-5]
+				print(response)
+				print("================================")
+				
+				terminal.send_string(response)
+				sleep(1)
+				ro = chat(conversation, f"# Terminal says:\n{terminal.getScreenDump().raw_text}")
+			
+			app.speak(str(ro), blocking=True)
+		
+except KeyboardInterrupt:
+	print("Terminating application...")
+	app.quit()
+	print("Goodbye!")
+```

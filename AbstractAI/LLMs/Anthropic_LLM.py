@@ -5,6 +5,7 @@ from AbstractAI.Model.Converse.MessageSources import ModelSource
 from anthropic import Anthropic
 import json
 from typing import List, Dict, Any
+from anthropic import NOT_GIVEN
 
 class Anthropic_LLM(LLM):
 	def __init__(self, settings: Anthropic_LLMSettings):
@@ -14,8 +15,18 @@ class Anthropic_LLM(LLM):
 	def chat(self, conversation: Conversation, start_str: str = "", stream: bool = False, max_tokens: int = None) -> Message:
 		wip_message, message_list = self._new_message(conversation, start_str)
 		
+		system_message = NOT_GIVEN
+		if len(message_list)>0 and message_list[0]['role'] == 'system':
+			system_message = message_list[0]['content']
+			message_list = message_list[1:]
+		
+		for msg in message_list:
+			if msg['role'] == 'system':
+				msg['role'] = 'user'
+		
 		completion = self.client.messages.create(
 			model=self.settings.model_name,
+			system=system_message,
 			messages=message_list,
 			max_tokens=max_tokens if max_tokens is not None else 1024,
 			stream=stream
