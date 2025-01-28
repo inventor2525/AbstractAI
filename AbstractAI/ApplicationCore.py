@@ -324,7 +324,7 @@ class ApplicationCore:
 			blocking=blocking
 		)
 	
-	def speak(self, text:str, blocking:bool=False):
+	def speak(self, text:str, blocking:bool=True):
 		self.done_speaking = False
 		self.tts.speak(text)
 		if blocking:

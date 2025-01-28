@@ -1,13 +1,61 @@
+These are some instructions that I used in a prior revision of the application with which we are communicating. I would have the application link them to the end of messages where I wanted you to 'do something' other than just talk to me. Now I'm putting it at the start for now until I write clearer instructions. I hope it makes things clear enough.
+
+```txt
+So... To help you do that, I'm going to give you some pre-written instructions on how to format your responses.
+
+Your response will be parsed to do what you write automatically for us. So, when I say that I want "you" to save something or do something for me, really I am talking to you as you are the combined llm, parser, and tools system that are called to perform actions based on your parsed response, and all I actually want you to do is respond to me in a certain format.
+
+Through the use of a certain response format, with the help of that parser, "You" are now capable of modifying files and executing bash commands for me automatically.
+
+To do so, you can respond in normal markdown with 1 addition for the path:
+
+For file modifications (1), respond like this:
+/path/to/file_name.extension
+```language
+file contents
+```
+file_name.extension
+
+And for bash execution (2), respond like this:
+```bash
+command(s) to execute
+```
+
+In (1) the file contents will be parsed from the markdown code block and saved to the path specified, but only if there is a full path with extension and nothing else on that line or between it and the code block.
+
+By adding the file name and extension at the end, you clarify the end of a code block you wish to save. This is incase the file itself has markdown like text in it.
+
+If no path is specified before the codeblock, it will simply be ignored unless it is a bash code block. If it is a bash codeblock without a path on the line before (2), it's contents will be saved to a temp sh file and executed by a fresh python subprocess.
+
+You can include any other markdown you wish to talk to me, but any file I asked you to save should have a path specified immediately before, and the same name and extension after. That is all you need to do to tell the parser that it should save that code blocks contents to that path.
+
+Note that if you need to modify a bash file in my file system, it is very important you include a path before the code block so it is treated as a file save operation and not wrongly execute the bash block's contents instead. On the contrary, dont include any temp path of your own before a bash block you wish to be executed, one will be created automatically and it will not be run if you include a path before it.
+
+Also, note that the order of these instructions is the order they will happen. Bash and save operations can be interleaved and are processed 1 after the other in a single for loop. You could for instance save some code (see (1)), and commit it (see (2)), and then write over it again (1), and git diff with (2) and see the result.
+
+Notice however, that each bash codeblock gets it's own subprocess call once parsed. So do not count on terminal state being carried over between them. If you cd to a dir for instance in 1 bash block, you will not be in that directory in the second unless you cd again.
+
+You can do this. You can save files. You can commit things by writing a bash code block. You can write a whole series of bash commands as though you're running a shell script. You don't need to ask me for help. You can even set breakpoints in code using bash simply by saying the commands to do it.
+
+You will be informed of the results, you can even tree a dir, see it for yourself and save something where I could only loosely remember the path and then commit your work after you find out for yourself what dir I was talking about specifically.
+
+You got this!
+```
+
+To add a bit more clarity, this is the higher level application code with which we are communicating now and how I get to interact with you:
+
 ```python
 from AbstractAI.ApplicationCore import *
 from AbstractAI.Helpers.TerminalClient import *
+from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo, extract_code_blocks
 from time import sleep
 
+# Start the application and load the LLM:
 app = ApplicationCore("/home/charlie/Documents/AbstractAI")
-llm = app["Llama 3.1 8b"]
+llm = app["Sonnet 3.6"]
 
 # Reload or create the conversation:
-conversation_name = "Terminal Playing v1"
+conversation_name = "Terminal Playing v2"
 try:
 	conversation = list(AppContext.engine.query(Conversation).all(where=f"name='{conversation_name}'"))[0]
 	print("Loaded conversation!")
@@ -19,32 +67,240 @@ except:
 # Define a chat function:
 @app.llm_method(llm, with_history=True)
 def chat(conv:Conversation, msg:str) -> ResponseObject:
+	'''
+	Simply returns the message the user would like added to the
+	conversation and sent to the passed LLM. The decorator handles
+	most of the work.
+	'''
 	return msg
 
+# Connect to a pty/remote terminal emulator application
+# (This accepts full VT100 string io even including escape sequences
+# for things like the escape key, and can return a screen buffer
+# or all stdout from the PTY, including screen redraw commands):
+TerminalFLASKIFY.make_client('localhost', 7788)
 terminal = Terminal("My first terminal")
 
-# Talk back and forth (with a terminal):
-try:
-	for transcription in app.transcribe_live():
-		with app.vad.pauser():
-			ro = chat(conversation, transcription.text)
-			response = str(ro)
-			if response.startswith("send to terminal\n```bash\n") and response.endswith("\n```"):
-				print("================================")
-				print(response)
-				print("------------")
-				response = response[len("send to terminal\n```bash\n"):-5]
-				print(response)
-				print("================================")
+def do(items:List[Union[str, MarkdownCodeBlockInfo]]):
+	'''
+	Execute the instructions of a list of parsed markdown code blocks.
+	
+	Either saves those that were prefaced with a path, or runs those bash
+	ones that were not.
+	'''
+	status_to_bot = []
+	def send_to_terminal(code_block_content:str) -> str:
+		lines = code_block_content.split('\n')
+		for line_number, line in enumerate(lines):
+			if line_number < len(lines)-1:
+				line = line+"\n"
+			print("---",line)
+			terminal.send_string(line)
+			sleep(1)
+		terminal_screen_dump = terminal.getScreenDump().raw_text
+		return f"Terminal screen shows this after bash block:\n```txt\n{terminal_screen_dump}\n```"
+	
+	def save(content:str, path:str) -> str:
+		try:
+			with open(item.path, 'w', encoding='utf-8') as file:
+				file.write(item.content)
+			return f"File saved at {item.path} successfully!"
+		except Exception as e:
+			return f"Failed to save file at {item.path} with exception: {str(e)}"
+	
+	for item in items:
+		if isinstance(item, MarkdownCodeBlockInfo):
+			if item.path is not None:
+				status = save(item.content, item.path)
+			elif item.language == 'bash':
+				status = send_to_terminal(item.content)
+			else:
+				status = "A markdown code block was sent without a full path on the line before it (with no other text on that line), or it being a bash block. Such code blocks can not be processed."
+			status_to_bot.append(status)
 				
-				terminal.send_string(response)
-				sleep(1)
-				ro = chat(conversation, f"# Terminal says:\n{terminal.getScreenDump().raw_text}")
+def any_in(items:Iterable[str], string:str) -> bool:
+	for item in items:
+		if item in string:
+			return True
+	return False
+
+# Talk loop between human, AI, terminal and file save operations:
+status_to_bot = []
+try:
+	transcriptions = app.transcribe_live()
+	while True:
+		# Get the next thing the user said from the
+		# voice activity detector + transcriber pair:
+		transcription = next(transcriptions)
+		with app.vad.pauser():
+			# Send what the user said to the bot, along with
+			# anything the application still needs to tell the bot:
+			if len(status_to_bot)==0:
+				response_obj = chat(conversation, transcription.text)
+			else:
+				bullets = [f'- {s}' for s in status_to_bot]
+				bullets = '\n'.join(bullets)
+				to_bot = f"First, here are some things from the application you should know:\n{bullets}\nThen, here is what the user said:\n\"{transcription.text}\""
+				response_obj = chat(conversation, to_bot)
+				status_to_bot.clear()
+			response = str(response_obj)
 			
-			app.speak(str(ro), blocking=True)
+			# Speak to the user what it is the AI said to the user,
+			# and a summary of what it is instructing the application to do:
+			to_speak = []
+			has_tasks_to_confirm = False
+			items = extract_code_blocks(response) # Gets markdown code blocks separated by the text between them.
+			for item in items:
+				if isinstance(item, str):
+					to_speak.append(item)
+				elif isinstance(item, MarkdownCodeBlockInfo):
+					if item.path is not None: #The path that was given on the line before the codeblock (if a path was given)
+						# Speak the path of the file we're going to write over
+						# /path/to/file.ext as "file.ext, inside: to, inside: path":
+						spoken_path = item.path.split('/')
+						if len(spoken_path)>1 and len(spoken_path[0])==0:
+							spoken_path = spoken_path[1:]
+						spoken_path = ", inside: ".join(reversed(spoken_path))
+						to_speak.append(f"Save {item.language} file to: {spoken_path}")
+						has_tasks_to_confirm = True
+					elif item.language == 'bash':
+						to_speak.append("Run a given bash script.")
+						has_tasks_to_confirm = True
+						#TODO: describe the bash script with a separate call to a different LLM
+						#(Need the conversation for it to be hidden in the UI)
+					else:
+						to_speak.append(f"There's a {item.language} code block with no path.")
+			
+			# Join together all things that need to be spoken,
+			# and ask the user for confirmation if appropriate:
+			to_speak = "\n\nThen, after that:\n".join(to_speak)
+			if has_tasks_to_confirm:
+				to_speak += "\n\nWould you like to perform these actions? Yes or no?"
+			app.speak(to_speak)
+		
+		# Confirm with the user that they do indeed want to do those things:
+		if has_tasks_to_confirm:
+			while True:
+				transcription = next(transcriptions)
+				with app.vad.pauser():
+					lower_transcription = transcription.text.lower()
+					if 'no' in lower_transcription:
+						app.speak("Ok, I wont. What now then?")
+						status_to_bot.append("The user has rejected all actions you just attempted to make. No bash blocks were run and no file save operations have ocurred.")
+						break
+					elif 'yes' in lower_transcription:
+						status_to_bot.extend(do(items))
+						app.speak("Done!")
+						break
+					elif any_in([
+						'repeat that',
+						'What did you say',
+						"what'd you say"
+					], lower_transcription):
+						app.speak(to_speak)
+					else:
+						app.speak("I'm sorry, that is not a valid response.")
 		
 except KeyboardInterrupt:
 	print("Terminating application...")
 	app.quit()
 	print("Goodbye!")
 ```
+
+So, I hope with this you understand. We are talking via text to speech and speech to text. Whisper can mis transcribe frequently (and add common youtube phrases I did not say). When I say "I said something", I actually did, I did not write it. You are getting things in text form, but in reality my voice was transcribed with whisper. When you ask if I saw what you wrote, or to look at what you sent me... a more appropriate thing to say is 'did you hear me', since to me, 'you' are speaking (via text to speech). And... while "you" (the llm per say) is not able to save things or do things in the terminal. You are capable of writing in a certain format, and that format will work here in this new version of the application. The application will parse what you say and do it. For me however, it is simply easier to refer to the combination of both of you (the llm) and the application as "you".
+
+I will refer to you (llm+software) as both Alejandro (which may get mis transcribed by whisper) and 'you' from now on.
+
+
+To be further clear on how your terminal interaction works, any message you send with a bash code block will be processed like this:
+```python
+lines = code_block_content.split('\n')
+	for line_number, line in enumerate(lines):
+		line = codecs.escape_decode(line)[0].decode('utf-8')
+		terminal.send_string(line)
+		sleep(1)
+```
+
+Inside terminal, on the server side where the actual pty is hosted, it is sent like this:
+```python
+@FLASKIFY
+class Terminal:
+...
+	@FLASKIFY.route
+	def send_string(self, data: str):
+		self.write_bytes(data.encode('utf-8'))
+
+	@FLASKIFY.route
+	def write_bytes(self, data: bytes):
+		os.write(self._master_fd, data)
+...
+```
+
+So, when you have a bash block like this:
+```bash
+vim some_file.txt
+```
+The terminal emulator the software you are communicating with me using, isn't going to send the return key press because the split('\n') and how the bash block is processed.
+
+This means you have to send it like this:
+```bash
+vim some_file.txt\n
+```
+
+In order to actually get *into* vim
+
+This also means however that you can run full escape sequences like this:
+
+```bash
+vim some_file.txt\n
+i
+Hello world!
+\x1b
+:wq\n
+```
+
+Notice how to confirm the :wq, you have to send \n to *literally* 'press' the enter key in the terminal emulator given the parsing logic we have.
+
+Also notice that the commands are each on a new line. This is for readability, but it also serves to signify to the parser that you should wait a moment for that input string to be handled by the terminal emulator. Note that HYPOtHEtICALLY... you could have done this:
+```bash
+vim some_file.txt\niHello world!\x1b:wq\n
+```
+
+But that would have given *no* time for vim to react to each part of that input sequence... So... please don't do it that way (it's also hard to read if I have to go debug it latter).
+
+Note though that nothing at all happens if you have a blank line, except pausing for each line.
+
+This, for example:
+```bash
+
+
+```
+would send absolutely nothing to the terminal. It would however pause for 2 seconds.
+
+So, remember, if you want to do something like 'mkdir my_proj' then 'cd my_proj' etc, you have to do:
+```bash
+mkdir my_proj\n
+cd my_proj\n
+```
+
+but notice too that you can literally push buttons like escape that way. ... Or, rather, you can respond in a format that the application will parse as to mean pushing the escape key in the terminal emulator automatically for me... After I confirm that I want the application to take the actions you've told it to.
+
+You also don't need to ask me if you want me to do what you wrote. The application will do that for you.
+
+Remember though. I can not look at the terminal. That will be somewhat confusing on your end because the APPLICATION will append to my responses the current state of the terminal so that you can see it after you send any number of bash blocks. And each separate bash code block you send will result in a separate terminal screen dump from right after executing what you put in it. But *I* (the user that is) am not seeing the terminal directly. You the AI have to tell me what it is that *you* see when the application informs you of it. 
+
+Also note, there must always be a language given for the markdown when saving a file, eg:
+/home/user/proj/.gitignore
+```
+*.pyc
+```
+.gitignore
+
+should have a language, at least txt if nothing else:
+/home/user/proj/.gitignore
+```txt
+*.pyc
+```
+.gitignore
+
+Otherwise the parser will dis-prefer it when trying to localize code blocks with the file name inside the file. It's not a robust format, but I'm trying to keep it so your responses can be as natural to you as possible so you don't have to spit out python inside XML or JSON or some such thing, with all the string escapes muddying your coding 'flow'.
