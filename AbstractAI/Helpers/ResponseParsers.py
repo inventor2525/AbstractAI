@@ -51,9 +51,17 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                     looking_for_file_end = False
                 else:
                     file_name = os.path.basename(path)
-                    looking_for_file_end = f"\n`"+"``\n{file_name}\n" in text
-                    #Parser still can't handle the above line ^ without the "+" in the middle of the ` ` `
-                
+                    file_name_end_strings = text.count(f"\n```\n{file_name}\n")
+                    looking_for_file_end = file_name_end_strings == 1
+                    if file_name_end_strings > 1:
+                        # We have multiple files in this markdown with the same name...
+                        # And... Some of them might be nested. Cry's
+                        
+                        #lets just grab the last one for right now and assume everything is nested.
+                        #this will totally break if say... you have multiple __init__ files in
+                        #the same markdown.
+                        pass #TODO:
+                    
                 if len(other_lines)>0:
                     code_blocks.append("\n".join(other_lines))
                     other_lines.clear()
@@ -63,41 +71,50 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                 other_lines.append(line)
                 path = None
         elif depth >= 1:
-            pseudo_depth = depth + fuzzy_depth
-            if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
-                fuzzy_depth += 1
-                def could_this_be_the_end():
-                    if depth>fuzzy_depth:
-                        return False
-                    if (fuzzy_depth-depth) % 2 == 0:
-                        return True
-                    return False
-                def is_it_actually():
-                    if looking_for_file_end:
-                        return lines[i+1] == file_name
-                    return True
-                if could_this_be_the_end() and is_it_actually():
+            if looking_for_file_end:
+                if line=="```" and lines[i+1]==file_name:
                     code_blocks.append(MarkdownCodeBlockInfo(language, code.strip(), path))
                     path = None
                     code = ""
                     depth = 0
                     fuzzy_depth = 0
                     language = ""
+            else:
+                pseudo_depth = depth + fuzzy_depth
+                if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
+                    fuzzy_depth += 1
+                    def could_this_be_the_end():
+                        if depth>fuzzy_depth:
+                            return False
+                        if (fuzzy_depth-depth) % 2 == 0:
+                            return True
+                        return False
+                    def is_it_actually():
+                        if looking_for_file_end:
+                            return lines[i+1] == file_name
+                        return True
+                    if could_this_be_the_end() and is_it_actually():
+                        code_blocks.append(MarkdownCodeBlockInfo(language, code.strip(), path))
+                        path = None
+                        code = ""
+                        depth = 0
+                        fuzzy_depth = 0
+                        language = ""
+                    else:
+                        code += line + "\n"
                 else:
                     code += line + "\n"
-            else:
-                code += line + "\n"
-                nested_start_matches = list(re.finditer(nested_code_start_pattern, line))
-                nested_end_matches = list(re.finditer(nested_code_pattern, line))
-                
-                if nested_start_matches:
-                    last_start_pos = nested_start_matches[-1].end()
-                    end_after_start = any(m.start() > last_start_pos for m in nested_end_matches)
+                    nested_start_matches = list(re.finditer(nested_code_start_pattern, line))
+                    nested_end_matches = list(re.finditer(nested_code_pattern, line))
                     
-                    if not end_after_start:
-                        depth += 1
-                elif nested_end_matches:
-                    fuzzy_depth += 1
+                    if nested_start_matches:
+                        last_start_pos = nested_start_matches[-1].end()
+                        end_after_start = any(m.start() > last_start_pos for m in nested_end_matches)
+                        
+                        if not end_after_start:
+                            depth += 1
+                    elif nested_end_matches:
+                        fuzzy_depth += 1
     if len(other_lines)>0:
         code_blocks.append("\n".join(other_lines))
     return code_blocks
