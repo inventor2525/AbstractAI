@@ -53,6 +53,8 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                     file_name = os.path.basename(path)
                     file_name_end_strings = text.count(f"\n```\n{file_name}\n")
                     looking_for_file_end = file_name_end_strings == 1
+                    
+                    hacky_total_needed = 1
                     if file_name_end_strings > 1:
                         # We have multiple files in this markdown with the same name...
                         # And... Some of them might be nested. Cry's
@@ -60,7 +62,9 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                         #lets just grab the last one for right now and assume everything is nested.
                         #this will totally break if say... you have multiple __init__ files in
                         #the same markdown.
-                        pass #TODO:
+                        
+                        hacky_total_needed = file_name_end_strings
+                        hacky_count = 0
                     
                 if len(other_lines)>0:
                     code_blocks.append("\n".join(other_lines))
@@ -73,12 +77,14 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
         elif depth >= 1:
             if looking_for_file_end:
                 if line=="```" and lines[i+1]==file_name:
-                    code_blocks.append(MarkdownCodeBlockInfo(language, code.strip(), path))
-                    path = None
-                    code = ""
-                    depth = 0
-                    fuzzy_depth = 0
-                    language = ""
+                    hacky_count += 1
+                    if hacky_count == hacky_total_needed:
+                        code_blocks.append(MarkdownCodeBlockInfo(language, code.strip(), path))
+                        path = None
+                        code = ""
+                        depth = 0
+                        fuzzy_depth = 0
+                        language = ""
             else:
                 pseudo_depth = depth + fuzzy_depth
                 if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
