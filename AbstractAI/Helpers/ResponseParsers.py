@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Union, Tuple
 import re
+import os
 
 @dataclass
 class MarkdownCodeBlockInfo:
@@ -35,6 +36,9 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
     
     other_lines = []
     
+    file_name:str = None
+    looking_for_file_end = False
+    
     lines = text.split('\n')
     for i, line in enumerate(lines):
         if depth == 0:
@@ -43,6 +47,12 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
             elif re.match(code_start_pattern, line):
                 depth = 1
                 language = re.match(code_start_pattern, line).group(1) or "text"
+                if path is None:
+                    looking_for_file_end = False
+                else:
+                    file_name = os.path.basename(path)
+                    looking_for_file_end = f"\n`"+"``\n{file_name}\n" in text
+                    #Parser still can't handle the above line ^ without the "+" in the middle of the ` ` `
                 
                 if len(other_lines)>0:
                     code_blocks.append("\n".join(other_lines))
@@ -62,7 +72,11 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                     if (fuzzy_depth-depth) % 2 == 0:
                         return True
                     return False
-                if could_this_be_the_end():
+                def is_it_actually():
+                    if looking_for_file_end:
+                        return lines[i+1] == file_name
+                    return True
+                if could_this_be_the_end() and is_it_actually():
                     code_blocks.append(MarkdownCodeBlockInfo(language, code.strip(), path))
                     path = None
                     code = ""
