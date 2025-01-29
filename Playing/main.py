@@ -9,7 +9,7 @@ app = ApplicationCore("/home/charlie/Documents/AbstractAI")
 llm = app["Sonnet 3.6"]
 
 # Reload or create the conversation:
-conversation_name = "Terminal Playing v4"
+conversation_name = "Terminal Playing v5"
 try:
 	conversation = list(AppContext.engine.query(Conversation).all(where=f"name='{conversation_name}'"))[0]
 	print("Loaded conversation!")
@@ -77,26 +77,37 @@ def any_in(items:Iterable[str], string:str) -> bool:
 			return True
 	return False
 
+code_blocks = extract_code_blocks(conversation[-1].content)
+
 # Talk loop between human, AI, terminal and file save operations:
 status_to_bot = []
 try:
 	transcriptions = app.transcribe_live()
+	un_sent = ""
+	
 	while True:
 		# Get the next thing the user said from the
 		# voice activity detector + transcriber pair:
 		transcription = next(transcriptions)
+		
+		# Just keep listening until they tell us to send:
+		if 'send message now' not in transcription.text.lower():
+			un_sent += transcription.text
+			continue
+		
 		with app.vad.pauser():
 			# Send what the user said to the bot, along with
 			# anything the application still needs to tell the bot:
 			if len(status_to_bot)==0:
-				response_obj = chat(conversation, transcription.text)
+				response_obj = chat(conversation, un_sent)
 			else:
 				bullets = [f'- {s}' for s in status_to_bot]
 				bullets = '\n'.join(bullets)
-				to_bot = f"First, here are some things from the application you should know:\n{bullets}\nThen, here is what the user said:\n\"{transcription.text}\""
+				to_bot = f"First, here are some things from the application you should know:\n{bullets}\nThen, here is what the user said:\n\"{un_sent}\""
 				response_obj = chat(conversation, to_bot)
 				status_to_bot.clear()
 			response = str(response_obj)
+			un_sent = ""
 			
 			# Speak to the user what it is the AI said to the user,
 			# and a summary of what it is instructing the application to do:

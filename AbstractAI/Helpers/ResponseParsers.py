@@ -17,7 +17,7 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
         'python', 'bash', 'sh', 'rust', 'cpp', 'javascript', 'java', 'ruby', 'go',
         'typescript', 'csharp', 'php', 'swift', 'kotlin', 'scala', 'haskell', 'r',
         'matlab', 'sql', 'html', 'css', 'xml', 'json', 'yaml', 'toml', 'powershell',
-        'markdown', 'md', 'text', 'txt', 'vhdl'
+        'markdown', 'md', 'text', 'txt', 'vhdl', 'makefile'
     ]
     language_pattern = '|'.join(language_list)
     
@@ -38,9 +38,13 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
     
     file_name:str = None
     looking_for_file_end = False
+    skip_next_line = False
     
     lines = text.split('\n')
     for i, line in enumerate(lines):
+        if skip_next_line:
+            skip_next_line = False
+            continue
         if depth == 0:
             if re.match(path_pattern, line):
                 path = line.strip()
@@ -51,9 +55,10 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                     looking_for_file_end = False
                 else:
                     file_name = os.path.basename(path)
-                    file_name_end_strings = text.count(f"\n```\n{file_name}\n")
+                    file_name_end_strings = text.count(f"\n```\n{file_name}")
                     looking_for_file_end = file_name_end_strings == 1
                     
+                    hacky_count = 0
                     hacky_total_needed = 1
                     if file_name_end_strings > 1:
                         # We have multiple files in this markdown with the same name...
@@ -64,7 +69,6 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                         #the same markdown.
                         
                         hacky_total_needed = file_name_end_strings
-                        hacky_count = 0
                     
                 if len(other_lines)>0:
                     code_blocks.append("\n".join(other_lines))
@@ -85,6 +89,9 @@ def extract_code_blocks(text: str) -> List[Union[MarkdownCodeBlockInfo, str]]:
                         depth = 0
                         fuzzy_depth = 0
                         language = ""
+                        skip_next_line = True
+                else:
+                    code += line + "\n"
             else:
                 pseudo_depth = depth + fuzzy_depth
                 if pseudo_depth % 2 == 1 and re.match(code_end_pattern, line):
