@@ -119,6 +119,8 @@ class VAD:
 		voice_detected = False
 		voice_detected_segments: List[VAD._Segment] = []
 		def concat(segs:List[VAD._Segment]) -> VAD._Segment:
+			if segs is None or len(segs)==0:
+				return None
 			return VAD._Segment(
 				np.concatenate([b.data for b in segs]),
 				segs[0].start_time,
@@ -227,6 +229,9 @@ class VAD:
 		# been building out atm with voice in it:
 		if voice_detected:
 			last_audio = concat(voice_detected_segments)
+			if last_audio is None:
+				return
+			
 			# Make sure it's actually got some voice in it:
 			if last_audio.data.size>0 and len(self._check_voice_activity(last_audio.data)) > 0:
 				with self.segment_lock:
