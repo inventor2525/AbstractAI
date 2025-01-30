@@ -17,6 +17,11 @@ import argparse
 import shutil
 import os
 
+stopwatch("nltk")
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
+
 stopwatch("ClassyFlaskDB")
 from ClassyFlaskDB.DefaultModel import *
 from ClassyFlaskDB.new.AudioTranscoder import AudioTranscoder
@@ -340,6 +345,21 @@ class ApplicationCore:
 		AppContext.jobs.stop()
 		self.save_jobs()
 		self.save_settings()
+	
+	def sanitize_text(text:str) -> str:
+		'''
+		Makes text all lower case and removes all punctuation.
+		'''
+		# Tokenize the text
+		tokens = word_tokenize(text.lower())
+		
+		# Remove punctuation and numbers
+		tokens = [token for token in tokens if token.isalpha()]
+		
+		# Join the tokens back into a string
+		processed_text = ' '.join(tokens)
+		
+		return processed_text
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")

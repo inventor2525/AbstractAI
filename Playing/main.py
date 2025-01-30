@@ -92,14 +92,15 @@ try:
 		# Get the next thing the user said from the
 		# voice activity detector + transcriber pair:
 		transcription = next(transcriptions)
+		sanitized_transcription = app.sanitize_text(transcription.text)
 		
 		# Check for pause/resume listening commands:
-		if 'stop listening' == transcription.text.lower():
+		if 'stop listening' == sanitized_transcription:
 			is_listening = False
 			with app.vad.pauser():
 				app.speak("No longer listening.")
 			continue
-		elif 'start listening' == transcription.text.lower():
+		elif 'start listening' == sanitized_transcription:
 			is_listening = True
 			with app.vad.pauser():
 				app.speak("I'm listening again!")
@@ -110,7 +111,7 @@ try:
 			continue
 		
 		# Just keep listening until they tell us to send:
-		if 'send message now' not in transcription.text.lower():
+		if 'send message now' != sanitized_transcription:
 			un_sent += transcription.text
 			continue
 		
@@ -165,13 +166,13 @@ try:
 		if has_tasks_to_confirm:
 			while True:
 				transcription = next(transcriptions)
+				sanitized_transcription = app.sanitize_text(transcription.text)
 				with app.vad.pauser():
-					lower_transcription = transcription.text.lower()
-					if 'no' == lower_transcription:
+					if 'no' == sanitized_transcription:
 						app.speak("Ok, I wont. What now then?")
 						status_to_bot.append("The user has rejected all actions you just attempted to make. No bash blocks were run and no file save operations have ocurred.")
 						break
-					elif 'yes' == lower_transcription:
+					elif 'yes' == sanitized_transcription:
 						status_to_bot.extend(do(items))
 						app.speak("Done!")
 						break
@@ -179,7 +180,7 @@ try:
 						'repeat that',
 						'what did you say',
 						"what'd you say"
-					], lower_transcription):
+					], sanitized_transcription):
 						app.speak(to_speak)
 					else:
 						app.speak(f"I'm sorry. '{transcription.text}', is not a valid response.")
