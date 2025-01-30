@@ -83,12 +83,31 @@ code_blocks = extract_code_blocks(conversation[-1].content)
 status_to_bot = []
 try:
 	transcriptions = app.transcribe_live()
+
+	is_listening = True
+
 	un_sent = ""
 	
 	while True:
 		# Get the next thing the user said from the
 		# voice activity detector + transcriber pair:
 		transcription = next(transcriptions)
+		
+		# Check for pause/resume listening commands:
+		if 'stop listening' == transcription.text.lower():
+			is_listening = False
+			with app.vad.pauser():
+				app.speak("No longer listening.")
+			continue
+		elif 'start listening' == transcription.text.lower():
+			is_listening = True
+			with app.vad.pauser():
+				app.speak("I'm listening again!")
+			continue
+
+		# Only accumulate text if we're listening:
+		if not is_listening:
+			continue
 		
 		# Just keep listening until they tell us to send:
 		if 'send message now' not in transcription.text.lower():
