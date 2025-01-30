@@ -26,6 +26,7 @@ def chat(conv:Conversation, msg:str) -> ResponseObject:
 	conversation and sent to the passed LLM. The decorator handles
 	most of the work.
 	'''
+	print(f"User sending: '{msg}'")
 	return msg
 
 # Connect to a pty/remote terminal emulator application
@@ -92,6 +93,7 @@ try:
 		# Get the next thing the user said from the
 		# voice activity detector + transcriber pair:
 		transcription = next(transcriptions)
+		print(f"User Said: '{transcription.text}'")
 		sanitized_transcription = app.sanitize_text(transcription.text)
 		
 		# Check for pause/resume listening commands:
@@ -127,6 +129,7 @@ try:
 				response_obj = chat(conversation, to_bot)
 				status_to_bot.clear()
 			response = str(response_obj)
+			print(f"Chat bot said:'{response}'")
 			un_sent = ""
 			
 			# Speak to the user what it is the AI said to the user,
@@ -166,6 +169,8 @@ try:
 		if has_tasks_to_confirm:
 			while True:
 				transcription = next(transcriptions)
+				print(f"User Said: '{transcription.text}'")
+				
 				sanitized_transcription = app.sanitize_text(transcription.text)
 				with app.vad.pauser():
 					if 'no' == sanitized_transcription:
