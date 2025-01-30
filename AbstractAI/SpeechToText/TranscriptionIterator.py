@@ -20,6 +20,7 @@ class StreamedTranscriptions:
 class TranscriptionIterator:
 	audio_recorder: AudioRecorder
 	vad: VAD
+	stream_path: str = None
 	transcriptions: StreamedTranscriptions = field(default=None, init=False)
 	
 	def __post_init__(self):
@@ -31,7 +32,7 @@ class TranscriptionIterator:
 		self.transcriptions = StreamedTranscriptions()
 		
 		self.audio_recorder.start_listening()
-		self.audio_recorder.start_recording()
+		self.audio_recorder.start_recording(self.stream_path)
 		self._record_start_time = self.audio_recorder.last_peek
 		self.vad.start()
 		return self

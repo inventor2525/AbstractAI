@@ -303,7 +303,7 @@ class ApplicationCore:
 		self.done_speaking = True
 		
 	def transcribe_live(self) -> Iterator[Transcription]:
-		with TranscriptionIterator(self.audio_recorder, self.vad) as iterator:
+		with TranscriptionIterator(self.audio_recorder, self.vad, stream_path="/home/charlie/_temp_stream_audio") as iterator:
 			yield from iterator
 			
 	def __getitem__(self, model_name: str) -> LLM:

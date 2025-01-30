@@ -5,6 +5,8 @@ from .Stopwatch import Stopwatch
 from typing import TypeVar, Type
 from datetime import datetime
 import threading
+import wave
+import time
 
 T = TypeVar("T")
 class AudioRecorder:
@@ -54,6 +56,19 @@ class AudioRecorder:
 			self.should_listen = True
 			self.should_record = False
 			self.recorder = recorder
+			self.dump_path = None
+			self.wave_file = None
+			self.text_file = None
+			self.last_append_time = 0
+
+		def set_dump_path(self, dump_path):
+			self.dump_path = dump_path
+			if dump_path:
+				self.wave_file = wave.open(f"{dump_path}.wav", 'wb')
+				self.wave_file.setnchannels(1)
+				self.wave_file.setsampwidth(2)
+				self.wave_file.setframerate(int(self.recorder.sample_rate))
+				self.text_file = open(f"{dump_path}_timestamps.txt", 'w')
 
 		def run(self):
 			self.stream = sd.InputStream(
@@ -66,16 +81,29 @@ class AudioRecorder:
 				was_recording = self.should_record
 				prev_buffer = None
 				data_start_time :datetime = None
+				total_frames = 0
 				while self.should_listen:
 					data_start_time = datetime.now()
 					data, _ = self.stream.read(1024)
 					record = self.should_record
 					if record:
+						if self.wave_file:
+							self.wave_file.writeframes((data * 32767).astype(np.int16).tobytes())
+						total_frames += len(data)
 						with self.recorder.lock:
 							if not was_recording and prev_buffer is not None:
 								self.last_peek = data_start_time
 								self.recorder.buffers[-1].append(prev_buffer)
 							self.recorder.buffers[-1].append(data.copy())
+						
+						# Append timestamp and length to text file every second
+						current_time = time.time()
+						if self.text_file and current_time - self.last_append_time >= 1:
+							recording_length = total_frames / self.recorder.sample_rate
+							timestamp = int(current_time * 1000)  # Unix timestamp in milliseconds
+							self.text_file.write(f"{recording_length:.3f}:{timestamp}\n")
+							self.text_file.flush()
+							self.last_append_time = current_time
 					else:
 						prev_buffer = data.copy()
 					was_recording = record
@@ -84,8 +112,13 @@ class AudioRecorder:
 			self.stream.stop()
 			self.stream.close()
 			del self.stream
+
+		def get_file_paths(self):
+			if self.dump_path:
+				return f"{self.dump_path}.wav", f"{self.dump_path}_timestamps.txt"
+			return None, None
 	
-	def start_recording(self) -> bool:
+	def start_recording(self, dump_path=None) -> bool:
 		'''
 		Starts a single new recording, only call this if it's
 		listening first (it starts automatically on init).
@@ -101,6 +134,7 @@ class AudioRecorder:
 			Stopwatch.singleton.start("Recording")
 			self.recording_thread.should_record = True
 			self.last_peek = datetime.now() #More accurate start time will be picked up in the run loop that may actually be ~1000 samples in the past but this at least makes sure 'a date' is populated simply incase race conditions
+			self.recording_thread.set_dump_path(dump_path)
 			return True
 
 	def stop_recording(self, return_type:Type[T]=AudioSegment) -> T:
@@ -130,6 +164,8 @@ class AudioRecorder:
 						peek_buffers.append(peek_buffer)
 				final_buffer = np.concatenate(peek_buffers)
 				self.buffers = [[]]  # Reset with a new empty list
+		
+		self.audio_file_path, self.text_file_path = self.recording_thread.get_file_paths()
 		
 		# Format and return the audio:
 		if final_buffer is not None:
