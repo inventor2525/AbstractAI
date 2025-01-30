@@ -167,22 +167,23 @@ try:
 				transcription = next(transcriptions)
 				with app.vad.pauser():
 					lower_transcription = transcription.text.lower()
-					if 'no' in lower_transcription:
+					if 'no' == lower_transcription:
 						app.speak("Ok, I wont. What now then?")
 						status_to_bot.append("The user has rejected all actions you just attempted to make. No bash blocks were run and no file save operations have ocurred.")
 						break
-					elif 'yes' in lower_transcription:
+					elif 'yes' == lower_transcription:
 						status_to_bot.extend(do(items))
 						app.speak("Done!")
 						break
 					elif any_in([
 						'repeat that',
-						'What did you say',
+						'what did you say',
 						"what'd you say"
 					], lower_transcription):
 						app.speak(to_speak)
 					else:
-						app.speak("I'm sorry, that is not a valid response.")
+						app.speak(f"I'm sorry. '{transcription.text}', is not a valid response.")
+						status_to_bot.append(f"The user was asked yes or no by the application about performing the actions you presented, but said this '{transcription.text}' instead. -- FYI incase this was in error for the application to have not picked up on at the right time instead of user or whisper error.")
 		
 except KeyboardInterrupt:
 	print("Terminating application...")
