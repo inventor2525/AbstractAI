@@ -330,6 +330,10 @@ class ApplicationCore:
 		)
 	
 	def speak(self, text:str, blocking:bool=True):
+		if text is None or not isinstance(text, str) or len(text)==0:
+			print(f"We were told to speak {text} in error.")
+			return
+		print(f"Speaking '{text}'")
 		self.done_speaking = False
 		self.tts.speak(text)
 		if blocking:
