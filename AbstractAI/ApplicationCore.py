@@ -346,7 +346,7 @@ class ApplicationCore:
 		self.save_jobs()
 		self.save_settings()
 	
-	def sanitize_text(text:str) -> str:
+	def sanitize_text(self, text:str) -> str:
 		'''
 		Makes text all lower case and removes all punctuation.
 		'''
@@ -358,8 +358,7 @@ class ApplicationCore:
 		
 		# Join the tokens back into a string
 		processed_text = ' '.join(tokens)
-		
-		return processed_text
+		return processed_text.strip()
 		
 stopwatch.end_scope() #AbstractAI App Core Init
 stopwatch("")
