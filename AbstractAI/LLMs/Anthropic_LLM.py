@@ -11,9 +11,26 @@ class Anthropic_LLM(LLM):
 	def __init__(self, settings: Anthropic_LLMSettings):
 		self.client = None
 		super().__init__(settings)
+		self._prev_cached_msg = None
 	
 	def chat(self, conversation: Conversation, start_str: str = "", stream: bool = False, max_tokens: int = None) -> Message:
 		wip_message, message_list = self._new_message(conversation, start_str)
+		
+		def make_msg_cached(msg:Dict[str, str]):
+			msg['content'] = [{
+				'type':'text',
+				'text':msg['content'],
+				"cache_control": {"type": "ephemeral"}
+			}]
+		
+		if self.settings.rolling_cache:
+			if self._prev_cached_msg: #The simple egotist implementation (there is only *1* conversation in the app, more will break this, but it doesn't matter cause there should only ever be 1 conversation. GOT IT?!?! Good!)
+				for msg in reversed(message_list):
+					if msg['content'] == self._prev_cached_msg:
+						make_msg_cached(msg)
+			if len(message_list)>0:
+				self._prev_cached_msg = message_list[-1]['content']
+				make_msg_cached(message_list[-1])
 		
 		system_message = NOT_GIVEN
 		if len(message_list)>0 and message_list[0]['role'] == 'system':
@@ -24,14 +41,17 @@ class Anthropic_LLM(LLM):
 			if msg['role'] == 'system':
 				msg['role'] = 'user'
 		
-		completion = self.client.messages.create(
-			model=self.settings.model_name,
-			system=system_message,
-			messages=message_list,
-			max_tokens=max_tokens if max_tokens is not None else 1024,
-			stream=stream
-		)
-
+		try:
+			completion = self.client.messages.create(
+				model=self.settings.model_name,
+				system=system_message,
+				messages=message_list,
+				max_tokens=max_tokens if max_tokens is not None else 1024,
+				stream=stream
+			)
+			print(completion)
+		except Exception as e:
+			print(e)
 		if stream:
 			chunk_iterator = iter(completion)
 
