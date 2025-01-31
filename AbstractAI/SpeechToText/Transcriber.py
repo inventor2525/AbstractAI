@@ -29,7 +29,13 @@ class Transcriber:
 	def transcribe(self, audio: Audio) -> Transcription:
 		start_time = time.time()
 		if self.stt_settings.use_groq:
-			transcription = self._transcribe_with_groq(audio)
+			try:
+				transcription = self._transcribe_with_groq(audio)
+			except Exception as e1:
+				try:
+					transcription = self._transcribe_with_local_model(audio)
+				except Exception as e2:
+					raise Exception(f"Failed to transcribe audio. First groq was attempted with exception \"{e1}\", then local model failed with \"{e2}\".")
 		else:
 			transcription = self._transcribe_with_local_model(audio)
 
