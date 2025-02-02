@@ -1,5 +1,6 @@
 from enum import Enum
 from ClassyFlaskDB.DefaultModel import *
+from AbstractAI.Helpers.Stopwatch import SafeStopwatch
 from AbstractAI.Helpers.ScopeParams import ScopeParamsModel
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus, WaitFor
 from AbstractAI.Model.Converse import Conversation, Message, Role, MessageSequence, CallerInfo
@@ -66,33 +67,41 @@ class LLMJob(Job):
 	response: ResponseObject
 
 def llm_job_work(job: LLMJob) -> JobStatus:
-	try:
-		conversation = job.message_sequence.conversation
-		conversation.message_sequence = job.message_sequence
-		
-		llm = job.llm_settings.model
-		
-		# Filter LLM params based on the chat method's signature
-		chat_params = inspect.signature(llm.chat).parameters
-		filtered_params = {k: v for k, v in job.llm_params.items() if k in chat_params}
-		
-		message = llm.chat(conversation, **filtered_params)
-		conversation + message
-		
-		job.response.message = message
-		job.response.after_response_message_sequence = conversation.message_sequence
-		
-		if job.llm_params.get('stream', False):
-			while llm.continue_message(message):
-				if job.should_stop:
-					llm.stop_message(message)
-					return JobStatus.STOPPED
-		
-		return JobStatus.SUCCESS
-	except Exception as e:
-		job.status = f"Error: {str(e)}"
-		job.status_hover = traceback.format_exc()
-		return JobStatus.FAILED
+	with SafeStopwatch.singleton.timed_block("LLM Job Work"):
+		with SafeStopwatch.singleton.scope():
+			try:
+				SafeStopwatch.singleton("Setup job")
+				conversation = job.message_sequence.conversation
+				conversation.message_sequence = job.message_sequence
+				
+				llm = job.llm_settings.model
+				
+				# Filter LLM params based on the chat method's signature
+				chat_params = inspect.signature(llm.chat).parameters
+				filtered_params = {k: v for k, v in job.llm_params.items() if k in chat_params}
+				
+				SafeStopwatch.singleton("LLM Chat")
+				message = llm.chat(conversation, **filtered_params)
+				
+				SafeStopwatch.singleton("Setup return objects")
+				conversation + message
+				
+				job.response.message = message
+				job.response.after_response_message_sequence = conversation.message_sequence
+				
+				if job.llm_params.get('stream', False):
+					SafeStopwatch.singleton("Stream")
+					while llm.continue_message(message):
+						if job.should_stop:
+							llm.stop_message(message)
+							return JobStatus.STOPPED
+				
+				return JobStatus.SUCCESS
+			except Exception as e:
+				SafeStopwatch.singleton("Format Exception")
+				job.status = f"Error: {str(e)}"
+				job.status_hover = traceback.format_exc()
+				return JobStatus.FAILED
 
 def llm_job_callback(job: LLMJob):
 	# Callback stub
@@ -113,40 +122,46 @@ def get_stacktrace():
     return "\n".join(traceback)
 
 def llm_job(llm:LLM, prompt:str, conversation:Conversation=None, source:Object=None, key:str=None, blocking:bool=True) -> ResponseObject:
-	stacktrace=get_stacktrace() # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
-	
-	if conversation is None:
-		conversation = Conversation(key, stacktrace) | source
-	before_message_sequence = conversation.message_sequence
-	
-	conversation + Message(prompt, Role.User()) | source
-	
-	after_prompt_message_sequence = conversation.message_sequence
-	
-	response = ResponseObject(
-		before_message_sequence=before_message_sequence,
-		after_prompt_message_sequence=after_prompt_message_sequence,
-		key=key
-	) | source
-	
-	with LLMParams():
-		llm_params = LLMParams.get_all_params()
-		job = LLMJob(
-			job_key="LLM Chat",
-			llm_settings=llm.settings,
-			message_sequence=after_prompt_message_sequence,
-			llm_params=llm_params,
-			response=response
-		) | source
-		
-		response.job = job
-		
-		if blocking:
-			Jobs.singleton().execute_job(job)
-		else:
-			Jobs.singleton().add(job)
-		
-		return response
+	with SafeStopwatch.singleton.timed_block("LLM Job"):
+		with SafeStopwatch.singleton.scope():
+			SafeStopwatch.singleton("Get stack trace")
+			stacktrace=get_stacktrace() # Useful for self coding personal assistants to know where their own messages came from to aid them in self alteration.
+			
+			SafeStopwatch.singleton("Get / Create Conversation")
+			if conversation is None:
+				conversation = Conversation(key, stacktrace) | source
+			before_message_sequence = conversation.message_sequence
+			
+			conversation + Message(prompt, Role.User()) | source
+			
+			after_prompt_message_sequence = conversation.message_sequence
+			
+			response = ResponseObject(
+				before_message_sequence=before_message_sequence,
+				after_prompt_message_sequence=after_prompt_message_sequence,
+				key=key
+			) | source
+			
+			SafeStopwatch.singleton("Create LLM Job")
+			with LLMParams():
+				llm_params = LLMParams.get_all_params()
+				job = LLMJob(
+					job_key="LLM Chat",
+					llm_settings=llm.settings,
+					message_sequence=after_prompt_message_sequence,
+					llm_params=llm_params,
+					response=response
+				) | source
+				
+				response.job = job
+				
+				SafeStopwatch.singleton("Process Job")
+				if blocking:
+					Jobs.singleton().execute_job(job)
+				else:
+					Jobs.singleton().add(job)
+				
+				return response
 
 def llm_method(llm: LLM, key:str=None, with_history: bool = False, blocking: bool = True):
 	'''

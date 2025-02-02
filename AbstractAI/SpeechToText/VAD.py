@@ -1,7 +1,7 @@
 import threading
 import time
 import numpy as np
-from AbstractAI.Helpers.Stopwatch import Stopwatch
+from AbstractAI.Helpers.Stopwatch import Stopwatch, SafeStopwatch
 
 # Timing some really slow Voice Activity Detection imports:
 Stopwatch.singleton("VAD Imports")
@@ -286,11 +286,15 @@ class VAD:
 					segment = self.vocal_segments.pop(0)
 					if not self.vocal_segments:
 						self.segment_available.clear()  # Clear the event if no more segments
-					yield Audio(
+					yield_time = datetime.now()
+					print(f"yielding audio stopped {(yield_time-segment.end_time).total_seconds()} seconds ago.")
+					SafeStopwatch.singleton.start("Transcribe VAD segment")
+					audio = Audio(
 						self.recorder.np_to_AudioSegment(segment.data),
 						start_time=segment.start_time,
 						date_created=segment.end_time
 					)
+					yield audio
 	
 	def pauser(self) -> 'VAD.Pause':
 		'''

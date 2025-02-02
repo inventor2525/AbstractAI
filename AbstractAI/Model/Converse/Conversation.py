@@ -7,6 +7,7 @@ from .Message import Message
 from datetime import datetime
 from typing import Callable, List, Union, Tuple, Iterator
 from AbstractAI.Model.Artifacts import TextArtifact
+from AbstractAI.Helpers.Stopwatch import SafeStopwatch
 
 @DATA(excluded_fields=["conversation_changed", "message_added", "message_removed"])
 @dataclass
@@ -35,14 +36,21 @@ class Conversation(Object):
 		self.conversation_changed.connect(conversation_changed)
 		
 	def new_message_sequence(self):
-		self._ensure_all_message_sequences()
-		self.message_sequence = self.message_sequence.copy()
-		self.message_sequence.conversation = self
-		self._all_message_sequences.append(self.message_sequence)
+		with SafeStopwatch.singleton.scope():
+			SafeStopwatch.singleton("ensure all message sequences")
+			self._ensure_all_message_sequences()
+			SafeStopwatch.singleton("message sequence copy")
+			self.message_sequence = self.message_sequence.copy()
+			SafeStopwatch.singleton("message sequence append")
+			self.message_sequence.conversation = self
+			self._all_message_sequences.append(self.message_sequence)
 		
 	def add_message(self, message:Message):
-		self.new_message_sequence()
-		self.message_sequence.add_message(message)
+		with SafeStopwatch.singleton.scope():
+			SafeStopwatch.singleton("New Message Sequence")
+			self.new_message_sequence()
+			SafeStopwatch.singleton("Add message to new sequence")
+			self.message_sequence.add_message(message)
 		
 	def add_messages(self, messages:List[Message]):
 		if messages:
@@ -136,37 +144,44 @@ class Conversation(Object):
 		return message in self.message_sequence
 	
 	def __add__(self, message_s: Union[Message, str, TextArtifact, Tuple[str, Role], Tuple[TextArtifact, Role], List[Union[Message, str, TextArtifact, Tuple[str, Role], Tuple[TextArtifact, Role]]]]) -> Union[Message,List[Message]]:
-		def item_to_message(item):
-			if isinstance(item, str):
-				new_msg = Message(item)
-			elif isinstance(item, TextArtifact):
-				new_msg = Message(item.text) | item
-			elif isinstance(item, tuple):
-				if isinstance(item[0], str):
-					new_msg = Message(*item)
-				elif isinstance(item[0], TextArtifact):
-					item = list(item)
-					artifact = item[0]
-					item[0] = artifact.text
-					new_msg = Message(*item) | artifact
+		with SafeStopwatch.singleton.scope():
+			def item_to_message(item):
+				if isinstance(item, str):
+					new_msg = Message(item)
+				elif isinstance(item, TextArtifact):
+					new_msg = Message(item.text) | item
+				elif isinstance(item, tuple):
+					if isinstance(item[0], str):
+						new_msg = Message(*item)
+					elif isinstance(item[0], TextArtifact):
+						item = list(item)
+						artifact = item[0]
+						item[0] = artifact.text
+						new_msg = Message(*item) | artifact
+					else:
+						ValueError(f"Unsupported type: {type(item)}")
+				elif isinstance(item, Message):
+					new_msg = item
 				else:
-					ValueError(f"Unsupported type: {type(item)}")
-			elif isinstance(item, Message):
-				new_msg = item
-			else:
-				raise ValueError(f"Unsupported type: {type(item)}")
-			return new_msg
+					raise ValueError(f"Unsupported type: {type(item)}")
+				return new_msg
 
-		if isinstance(message_s, list):
-			if len(message_s)==0:
-				return None
-			messages = [item_to_message(item) for item in message_s]
-			self.add_messages(messages)
-			return messages
-		else:
-			msg = item_to_message(message_s)
-			self.add_message(msg)
-			return msg
+			if isinstance(message_s, list):
+				if len(message_s)==0:
+					return None
+				SafeStopwatch.singleton("Get messages")
+				messages = [item_to_message(item) for item in message_s]
+				
+				SafeStopwatch.singleton("Add messages")
+				self.add_messages(messages)
+				return messages
+			else:
+				SafeStopwatch.singleton("Get message")
+				msg = item_to_message(message_s)
+				
+				SafeStopwatch.singleton("Add message")
+				self.add_message(msg)
+				return msg
 
 	def __sub__(self, message_s: Union[Message, str, Tuple[str, Role], List[Union[Message, str, Tuple[str, Role]]]]) -> 'Conversation':
 		def get_message(obj):

@@ -1,10 +1,13 @@
 from AbstractAI.AppContext import AppContext
 from AbstractAI.Model.Converse import DATA
 from AbstractAI.Helpers.Jobs import Job, Jobs, JobStatus
+from AbstractAI.Helpers.Stopwatch import SafeStopwatch
 from ClassyFlaskDB.DefaultModel import Object
 from dataclasses import dataclass, field
 from pydub import AudioSegment
 from typing import Callable
+
+safe_stopwatch = SafeStopwatch.singleton
 
 @DATA
 @dataclass
@@ -61,13 +64,17 @@ class OpenAI_TTS(TTS):
 		
 	def work(self, job:TTSJob) -> JobStatus:
 		if job.data.text and len(job.data.text)>0:
-			response = self.client.audio.speech.create(
-				model=self.settings.model,
-				voice=self.settings.voice,
-				input=job.data.text
-			)
-			response.write_to_file("temp.mp3")
-			audio_segment = AudioSegment.from_mp3("temp.mp3")
-			#TODO: do this in memory, not by a double save ^^
-			job.data.speech = audio_segment
+			with safe_stopwatch.scope():
+				safe_stopwatch("Request")
+				response = self.client.audio.speech.create(
+					model=self.settings.model,
+					voice=self.settings.voice,
+					input=job.data.text
+				)
+				safe_stopwatch("Save")
+				response.write_to_file("temp.mp3")
+				safe_stopwatch("Create AudioSegment")
+				audio_segment = AudioSegment.from_mp3("temp.mp3")
+				#TODO: do this in memory, not by a double save ^^
+				job.data.speech = audio_segment
 		return JobStatus.SUCCESS

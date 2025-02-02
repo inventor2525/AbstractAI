@@ -31,8 +31,8 @@ class TimerStats:
 			return None
 
 class Stopwatch:
-	singleton = None
-	def __init__(self, should_log:bool=False, log_starts:bool=True, log_stops:bool=True, log_time_taken:bool=True, log_statistics:bool=True):
+	singleton:'Stopwatch' = None
+	def __init__(self, should_log:bool=False, log_starts:bool=True, log_stops:bool=True, log_time_taken:bool=True, log_statistics:bool=True, as_singleton:bool=True):
 		self.timers:Dict[str, TimerStats] = {}
 		self.should_log = should_log
 		
@@ -41,7 +41,7 @@ class Stopwatch:
 		self.log_time_taken = log_time_taken
 		self.log_statistics = log_statistics
 		
-		if Stopwatch.singleton is None:
+		if as_singleton and Stopwatch.singleton is None:
 			Stopwatch.singleton = self
 		
 		self.previous_keys:List[Any] = [None]
@@ -109,3 +109,48 @@ class Stopwatch:
 	
 	def __call__(self, key:Any, details:str=None, should_log:bool=None, log_time_taken:bool=None, log_statistics:bool=None) -> Dict[str, Any]:
 		return self.sequential(key, details, should_log, log_time_taken, log_statistics)
+
+import threading
+class SafeStopwatch(Stopwatch):
+	singleton:'SafeStopwatch' = None
+	
+	def __init__(self, should_log: bool = False, log_starts: bool = True, log_stops: bool = True, log_time_taken: bool = True, log_statistics: bool = True, as_singleton:bool=True):
+		super().__init__(should_log, log_starts, log_stops, log_time_taken, log_statistics, False)
+		if as_singleton and SafeStopwatch.singleton is None:
+			SafeStopwatch.singleton = self
+		self.lock = threading.RLock()
+	
+	def print(self, msg: str) -> str:
+		with self.lock:
+			return super().print(msg)
+	
+	def start(self, key: Any, details: str = None, should_log: bool = None):
+		with self.lock:
+			return super().start(key, details, should_log)
+	
+	def stop(self, key: Any, should_log: bool = None, log_time_taken: bool = None, log_statistics: bool = None) -> Dict[str, Any]:
+		with self.lock:
+			return super().stop(key, should_log, log_time_taken, log_statistics)
+	
+	def sequential(self, key: Any, details: str = None, should_log: bool = None, log_time_taken: bool = None, log_statistics: bool = None) -> Dict[str, Any]:
+		with self.lock:
+			stats = None
+			if self.previous_keys[-1] is not None:
+				stats = super().stop(self.previous_keys[-1], should_log, log_time_taken, log_statistics)
+			super().start(key, details, should_log)
+			self.previous_keys[-1] = key
+			return stats
+	
+	def new_scope(self):
+		with self.lock:
+			return super().new_scope()
+	
+	@contextmanager
+	def scope(self, should_log: bool = None, log_time_taken: bool = None, log_statistics: bool = None):
+		self.new_scope()
+		yield
+		self.end_scope(should_log, log_time_taken, log_statistics)
+	
+	def end_scope(self, should_log: bool = None, log_time_taken: bool = None, log_statistics: bool = None):
+		with self.lock:
+			return super().end_scope(should_log, log_time_taken, log_statistics)

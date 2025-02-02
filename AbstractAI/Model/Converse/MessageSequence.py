@@ -1,3 +1,4 @@
+from AbstractAI.Helpers.Stopwatch import SafeStopwatch
 from ClassyFlaskDB.DefaultModel import *
 from .Message import Message
 from typing import List, Optional
@@ -9,12 +10,16 @@ class MessageSequence(Object):
 	conversation: "Conversation" = field(default=None, compare=False)
 	
 	def add_message(self, message: Message):
-		self._add_message(message)
-		self.new_id()
-		
-		if self.conversation is not None:
-			self.conversation.message_added(message)
-			self.conversation.conversation_changed()
+		with SafeStopwatch.singleton.scope():
+			SafeStopwatch.singleton("Add")
+			self._add_message(message)
+			self.new_id()
+			
+			if self.conversation is not None:
+				SafeStopwatch.singleton("message_added event")
+				self.conversation.message_added(message)
+				SafeStopwatch.singleton("conversation_changed event")
+				self.conversation.conversation_changed()
 	
 	def insert_message(self, message: Message, index:int, silent:bool=False):
 		message.conversation = self.conversation

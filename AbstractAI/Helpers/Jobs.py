@@ -6,6 +6,7 @@ import traceback
 import threading
 from threading import Thread, Lock, Event
 from ClassyFlaskDB.DefaultModel import *
+from AbstractAI.Helpers.Stopwatch import SafeStopwatch
 from AbstractAI.Helpers.Signal import Signal
 
 class JobPriority(Enum):
@@ -213,8 +214,9 @@ class Jobs(Object):
         :param callback: Called after the job is finished, this should be
         quick and non-blocking.
         """
-        creation_traceback = traceback.format_stack()
-        Jobs.registry[job_key] = JobCallable(work, callback, ''.join(creation_traceback))
+        with SafeStopwatch.singleton.timed_block("Register job"):
+            creation_traceback = traceback.format_stack()
+            Jobs.registry[job_key] = JobCallable(work, callback, ''.join(creation_traceback))
 
     def add(self, job: Job) -> Job:
         """
@@ -223,18 +225,19 @@ class Jobs(Object):
         :param job: The job to add
         :return: The added job
         """
-        with self._lock:
-            if not self._ensure_job_registered(job):
-                print(f"Note: Adding un-registered job with key: '{job.job_key}'. This may be important if nothing registers it latter. If something does, it should run normally at that time. If not, you will see it skipped repeatedly.")
-            job.jobs = self
-            self._jobs.append(job)
+        with SafeStopwatch.singleton.timed_block("Add job"):
+            with self._lock:
+                if not self._ensure_job_registered(job):
+                    print(f"Note: Adding un-registered job with key: '{job.job_key}'. This may be important if nothing registers it latter. If something does, it should run normally at that time. If not, you will see it skipped repeatedly.")
+                job.jobs = self
+                self._jobs.append(job)
+            
+            current_wait_for = WaitFor.get_current()
+            if current_wait_for:
+                current_wait_for.add_job(job)
         
-        current_wait_for = WaitFor.get_current()
-        if current_wait_for:
-            current_wait_for.add_job(job)
-        
-        self.changed()
-        return job
+            self.changed()
+            return job
 
     def start_job(self, job: Job, priority: JobPriority):
         """
@@ -243,19 +246,20 @@ class Jobs(Object):
         :param job: The job to start
         :param priority: The priority level for starting the job
         """
-        with self._lock:
-            if priority != JobPriority.WHENEVER and job in self._jobs:
-                self._jobs.remove(job)
+        with SafeStopwatch.singleton.timed_block("Start job"):
+            with self._lock:
+                if priority != JobPriority.WHENEVER and job in self._jobs:
+                    self._jobs.remove(job)
 
-            if priority == JobPriority.NOW:
-                self.stop()
-                self._jobs.insert(0, job)
-            elif priority == JobPriority.NEXT:
-                self._jobs.insert(0 if not self._thread else 1, job)
-            elif job not in self._jobs:
-                self._jobs.append(job)
+                if priority == JobPriority.NOW:
+                    self.stop()
+                    self._jobs.insert(0, job)
+                elif priority == JobPriority.NEXT:
+                    self._jobs.insert(0 if not self._thread else 1, job)
+                elif job not in self._jobs:
+                    self._jobs.append(job)
 
-        self.start()
+            self.start()
         self.changed()
     
     def execute_job(self, job:Job):
@@ -266,18 +270,20 @@ class Jobs(Object):
         This makes sure it's saved with the job list
         to file, but not dispatch it needlessly to a separate thread.
         '''
-        already_running = False
-        with self._lock:
-            if job.running:
-                already_running = True
-            else:
-                if not self._ensure_job_registered(job):
-                    raise Exception(f"Error executing un-registered job with key: '{job.job_key}'")
-            job.running = True
-        if already_running:
-            job.wait()
-        else:
-            self._execute_job(job)
+        with SafeStopwatch.singleton.scope():
+            with SafeStopwatch.singleton.timed_block("Execute job"):
+                already_running = False
+                with self._lock:
+                    if job.running:
+                        already_running = True
+                    else:
+                        if not self._ensure_job_registered(job):
+                            raise Exception(f"Error executing un-registered job with key: '{job.job_key}'")
+                    job.running = True
+                if already_running:
+                    job.wait()
+                else:
+                    self._execute_job(job)
             
     def start(self):
         """
@@ -333,31 +339,34 @@ class Jobs(Object):
         self.thread_status_changed(False)
     
     def _execute_job(self, job:Job):
-        print(f"Starting job: {job.name or job.job_key}")
-        try:
-            status = job()
-            changed = False
-            with self._lock:
-                if status == JobStatus.SUCCESS or status == None:
-                    print(f"Job completed successfully: {job.name or job.job_key}")
-                    try:
-                        self._jobs.remove(job)
-                    except:
-                        pass
-                    changed = True
-                elif status == JobStatus.FAILED:
-                    print(f"Job failed: {job.name or job.job_key}")
-                elif status == JobStatus.STOPPED:
-                    print(f"Job stopped: {job.name or job.job_key}")
-                job.should_stop = False
-                job.running = False
-            if changed:
-                self.changed()
-        except Exception as e:
-            print(f"Error in job {job.name or job.job_key}: {e}.")
-        Jobs.should_save_job(job)
-        
-        job.completed(job, status)
+        with SafeStopwatch.singleton.scope():
+            SafeStopwatch.singleton(f"_Execute job {job.job_key}")
+            try:
+                status = job()
+                changed = False
+                with self._lock:
+                    if status == JobStatus.SUCCESS or status == None:
+                        try:
+                            self._jobs.remove(job)
+                        except:
+                            pass
+                        changed = True
+                    elif status == JobStatus.FAILED:
+                        print(f"Job failed: {job.name or job.job_key}")
+                    elif status == JobStatus.STOPPED:
+                        print(f"Job stopped: {job.name or job.job_key}")
+                    job.should_stop = False
+                    job.running = False
+                SafeStopwatch.singleton(f"Jobs changed event")
+                if changed:
+                    self.changed()
+            except Exception as e:
+                print(f"Error in job {job.name or job.job_key}: {e}.")
+            SafeStopwatch.singleton(f"Save job event {job.name}")
+            Jobs.should_save_job(job)
+            
+            SafeStopwatch.singleton(f"Job completed event")
+            job.completed(job, status)
 
 class WaitFor:
     _local = threading.local()

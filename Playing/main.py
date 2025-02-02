@@ -94,6 +94,7 @@ try:
 		# voice activity detector + transcriber pair:
 		transcription = next(transcriptions)
 		print(f"User Said: '{transcription.text}'")
+		SafeStopwatch.singleton.stop("Transcribe VAD segment")
 		sanitized_transcription = app.sanitize_text(transcription.text)
 		
 		# Check for pause/resume listening commands:
@@ -169,6 +170,7 @@ try:
 		if has_tasks_to_confirm:
 			while True:
 				transcription = next(transcriptions)
+				SafeStopwatch.singleton.stop("Transcribe VAD segment")
 				print(f"User Said: '{transcription.text}'")
 				
 				sanitized_transcription = app.sanitize_text(transcription.text)

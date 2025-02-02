@@ -1,3 +1,4 @@
+from AbstractAI.Helpers.Stopwatch import SafeStopwatch
 from AbstractAI.Helpers.AudioRecorder import AudioRecorder
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from AbstractAI.Model.Settings.STT_Settings import STT_Settings_v1
@@ -75,24 +76,30 @@ class Transcriber:
 			return audio.export("temp_audio.mp3")
 
 	def _transcribe_with_groq(self, audio: Audio) -> Transcription:
-		self._ensure_groq_loaded()
-		audio_path = self._get_audio_path(audio.segment)
-		data = None
-		with open(audio_path, "rb") as audio_file:
-			result = self.client.audio.transcriptions.create(
-				file=(audio_path, audio_file.read()),
-				model="whisper-large-v3",
-				prompt="Specify context or spelling",
-				response_format="verbose_json",
-				language="en",
-				temperature=0.0
+		with SafeStopwatch.singleton.scope():
+			SafeStopwatch.singleton("Ensure Groq loaded")
+			self._ensure_groq_loaded()
+			SafeStopwatch.singleton("Get audio path")
+			audio_path = self._get_audio_path(audio.segment)
+			data = None
+			with open(audio_path, "rb") as audio_file:
+				SafeStopwatch.singleton("Groq request")
+				result = self.client.audio.transcriptions.create(
+					file=(audio_path, audio_file.read()),
+					model="whisper-large-v3",
+					prompt="Specify context or spelling",
+					response_format="verbose_json",
+					language="en",
+					temperature=0.0
+				)
+				SafeStopwatch.singleton("to_dict")
+				data = result.to_dict()
+			SafeStopwatch.singleton("return")
+			return Transcription(
+				data['text'],
+				audio=audio,
+				raw_data=data
 			)
-			data = result.to_dict()
-		return Transcription(
-			data['text'],
-			audio=audio,
-			raw_data=data
-		)
 
 	def _transcribe_with_local_model(self, audio: Audio) -> Transcription:
 		self._ensure_local_model_loaded()

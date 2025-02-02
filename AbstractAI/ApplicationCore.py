@@ -1,7 +1,10 @@
 # Setup StopWatch (for application timing):
-from AbstractAI.Helpers.Stopwatch import Stopwatch
+from AbstractAI.Helpers.Stopwatch import Stopwatch, SafeStopwatch
 Stopwatch.singleton = Stopwatch(should_log=True, log_statistics=False)
 stopwatch = Stopwatch.singleton
+
+SafeStopwatch.singleton = SafeStopwatch(should_log=True, log_statistics=False)
+safe_stopwatch = SafeStopwatch.singleton
 
 # Track import times:
 stopwatch("AbstractAI App Core Init")
@@ -288,15 +291,17 @@ class ApplicationCore:
 	
 	def save_jobs(self) -> None:
 		'''Saves current jobs list to the db. (triggered by Jobs.changed event)'''
-		with AppContext.jobs._lock:
-			AppContext.engine.merge(AppContext.jobs)
+		with safe_stopwatch.timed_block("Save jobs"):
+			with AppContext.jobs._lock:
+				AppContext.engine.merge(AppContext.jobs)
 	
 	def transcription_work(self, job: TranscriptionJob) -> JobStatus:
-		if job.audio:
-			job.transcription = self.transcriber.transcribe(job.audio)
-			return JobStatus.SUCCESS
-		job.status_hover = "No audio supplied for transcription."
-		return JobStatus.FAILED
+		with safe_stopwatch.timed_block("Transcribe job work"):
+			if job.audio:
+				job.transcription = self.transcriber.transcribe(job.audio)
+				return JobStatus.SUCCESS
+			job.status_hover = "No audio supplied for transcription."
+			return JobStatus.FAILED
 
 	def transcription_callback(self, job: TranscriptionJob):
 		self.transcription_completed(job.transcription)
@@ -330,15 +335,17 @@ class ApplicationCore:
 		)
 	
 	def speak(self, text:str, blocking:bool=True):
-		if text is None or not isinstance(text, str) or len(text)==0:
-			print(f"We were told to speak {text} in error.")
-			return
-		print(f"Speaking '{text}'")
-		self.done_speaking = False
-		self.tts.speak(text)
-		if blocking:
-			while not getattr(self, 'done_speaking', False):
-				time.sleep(0.01)
+		with safe_stopwatch.scope():
+			with safe_stopwatch.timed_block("Speak"):
+				if text is None or not isinstance(text, str) or len(text)==0:
+					print(f"We were told to speak {text} in error.")
+					return
+				print(f"Speaking '{text}'")
+				self.done_speaking = False
+				self.tts.speak(text)
+				if blocking:
+					while not getattr(self, 'done_speaking', False):
+						time.sleep(0.01)
 	
 	def quit(self):
 		'''Do all things needed to do before terminating the application.'''
