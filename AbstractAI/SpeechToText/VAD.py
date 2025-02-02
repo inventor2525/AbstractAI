@@ -44,11 +44,10 @@ class VAD:
 		
 		def __enter__(self):
 			self.vad.paused = True
-			self.vad.stop()
 			return self
 		
 		def __exit__(self, exc_type, exc_val, exc_tb):
-			self.vad.start(ignore_prev_audio=True)
+			self.vad.recorder.peek() # Ensure no audio leaks in from before we un-paused.
 			self.vad.paused = False
 	
 	@dataclass
@@ -72,6 +71,7 @@ class VAD:
 		self.window_padding = window_padding
 		
 		# Prep for VAD:
+		self.paused = False
 		self.running = False
 		self.vad_thread: threading.Thread = None
 		self.segment_available = threading.Event()
@@ -134,6 +134,12 @@ class VAD:
 				datetime.now()
 			)
 			if peek_data.data.size == 0:
+				continue
+			
+			if self.paused:
+				self.silent_peeks_buffer.clear()
+				voice_detected_segments.clear()
+				voice_detected = False
 				continue
 			
 			# Get a longer segment we can check for voice activity more robustly:
@@ -273,7 +279,7 @@ class VAD:
 		Yields:
 			AudioSegment: An AudioSegment containing the audio data of a voice.
 		"""
-		while self.running or getattr(self, 'paused', False):
+		while self.running:
 			self.segment_available.wait()  # Wait for a segment to become available
 			with self.segment_lock:
 				if self.vocal_segments:
