@@ -9,7 +9,7 @@ app = ApplicationCore("/home/charlie/Documents/AbstractAI")
 llm = app["Sonnet 3.6"]
 
 # Reload or create the conversation:
-conversation_name = "Terminal Playing v5"
+conversation_name = "Terminal Playing v6"
 try:
 	conversation = list(AppContext.engine.query(Conversation).all(where=f"name='{conversation_name}'"))[0]
 	print("Loaded conversation!")
@@ -77,6 +77,11 @@ def any_in(items:Iterable[str], string:str) -> bool:
 		if item in string:
 			return True
 	return False
+def any_equal(items:Iterable[str], string:str) -> bool:
+	for item in items:
+		if item == string:
+			return True
+	return False
 
 code_blocks = extract_code_blocks(conversation[-1].content)
 
@@ -86,37 +91,38 @@ try:
 	transcriptions = app.transcribe_live()
 
 	is_listening = True
-
+	continue_once_un_prompted = False
 	un_sent = ""
 	
 	while True:
-		# Get the next thing the user said from the
-		# voice activity detector + transcriber pair:
-		transcription = next(transcriptions)
-		print(f"User Said: '{transcription.text}'")
-		SafeStopwatch.singleton.stop("Transcribe VAD segment")
-		sanitized_transcription = app.sanitize_text(transcription.text)
-		
-		# Check for pause/resume listening commands:
-		if 'stop listening' == sanitized_transcription:
-			is_listening = False
-			with app.vad.pauser():
-				app.speak("No longer listening.")
-			continue
-		elif 'start listening' == sanitized_transcription:
-			is_listening = True
-			with app.vad.pauser():
-				app.speak("I'm listening again!")
-			continue
+		if not continue_once_un_prompted:
+			# Get the next thing the user said from the
+			# voice activity detector + transcriber pair:
+			transcription = next(transcriptions)
+			print(f"User Said: '{transcription.text}'")
+			SafeStopwatch.singleton.stop("Transcribe VAD segment")
+			sanitized_transcription = app.sanitize_text(transcription.text)
+			
+			# Check for pause/resume listening commands:
+			if 'stop listening' == sanitized_transcription:
+				is_listening = False
+				with app.vad.pauser():
+					app.speak("No longer listening.")
+				continue
+			elif 'start listening' == sanitized_transcription:
+				is_listening = True
+				with app.vad.pauser():
+					app.speak("I'm listening again!")
+				continue
 
-		# Only accumulate text if we're listening:
-		if not is_listening:
-			continue
-		
-		# Just keep listening until they tell us to send:
-		if 'send message now' != sanitized_transcription:
-			un_sent += transcription.text
-			continue
+			# Only accumulate text if we're listening:
+			if not is_listening:
+				continue
+			
+			# Just keep listening until they tell us to send:
+			if 'send message now' != sanitized_transcription:
+				un_sent += transcription.text
+				continue
 		
 		with app.vad.pauser():
 			# Send what the user said to the bot, along with
@@ -126,7 +132,10 @@ try:
 			else:
 				bullets = [f'- {s}' for s in status_to_bot]
 				bullets = '\n'.join(bullets)
-				to_bot = f"First, here are some things from the application you should know:\n{bullets}\nThen, here is what the user said:\n\"{un_sent}\""
+				if continue_once_un_prompted:
+					to_bot = f"The user chose to accept your actions and simply let you continue. Heres an update from the chat application:\n{bullets}"
+				else:
+					to_bot = f"First, here are some things from the chat application you should know:\n{bullets}\nThen, here is what the user said:\n\"{un_sent}\""
 				response_obj = chat(conversation, to_bot)
 				status_to_bot.clear()
 			response = str(response_obj)
@@ -165,6 +174,7 @@ try:
 			if has_tasks_to_confirm:
 				to_speak += "\n\nWould you like to perform these actions? Yes or no?"
 			app.speak(to_speak)
+		continue_once_un_prompted = False
 		
 		# Confirm with the user that they do indeed want to do those things:
 		if has_tasks_to_confirm:
@@ -179,9 +189,14 @@ try:
 						app.speak("Ok, I wont. What now then?")
 						status_to_bot.append("The user has rejected all actions you just attempted to make. No bash blocks were run and no file save operations have ocurred.")
 						break
-					elif 'yes' == sanitized_transcription:
+					elif any_equal([
+						'yes',
+						'continue',
+						'yes continue'
+					], sanitized_transcription):
 						status_to_bot.extend(do(items))
 						app.speak("Done!")
+						continue_once_un_prompted = 'continue' in sanitized_transcription
 						break
 					elif any_in([
 						'repeat that',
