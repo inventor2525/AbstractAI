@@ -44,6 +44,7 @@ class VAD:
 		
 		def __enter__(self):
 			self.vad.paused = True
+			self.vad.recorder.peek()
 			return self
 		
 		def __exit__(self, exc_type, exc_val, exc_tb):
@@ -211,6 +212,11 @@ class VAD:
 						if silent_duration >= self.window_padding:
 							# If it's been long enough without a voice,
 							# queue this recording to be returned:
+							if self.paused:
+								self.silent_peeks_buffer.clear()
+								voice_detected_segments.clear()
+								voice_detected = False
+								continue
 							with self.segment_lock:
 								self.vocal_segments.append(full_segment)
 							voice_detected_segments.clear()
