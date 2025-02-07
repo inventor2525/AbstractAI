@@ -66,8 +66,9 @@ from AbstractAI.SpeechToText.TranscriptionIterator import TranscriptionIterator
 stopwatch.stop("Speech to Text")
 
 stopwatch("Text to Speech")
-from AbstractAI.Model.Settings.OpenAI_TTS_Settings import OpenAI_TTS_Settings
-from AbstractAI.TextToSpeech.TTS import OpenAI_TTS, TTSJob
+from AbstractAI.TextToSpeech.TTS import TTSJob
+from AbstractAI.TextToSpeech.OpenAI_TTS import OpenAI_TTS, OpenAI_TTS_Settings
+from AbstractAI.TextToSpeech.Kokoro_TTS import Kokoro_TTS, Kokoro_TTS_Settings
 
 stopwatch("Context")
 from AbstractAI.AppContext import AppContext
@@ -137,6 +138,7 @@ class ApplicationCore:
 		self.vad_settings = self.query_db(VADSettings, as_setting=True)
 		self.stt_settings = self.query_db(STT_Settings_v1, as_setting=True)
 		self.speech_settings = self.query_db(OpenAI_TTS_Settings, as_setting=True)
+		self.local_speech_settings = self.query_db(Kokoro_TTS_Settings, as_setting=True)
 		
 		# Create User Source:
 		AppContext.user_source = UserSource() | CallerInfo.catch([0])
@@ -161,6 +163,7 @@ class ApplicationCore:
 		# Setup Text to Speech:
 		stopwatch("Text to Speech startup")
 		self.tts = OpenAI_TTS(self.speech_settings, callback=self.text_to_speech_callback)
+		self.local_tts = Kokoro_TTS(self.local_speech_settings, callback=self.text_to_speech_callback)
 		
 		# Load any previously un-completed jobs:
 		stopwatch("Query Jobs")
@@ -342,7 +345,8 @@ class ApplicationCore:
 					return
 				print(f"Speaking '{text}'")
 				self.done_speaking = False
-				self.tts.speak(text)
+				# self.tts.speak(text)
+				self.local_tts.speak(text)
 				if blocking:
 					while not getattr(self, 'done_speaking', False):
 						time.sleep(0.01)

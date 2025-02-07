@@ -8,8 +8,7 @@ from AbstractAI.Model.Converse import Conversation, Message, Role, CallerInfo
 from AbstractAI.Automation.Agent import Agent
 from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo
 from AbstractAI.UI.ChatViews.ConversationActionControl import ConversationAction
-from AbstractAI.Model.Settings.OpenAI_TTS_Settings import OpenAI_TTS_Settings
-from AbstractAI.TextToSpeech.TTS import OpenAI_TTS, TTSJob
+from AbstractAI.TextToSpeech.OpenAI_TTS import OpenAI_TTS, OpenAI_TTS_Settings, TTSJob
 from AbstractAI.Helpers.AudioPlayer import AudioPlayer
 from openai import OpenAI
 from pathlib import Path
