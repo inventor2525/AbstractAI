@@ -4,9 +4,11 @@ from AbstractAI.Helpers.ResponseParsers import MarkdownCodeBlockInfo, extract_co
 from time import sleep
 import codecs
 
+user_password = input("System Password?")
 # Start the application and load the LLM:
 app = ApplicationCore("/home/charlie/Documents/AbstractAI")
 llm = app["Sonnet 3.6"]
+#llm = app["Llama 3.3 70b"]
 
 # Reload or create the conversation:
 conversation_name = "Terminal Playing v6"
@@ -50,7 +52,7 @@ def do(items:List[Union[str, MarkdownCodeBlockInfo]]):
 			line = codecs.escape_decode(line)[0].decode('utf-8')
 			terminal.send_string(line)
 			sleep(1)
-		terminal_screen_dump = terminal.getScreenDump().raw_text
+		terminal_screen_dump = terminal.getScreenDump().raw_text.replace(user_password, '<USER_PASSWORD>')
 		return f"Terminal screen shows this after bash block:\n```txt\n{terminal_screen_dump}\n```"
 	
 	def save(content:str, path:str) -> str:
@@ -66,7 +68,7 @@ def do(items:List[Union[str, MarkdownCodeBlockInfo]]):
 			if item.path is not None:
 				status = save(item.content, item.path)
 			elif item.language == 'bash':
-				status = send_to_terminal(item.content)
+				status = send_to_terminal(item.content.replace('<USER_PASSWORD>', user_password))
 			else:
 				status = "A markdown code block was sent without a full path on the line before it (with no other text on that line), or it being a bash block. Such code blocks can not be processed."
 			status_to_bot.append(status)

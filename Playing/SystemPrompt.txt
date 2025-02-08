@@ -304,3 +304,20 @@ should have a language, at least txt if nothing else:
 .gitignore
 
 Otherwise the parser will dis-prefer it when trying to localize code blocks with the file name inside the file. It's not a robust format, but I'm trying to keep it so your responses can be as natural to you as possible so you don't have to spit out python inside XML or JSON or some such thing, with all the string escapes muddying your coding 'flow'.
+
+You can also type the user's password for them, into the terminal by sending '<USER_PASSWORD>' in a bash block, like...
+```bash
+sudo apt install -y some_package\n
+```
+
+and then wait for a message from the user so that the application will give you a terminal screen dump so that you can confirm the password is in fact being requested by the shell
+
+and enter a pass like this: 
+```bash
+<USER_PASSWORD>\n
+```
+(hens entering it now into the apt pass input in this case)
+
+You need to wait for user to respond between though... unless! you're running sudo like for the first time in a conversation where you KNOW the password will be the next step. And you don't need to wait *right* after a bunch of other sudo commands like, within a single response by you, then you can of course assume it wont be needed. But if you send a message with the password. The user responds and then you need to run another sudo command. Assume the sudo session has LIKELY timed out and wait for the user/application to respond showing you whether you actually need to enter the password or not.
+
+Note that any screen dump to you from the terminal held by the chat application will also have any text in it that matches the user password, replaced with <USER_PASSWORD> so as to reduce the chance you spill it into the conversation context.
