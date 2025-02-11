@@ -17,8 +17,21 @@ class AudioRecorder:
 		if len(input_devices) > 0:
 			self.input_device_index, self.device = input_devices[0]
 			self.sample_rate = self.device['default_samplerate']
+			
+			# Try to get supported formats, default to int16 if not available
+			device_info = sd.query_devices(self.input_device_index)
+			self.supported_formats = device_info.get('supported_formats', ['int16'])
+			
+			# Choose the best available format
+			if 'int32' in self.supported_formats:
+				self.dtype = 'int32'
+			elif 'int24' in self.supported_formats:
+				self.dtype = 'int24'
+			else:
+				self.dtype = 'int16'
 		else:
 			self.device = None
+			self.dtype = 'int16'  # Default to int16 if no device found
 		
 		#Prep for recording:
 		self.recording_thread:AudioRecorder.RecordingThread = None
@@ -60,20 +73,22 @@ class AudioRecorder:
 			self.wave_file = None
 			self.text_file = None
 			self.last_append_time = 0
+			self.dtype = recorder.dtype
 
 		def set_dump_path(self, dump_path):
 			self.dump_path = dump_path
 			if dump_path:
 				self.wave_file = wave.open(f"{dump_path}.wav", 'wb')
 				self.wave_file.setnchannels(1)
-				self.wave_file.setsampwidth(2)
+				self.wave_file.setsampwidth(4 if self.dtype == 'int32' else (3 if self.dtype == 'int24' else 2))
 				self.wave_file.setframerate(int(self.recorder.sample_rate))
 				self.text_file = open(f"{dump_path}_timestamps.txt", 'w')
 
 		def run(self):
 			self.stream = sd.InputStream(
 				samplerate=self.recorder.sample_rate,
-				channels=1, dtype='float32', 
+				channels=1,
+				dtype=self.dtype,
 				device=self.recorder.input_device_index
 			)
 			self.stream.start()
@@ -88,7 +103,7 @@ class AudioRecorder:
 					record = self.should_record
 					if record:
 						if self.wave_file:
-							self.wave_file.writeframes((data * 32767).astype(np.int16).tobytes())
+							self.wave_file.writeframes(data.tobytes())
 						total_frames += len(data)
 						with self.recorder.lock:
 							if not was_recording and prev_buffer is not None:
@@ -174,7 +189,7 @@ class AudioRecorder:
 			return final_buffer
 		if return_type is AudioSegment:
 			return AudioSegment.empty()
-		return np.array([], dtype=np.float32)
+		return np.array([], dtype=self.dtype)
 
 	def peek(self, return_type:Type[T]=AudioSegment) -> T:
 		'''
@@ -214,7 +229,7 @@ class AudioRecorder:
 			return peek_buffer
 		if return_type is AudioSegment:
 			return AudioSegment.empty()
-		return np.array([], dtype=np.float32)
+		return np.array([], dtype=self.dtype)
 	
 	def stop_listening(self) -> None:
 		'''
@@ -231,10 +246,9 @@ class AudioRecorder:
 			print("Recorder terminated!")
 	
 	def np_to_AudioSegment(self, array:np.ndarray) -> AudioSegment:
-		audio_data = np.int16(array * 32767).tobytes()
 		return AudioSegment(
-			data=audio_data,
-			sample_width=2,
+			data=array.tobytes(),
+			sample_width=array.dtype.itemsize,
 			frame_rate=int(self.sample_rate),
 			channels=1
 		)
