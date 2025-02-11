@@ -68,7 +68,10 @@ def do(items:List[Union[str, MarkdownCodeBlockInfo]]):
 			if item.path is not None:
 				status = save(item.content, item.path)
 			elif item.language == 'bash':
-				status = send_to_terminal(item.content.replace('<USER_PASSWORD>', user_password))
+				try:
+					status = send_to_terminal(item.content.replace('<USER_PASSWORD>', user_password))
+				except Exception as e:
+					status = str(e)
 			else:
 				status = "A markdown code block was sent without a full path on the line before it (with no other text on that line), or it being a bash block. Such code blocks can not be processed."
 			status_to_bot.append(status)
